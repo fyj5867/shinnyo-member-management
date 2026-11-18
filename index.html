@@ -617,7 +617,7 @@ function editNon(id, preset) {
   ${fol.length ? `<div class="muted">跟著這組的還有 ${fol.length} 人：${fol.map(x => esc(x.name)).join('、')}（改組時一起移過去）</div>` : ''}
   ${old ? '' : `<div style="margin-top:10px"><label class="ck"><input type="checkbox" id="n_star" checked>申請 ${y} 星供</label></div>`}
   <label>備註</label><textarea id="n_note" rows="3">${esc(p.note || '')}</textarea>
-  <div class="mbar"><button class="grow" onclick="saveNon('${old ? old.id : ''}')">儲存</button>${old ? `<button class="alt" onclick="toMember('${old.id}')">改成入信</button><button class="warn" onclick="removeNon('${old.id}')">刪除</button>` : ''}<button class="alt" onclick="closeModal()">取消</button></div>`);
+  <div class="mbar"><button class="grow" onclick="saveNon('${old ? old.id : ''}')">儲存</button>${old ? `<button class="alt" onclick="openBook('${old.id}')">奠供帳</button><button class="alt" onclick="toMember('${old.id}')">改成入信</button><button class="warn" onclick="removeNon('${old.id}')">刪除</button>` : ''}<button class="alt" onclick="closeModal()">取消</button></div>`);
 }
 function saveNon(id) {
   const ix = IX(), old = id ? ix.nm.get(id) : null, v = k => { const e = $('#n_' + k); return e ? e.value.trim() : ''; };
@@ -821,13 +821,16 @@ const isoDate = v => { const m = String(v || '').match(/(\d{4})\D+(\d{1,2})\D+(\
 const dDot = v => String(v || '').replace(/-/g, '.');
 const entAmt = e => (e.items || []).reduce((a, it) => a + (+it.amt || 0), 0);
 const entDelta = e => e.kind === 'out' ? -entAmt(e) : entAmt(e);
-const bookName = hid => { const p = anyP(hid); return p ? p.name : '（已不在名冊）'; };
+/* 帳本：名冊裡的任何人（戶長、家族入信、未入信）都可以有自己的一本；也可以自己取名開「自訂帳本」（存在設定 books） */
+const customBooks = () => cfgGet('books', []);
+const bookName = hid => { const p = anyP(hid); if (p) return p.name; const b = customBooks().find(x => x.id === hid); return b ? b.name : '（已不在名冊）'; };
+const bookKind = hid => { const ix = IX(); if (ix.m.has(hid)) return { family: '家族入信', ref: '參考', orphan: '家族入信' }[ix.kind.get(hid)] || '戶長'; if (ix.nm.has(hid)) return '未入信'; return customBooks().some(x => x.id === hid) ? '自訂' : ''; };
 const balHtml = b => b < 0 ? `<span class="bal neg">代支 ${money(-b)}</span>` : `<span class="bal">結餘 ${money(b)}</span>`;
 function bookOf(hid) {
   const es = LG().filter(e => e.hid === hid).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.seq || 0) - (b.seq || 0));
   let bal = 0; es.forEach(e => { bal += entDelta(e); e._bal = bal; }); return { es, bal };
 }
-function openBook(pid) { const ix = IX(), hid = ix.kind.get(pid) === 'family' ? ix.head.get(pid).id : pid; $('#modal').classList.add('hidden'); ui.tab = 'ledger'; ui.lg = hid; ui.q = ''; renderAll(); scrollTo(0, 0); }
+function openBook(hid) { if (!hid) return; $('#modal').classList.add('hidden'); ui.tab = 'ledger'; ui.lg = hid; ui.q = ''; renderAll(); scrollTo(0, 0); }
 function vLedger() {
   if (ui.lg) return vBook(ui.lg);
   $('#view').innerHTML = `<div class="bar"><span class="seg2"><button class="${ui.lgView === 'book' ? 'on' : ''}" onclick="ui.lgView='book';renderAll()">帳本</button><button class="${ui.lgView === 'month' ? 'on' : ''}" onclick="ui.lgView='month';renderAll()">依月份</button></span>
@@ -836,22 +839,48 @@ function vLedger() {
 }
 function renderBooks() {
   const l = $('#lglist'); if (!l) return; const q = ui.q.trim().toLowerCase();
-  const books = [...new Set(LG().map(e => e.hid))].map(h => { const b = bookOf(h); return { hid: h, name: bookName(h), bal: b.bal, last: b.es.length ? b.es[b.es.length - 1].date : '', n: b.es.length }; }).sort((a, b) => (b.last || '').localeCompare(a.last || ''));
+  const ids = [...new Set(LG().map(e => e.hid).concat(customBooks().map(b => b.id)))];
+  const books = ids.map(h => { const b = bookOf(h); return { hid: h, name: bookName(h), kind: bookKind(h), bal: b.bal, last: b.es.length ? b.es[b.es.length - 1].date : '', n: b.es.length }; }).sort((a, b) => (b.last || '').localeCompare(a.last || '') || byNameZh(a.name, b.name));
   const pos = books.reduce((a, b) => a + Math.max(0, b.bal), 0), neg = books.reduce((a, b) => a + Math.min(0, b.bal), 0);
   l.innerHTML = `<div class="panel sum"><div class="big">預存結餘<b>${money(pos)}</b><span class="lvc">代支 <b>${money(-neg)}</b>｜${books.length} 本帳</span></div>
-  <div class="muted" style="margin-top:4px">一戶一本，家人共用。預存（收款）加、申請（布施、超度、護摩…）扣；結餘變負的就是你代支的金額。</div></div>
-  ${books.filter(b => !q || b.name.toLowerCase().includes(q)).map(b => `<div class="card" style="cursor:pointer" onclick="openBook('${b.hid}')"><div class="hd"><b class="grow">${esc(b.name)}</b>${balHtml(b.bal)}</div><div class="muted">${b.n} 筆｜最近 ${esc(dDot(b.last))}</div></div>`).join('')
-    || '<div class="muted" style="padding:20px;text-align:center">還沒有帳本。按「＋開帳本」選一戶開始記，或在個人資料裡按「奠供帳」。</div>'}`;
+  <div class="muted" style="margin-top:4px">每個人都可以有自己的帳本（戶長、家族入信、未入信），也可以自己取名開帳本。預存（收款）加、申請（布施、超度、護摩…）扣；結餘變負的就是你代支的金額。</div></div>
+  ${books.filter(b => !q || b.name.toLowerCase().includes(q)).map(b => `<div class="card" style="cursor:pointer" onclick="openBook('${b.hid}')"><div class="hd"><b>${esc(b.name)}</b>${b.kind ? `<span class="chip${b.kind === '未入信' ? ' non' : ''}">${b.kind}</span>` : ''}<span class="grow"></span>${balHtml(b.bal)}</div><div class="muted">${b.n} 筆${b.last ? '｜最近 ' + esc(dDot(b.last)) : ''}</div></div>`).join('')
+    || '<div class="muted" style="padding:20px;text-align:center">還沒有帳本。按「＋開帳本」選人或自己取名，或在個人資料裡按「奠供帳」。</div>'}`;
 }
 function newBook() {
-  const ix = IX(); if (!ix.rows.length) return toast('名冊還沒有資料', 'err');
-  openModal(`<h2>開帳本</h2><div class="muted">一戶一本，家人共用預存金。</div><select id="nb" style="margin-top:10px">${ix.rows.map(h => `<option value="${h.id}">${'　'.repeat(Math.min(ix.depth.get(h.id), 3))}${esc(h.name)}（${lvOf(h)}）</option>`).join('')}</select>
-  <div class="row" style="margin-top:12px"><button class="grow" onclick="openBook($('#nb').value)">開啟</button><button class="alt" onclick="closeModal()">取消</button></div>`);
+  const ix = IX(), ind = n => '　'.repeat(n);
+  const opts = ix.rows.map(h => { const d = Math.min(ix.depth.get(h.id), 3);
+    return `<option value="${h.id}">${ind(d)}${esc(h.name)}（${lvOf(h)}）</option>` + (ix.fam.get(h.id) || []).filter(m => !m.deceased).map(m => `<option value="${m.id}">${ind(d + 1)}└ ${esc(m.name)}（家族入信）</option>`).join(''); }).join('')
+    + [...ix.nm.values()].filter(n => !n.deceased).sort((a, b) => byNameZh(a.name, b.name)).map(n => `<option value="${n.id}">${esc(n.name)}（未入信）</option>`).join('');
+  openModal(`<h2>開帳本</h2>
+  ${opts ? `<label>從名冊選人（戶長、家族入信、未入信都可以，各自一本）</label><select id="nb">${opts}</select>
+  <button style="margin-top:8px;width:100%" onclick="openBook($('#nb').value)">開這個人的帳本</button>` : ''}
+  <label style="margin-top:16px">或自己取名（不在名冊的人、一家人合用、專款都可以）</label><input id="nbName" placeholder="例：林家、法會專款">
+  <button class="alt" style="margin-top:8px;width:100%" onclick="addCustomBook()">建立自訂帳本</button>
+  <div class="mbar"><button class="alt grow" onclick="closeModal()">取消</button></div>`);
+}
+function addCustomBook() {
+  const n = $('#nbName').value.trim(); if (!n) return toast('請填帳本名稱', 'err');
+  const bs = customBooks(); if (bs.some(b => b.name === n)) return toast('已經有「' + n + '」這本帳', 'err');
+  const b = { id: 'B' + uid(), name: n }; cfgSet('books', bs.concat([b])); openBook(b.id); toast('已建立帳本');
+}
+function renameBook(id) {
+  const bs = customBooks(), b = bs.find(x => x.id === id); if (!b) return;
+  const v = prompt('帳本改名', b.name); if (v == null || !v.trim() || v.trim() === b.name) return;
+  if (bs.some(x => x.name === v.trim())) return toast('已經有「' + v.trim() + '」這本帳', 'err');
+  b.name = v.trim(); cfgSet('books', bs); renderAll();
+}
+function delBook(id) {
+  const b = customBooks().find(x => x.id === id); if (!b) return; const es = LG().filter(e => e.hid === id);
+  if (!confirm(`刪除帳本「${b.name}」？${es.length ? `\n裡面 ${es.length} 筆紀錄會一起刪除，無法復原。` : ''}`)) return;
+  if (es.length) SMStore.putMany('ledger', [], es.map(e => e.id));
+  cfgSet('books', customBooks().filter(x => x.id !== id)); ui.lg = ''; renderAll(); toast('已刪除帳本');
 }
 function vBook(hid) {
-  const { es, bal } = bookOf(hid), fam = IX().fam.get(hid) || [];
+  const ix = IX(), { es, bal } = bookOf(hid), fam = ix.fam.get(hid) || [], kind = bookKind(hid), head = ix.kind.get(hid) === 'family' ? ix.head.get(hid) : null;
+  const sub = fam.length ? `家人：${fam.map(x => esc(x.name)).join('、')}` : head ? `家族入信，戶長：<a onclick="openBook('${head.id}')">${esc(head.name)}</a>（點一下看戶長的帳本）` : kind === '自訂' ? `自訂帳本　<a onclick="renameBook('${hid}')">改名</a>　<a onclick="delBook('${hid}')" style="color:var(--warn)">刪除帳本</a>` : '';
   $('#view').innerHTML = `<div class="bar"><button class="alt sm" onclick="ui.lg='';renderAll()">← 帳本列表</button></div>
-  <div class="panel sum"><div class="big">${esc(bookName(hid))}</div>${fam.length ? `<div class="muted">家人：${fam.map(x => esc(x.name)).join('、')}</div>` : ''}<div style="margin-top:6px;font-size:20px">${balHtml(bal)}</div>
+  <div class="panel sum"><div class="big">${esc(bookName(hid))}${kind && kind !== '自訂' ? ` <span class="chip${kind === '未入信' ? ' non' : ''}">${kind}</span>` : ''}</div>${sub ? `<div class="muted">${sub}</div>` : ''}<div style="margin-top:6px;font-size:20px">${balHtml(bal)}</div>
   <div class="row" style="margin-top:8px"><button class="sm" onclick="editEntry('',{hid:'${hid}',kind:'out'})">＋申請（支出）</button><button class="alt sm" onclick="editEntry('',{hid:'${hid}',kind:'in'})">＋預存（收款）</button><button class="alt sm" onclick="pasteLine('${hid}')">貼上 LINE 記事</button><button class="alt sm" onclick="printBook('${hid}')">列印</button></div></div>
   ${es.slice().reverse().map(entCard).join('') || '<div class="muted" style="padding:20px;text-align:center">還沒有紀錄。可以一筆一筆加，或把 LINE 記事本的內容整段貼上。</div>'}`;
 }
