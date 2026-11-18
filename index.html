@@ -282,6 +282,9 @@ function togglePaid(pid, on) {
   const y = ui.year, p = byId(P(), pid), py = payerOf(y, p), r = yearRow(y, pid);
   if (on && !r.yuan) { r.yuan = true; SMStore.put('yearly', r); }
   const pr = yearRow(y, py.id); pr.yuanPaid = on ? (pr.yuanPaid || todayStr()) : ''; SMStore.put('yearly', pr);
+  const ta = $('#f_note'), key = y + ' 苑費已繳';      /* 同步在備註留一行紀錄 */
+  ta.value = ta.value.split(String.fromCharCode(10)).filter(l => !l.startsWith(key)).concat(on ? [key + ' ' + pr.yuanPaid] : []).join(String.fromCharCode(10)).trim();
+  SMStore.put('people', Object.assign({}, p, { note: ta.value }));
   const lab = $('#f_paid').closest('label'); if (lab) lab.classList.toggle('on', on);
   $('#creditLive').innerHTML = creditChip(p, y); toast(on ? y + ' 苑費已記為繳交' : '已取消繳交標記');
 }
@@ -379,7 +382,7 @@ function yearList() {
       const r = yearRow(y, m.id), role = roleOf(m);
       const ck = (k, n) => `<label class="ck ${r[k] ? 'on' : ''}"><input type="checkbox" ${r[k] ? 'checked' : ''} onchange="tick('${m.id}','${k}',this.checked)">${n}</label>`;
       return `<div class="items" style="border-top:1px dashed var(--line);padding-top:6px"><span class="t" style="cursor:pointer;min-width:64px" onclick="editPerson('${m.id}')">${esc(m.name)}</span>${role ? `<span class="chip good">${role}</span>` : ''}${m.status === 'non' ? '<span class="chip non">非入信</span>' : ''}${m.id === g.head.id ? '<span class="chip good">繳費代表</span>' : ''}
-      <button class="alt sm" title="指定由誰代為繳費" onclick="pickRep('${m.id}')">${r.rep && byId(P(), r.rep) ? '代繳：' + esc(byId(P(), r.rep).name) : '代繳▾'}</button>
+      <button class="alt sm" title="指定由誰代為繳費" onclick="pickRep('${m.id}')">${r.rep && byId(P(), r.rep) ? '代繳：' + esc(byId(P(), r.rep).name) : '代繳▾'}</button><button class="warn sm" title="刪除這個人" onclick="removePerson('${m.id}')">刪除</button>
       ${ck('yuan', '苑費')}${ck('cert', '祈年證')}${ck('star', '星供')}<span class="s" style="display:inline-flex;align-items:center;gap:4px">套子 <input class="n" type="number" min="0" value="${num(r.set) || ''}" onchange="setQty('${m.id}',this.value)"></span></div>`;
     }).join('');
     return `<div class="card"><div class="row"><div class="grow"><span class="t">${esc(g.head.name)}</span> <span class="s">${g.members.length} 人</span></div><div class="t">${money(f.total)}</div></div>
