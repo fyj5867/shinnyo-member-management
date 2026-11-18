@@ -330,12 +330,13 @@ function savePerson(id, isNew) {
   closeModal(); toast('已儲存');
 }
 function removePerson(id) {
-  const p = byId(P(), id), nc = children(id).length, nf = P().filter(x => x.famOf === id).length;
-  if (!confirm(`刪除「${p.name}」？\n其年度申請與收費紀錄也會一併刪除。${nc ? `\n他有 ${nc} 位導子，會變成無導親。` : ''}${nf ? `\n他有 ${nf} 位家族成員，會各自獨立成一戶。` : ''}\n（會同步到所有裝置，無法復原）`)) return;
-  const fix = children(id).map(k => Object.assign({}, k, { mentorId: '' })).concat(P().filter(x => x.famOf === id).map(k => Object.assign({}, k, { famOf: '' })));
-  SMStore.putMany('people', fix, [id]);
-  SMStore.putMany('yearly', [], YR().filter(r => r.pid === id).map(r => r.id));
-  closeModal(); toast('已刪除');
+  const p = byId(P(), id), fam = P().filter(x => x.famOf === id), ids = [id].concat(fam.map(x => x.id));
+  const kids = P().filter(x => x.mentorId && ids.includes(x.mentorId) && !ids.includes(x.id));
+  const nl = String.fromCharCode(10);
+  if (!confirm('刪除「' + p.name + '」？' + nl + '其年度申請與收費紀錄也會一併刪除。' + (fam.length ? nl + '家族入信成員不能獨立成戶，所以這 ' + fam.length + ' 位也會一併刪除：' + fam.map(x => x.name).join('、') + '。（若只想刪他一人，請先把家族成員改掛到別的戶長名下。）' : '') + (kids.length ? nl + '有 ' + kids.length + ' 位導子，會變成無導親。' : '') + nl + '（會同步到所有裝置，無法復原）')) return;
+  SMStore.putMany('people', kids.map(k => Object.assign({}, k, { mentorId: '' })), ids);
+  SMStore.putMany('yearly', [], YR().filter(r => ids.includes(r.pid)).map(r => r.id));
+  closeModal(); toast('已刪除 ' + ids.length + ' 人');
 }
 function openModal(html) { $('#modalBody').innerHTML = html; $('#modal').classList.remove('hidden'); }
 function closeModal() { $('#modal').classList.add('hidden'); renderAll(); }
@@ -353,8 +354,8 @@ function members(headId) {
    一組＝同一位代表底下所有人（可跨戶，仿 Excel 星供名單的「組內序 1＝代表」），收費與已收／發送都記在代表那筆。 */
 function payerOf(y, p, seen) {
   seen = seen || new Set(); if (seen.has(p.id)) return p; seen.add(p.id);
-  const rep = yearRow(y, p.id).rep; if (rep === p.id) return p;
-  const rp = rep && byId(P(), rep);
+  const rep = yearRow(y, p.id).rep; if (rep === p.id && !p.famOf) return p;     /* 家族入信成員不能自己獨立繳費，一律跟戶長 */
+  const rp = rep && rep !== p.id && byId(P(), rep);
   if (rp && alive(rp)) return payerOf(y, rp, seen);
   const h = headOf(p); return h.id !== p.id && alive(h) ? payerOf(y, h, seen) : p;
 }
@@ -845,7 +846,7 @@ function doImport() {
     } else { head = p; const mn = g(r, 'mentor'); if (mn && mn !== p.name) links.push([p, mn]); }
     /* 繳費代表：有「組內序」欄時，1＝新一組的代表，>1＝跟著上一位代表，空白＝自己 */
     let payer = head;
-    if (hasGrp) { const n = num(g(r, 'grp')); if (n === 1) curRep = p; else if (!(n > 1 && curRep)) curRep = null; payer = curRep || p; if (payer.id !== p.id) yr(p.id).rep = payer.id; else if (p.famOf) yr(p.id).rep = p.id; }
+    if (hasGrp) { const n = num(g(r, 'grp')); if (n === 1) curRep = p; else if (!(n > 1 && curRep)) curRep = null; payer = curRep || p; if (payer.famOf) payer = byId(people, payer.famOf) || payer; if (payer.id !== p.id && !(p.famOf && p.famOf === payer.id)) yr(p.id).rep = payer.id; }
     /* 年度勾選與收費狀態（收費狀態記在繳費代表那筆；沒有組內序欄就記在戶長） */
     if (col('yuan') >= 0 && truthy(g(r, 'yuan'))) yr(p.id).yuan = true;
     if (col('cert') >= 0 && truthy(g(r, 'cert'))) yr(p.id).cert = true;
