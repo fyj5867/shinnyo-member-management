@@ -116,6 +116,7 @@ const ui = { q: '', seat: '', status: '', year: (new Date().getMonth() >= 9 ? ne
 function go(t) { tab = t; renderAll(); scrollTo(0, 0); }
 function renderTabs() { $('#tabs').innerHTML = TABS.map(([k, ic, n]) => `<button class="${k === tab ? 'on' : ''}" onclick="go('${k}')"><i>${ic}</i>${n}</button>`).join(''); }
 function renderAll() {
+  try { fixNonFamily(true); } catch (e) {}     /* 未入信者一律不能是家族入信：舊資料自動修正 */
   if (!$('#modal').classList.contains('hidden')) { renderSyncBtn(); return; }   /* 編輯中不重畫，避免吃掉輸入 */
   const o = orgName(); $('#appTitle').textContent = o ? o + '　信徒管理' : '信徒管理';
   renderTabs(); renderSyncBtn();
@@ -141,7 +142,7 @@ function renderListOnly() { const l = $('#list'); if (l) l.innerHTML = (tab === 
 /* ═══════ 信徒 ═══════ */
 const headOf = p => (p.famOf && byId(P(), p.famOf)) || p;          /* 戶長：家族成員掛在戶長名下，沒掛的人自己就是戶長 */
 function roleOf(p) {                                               /* 導親／導子／所屬／家族（對最上層導親而言） */
-  if (p.famOf) return '家族入信';
+  if (p.famOf && p.status !== 'non') return '家族入信';
   let d = 0, cur = p, n = 0; while (cur && cur.mentorId && n++ < 60) { cur = byId(P(), cur.mentorId); d++; }
   return d === 0 ? (children(p.id).length ? '導親' : '') : d === 1 ? '導子' : '所屬';
 }
@@ -149,13 +150,15 @@ function roleOf(p) {                                               /* 導親／�
 function scopedPeople(st) {
   const keep = ui.status; ui.status = ''; const rows = filterPeople().filter(p => st === 'non' ? p.status === 'non' : p.status !== 'non'); ui.status = keep; return rows;
 }
-function fixNonFamily() {
+function fixNonFamily(auto) {
   const bad = P().filter(p => p.status === 'non' && p.famOf);
-  if (!bad.length) return toast('沒有需要修正的人');
-  if (!confirm('有 ' + bad.length + ' 位未入信者被掛成家族入信成員。'+String.fromCharCode(10)+'要全部改成獨立的未入信名單嗎？原本的繳費歸屬會保留（改記為由原戶長代繳）。')) return;
+  if (!bad.length) return auto ? 0 : toast('沒有需要修正的人');
+  if (!auto && !confirm('有 ' + bad.length + ' 位未入信者被掛成家族入信成員。'+String.fromCharCode(10)+'要全部改成獨立的未入信名單嗎？原本的繳費歸屬會保留（改記為由原戶長代繳）。')) return;
   const yrs = [], ppl = bad.map(p => Object.assign({}, p, { famOf: '' }));
   bad.forEach(p => YR().filter(r => r.pid === p.id && !r.rep).forEach(r => yrs.push(Object.assign({}, r, { rep: p.famOf }))));
-  SMStore.putMany('people', ppl); if (yrs.length) SMStore.putMany('yearly', yrs); renderAll(); toast('已修正 ' + bad.length + ' 人');
+  SMStore.putMany('people', ppl); if (yrs.length) SMStore.putMany('yearly', yrs);
+  if (auto) return toast('已把 ' + bad.length + ' 位未入信者移出家族入信（未入信者不能是家族入信）');
+  renderAll(); toast('已修正 ' + bad.length + ' 人');
 }
 function nonList() {
   const y = ui.year, rows = scopedPeople('non');
