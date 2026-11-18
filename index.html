@@ -114,21 +114,21 @@ a.btnlink{display:inline-block;text-align:center;border-radius:10px;padding:10px
 .irow{display:grid;grid-template-columns:minmax(0,1.3fr) 92px minmax(0,1fr) 36px;gap:6px;margin-bottom:6px}.irow input{padding:8px}.irow button{padding:0}
 @media(max-width:560px){.irow{grid-template-columns:minmax(0,1fr) 84px 36px}.irow .i_memo{grid-column:1/3}.srow{grid-template-columns:36px minmax(0,1fr) 98px 56px;gap:5px}}
 /* 實踐表 */
-.mx{overflow:auto;max-height:calc(100vh - 168px - env(safe-area-inset-bottom));max-height:calc(100dvh - 168px - env(safe-area-inset-bottom));background:#fff;border:1px solid var(--line);border-radius:14px;-webkit-overflow-scrolling:touch}
-.mx thead th{position:sticky;top:0;z-index:3}
-.mx thead tr+tr th{top:var(--h1,29px)}
-.mx thead th.nmc{left:0;z-index:4}
-.mx table{border-collapse:separate;border-spacing:0;font-size:14px;min-width:100%}
+/* 實踐表跟著整頁上下捲（手機才順）；表格只在左右方向自己滑。表頭另外一張表，黏在畫面上方，左右跟著表身對齊 */
+.mx{background:#fff;border:1px solid var(--line);border-radius:14px}
+.mxh{position:sticky;top:var(--hdrH,53px);z-index:4;overflow:hidden;background:#f7faf8;border-radius:14px 14px 0 0;box-shadow:0 1px 0 var(--line)}
+.mxb{overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+.mx table{border-collapse:separate;border-spacing:0;font-size:14px;table-layout:fixed}
 .mx th,.mx td{border-bottom:1px solid var(--line);border-left:1px solid #eef2ef;padding:0;text-align:center;white-space:nowrap}
 .mx th{font-size:12px;color:var(--muted);background:#f7faf8;padding:6px 4px;font-weight:600}
-.mx .nmc{position:sticky;left:0;z-index:1;background:#fff;text-align:left;padding:6px 10px;border-left:0;border-right:1px solid var(--line);max-width:150px;overflow:hidden;text-overflow:ellipsis}
+.mx .nmc{position:sticky;left:0;z-index:1;background:#fff;text-align:left;padding:6px 10px;border-left:0;border-right:1px solid var(--line);overflow:hidden;text-overflow:ellipsis}
 .mx th.nmc{background:#f7faf8;z-index:2}
 .mx .nmc a{font-weight:650;cursor:pointer;color:#1b302b}
 .mx tr.fam .nmc a{font-weight:500;color:#3d5249}
 .mx tr.idle .nmc a{color:#9aa7a1}
-.mx td.c button{width:100%;min-width:40px;height:38px;padding:0 4px;background:none;color:var(--ok);font-size:15px;border-radius:0;font-weight:700}
+.mx td.c button{width:100%;height:38px;padding:0 4px;background:none;color:var(--ok);font-size:15px;border-radius:0;font-weight:700}
 .mx td.c button.on{background:#dcefe3}
-.mx td.o button{min-width:72px;max-width:140px;overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:500;color:#1b302b}
+.mx td.o button{overflow:hidden;text-overflow:ellipsis;font-size:12px;font-weight:500;color:#1b302b}
 .chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.chips .fchip{flex:none}
 @media(max-width:760px){.chips{flex-wrap:nowrap;overflow-x:auto;padding-bottom:4px;margin-left:-4px;margin-right:-4px}}
 #printArea{display:none}
@@ -363,7 +363,9 @@ function renderAll() {
   if (!$('#modal').classList.contains('hidden')) return;           /* 編輯中不重畫，避免吃掉輸入 */
   const o = orgName(); $('#appTitle').textContent = o ? o + '　信徒管理' : '信徒管理';
   $('#tabs').innerHTML = TABS.map(([k, ic, n]) => `<button class="${k === ui.tab ? 'on' : ''}" onclick="go('${k}')"><i>${ic}</i>${n}</button>`).join('');
+  const sy = scrollY, ob = $('#mxb'), sx = ob ? ob.scrollLeft : 0;               /* 重畫後回到原本的位置，不跳回最上面 */
   ({ roster: vRoster, prac: vPrac, star: vStar, fees: vFees, ledger: vLedger, settings: vSettings }[ui.tab] || vRoster)();
+  if (sy) scrollTo(0, sy); const nb = $('#mxb'); if (nb && sx) { nb.scrollLeft = sx; mxSync(nb); }
 }
 function renderSyncBtn() { const s = SMSync.status(), b = $('#syncBtn'); b.className = s.cls; b.textContent = s.txt; }
 function openModal(html) { $('#modalBody').innerHTML = html; $('#modal').classList.remove('hidden'); }
@@ -494,10 +496,11 @@ function vPrac() {
   renderPrac();
 }
 function renderPrac() {
-  const s = $('#psum'), l = $('#plist'); if (!s || !l) return; const x = l.scrollLeft, y = l.scrollTop;
-  s.innerHTML = pracSumHtml(); l.innerHTML = pracTable(); l.scrollLeft = x; l.scrollTop = y;
-  const tr = l.querySelector('thead tr'); if (tr) l.style.setProperty('--h1', tr.getBoundingClientRect().height + 'px');   /* 第二列表頭（大乘…）接在第一列下面 */
+  const s = $('#psum'), l = $('#plist'); if (!s || !l) return; const ob = $('#mxb'), x = ob ? ob.scrollLeft : 0;
+  s.innerHTML = pracSumHtml(); l.innerHTML = pracTable();
+  const b = $('#mxb'); if (b && x) { b.scrollLeft = x; mxSync(b); }
 }
+function mxSync(b) { const h = $('#mxh'); if (h) h.scrollLeft = b.scrollLeft; }
 function pracSumHtml() {
   const s = pracStats(pracRows());
   const chip = (k, n, c) => `<button class="fchip ${ui.pf === k ? 'on' : ''}" onclick="ui.pf=ui.pf==='${k}'?'':'${k}';renderPrac()">${n} <b>${c}</b></button>`;
@@ -511,11 +514,15 @@ function pracTable() {
   const cell = (p, k) => `<td class="c"><button class="${pracOn(p, k) ? 'on' : ''}" onclick="togglePrac('${p.id}','${k}')">${pracOn(p, k) ? '●' : ''}</button></td>`;
   const th = `<thead><tr><th class="nmc" rowspan="2">姓名</th><th rowspan="2">度眾</th>${PRAC_A.map(k => `<th rowspan="2">${k}</th>`).join('')}<th colspan="4">${KZ}</th>${PRAC_B.map(k => `<th rowspan="2">${k}</th>`).join('')}<th rowspan="2">其他</th></tr>
   <tr>${KAIZA.map(k => `<th>${k}</th>`).join('')}</tr></thead>`;
-  const body = rows.map(({ p, d, fam }) => `<tr class="${fam ? 'fam' : ''}${isActive(p) ? '' : ' idle'}"><td class="nmc" style="padding-left:${filtered ? 10 : 10 + Math.min(d, 4) * 12 + (fam ? 18 : 0)}px"><a onclick="editPerson('${p.id}')">${esc(p.name)}</a>${fam && filtered ? `<span class="sub"> ${esc(fam.name)}家</span>` : ''}</td>
+  const body = rows.map(({ p, d, fam }) => `<tr class="${fam ? 'fam' : ''}${isActive(p) ? '' : ' idle'}"><td class="nmc" style="padding-left:${filtered ? 10 : 10 + Math.min(d, 3) * 8 + (fam ? 12 : 0)}px"><a onclick="editPerson('${p.id}')">${esc(p.name)}</a>${fam && filtered ? `<span class="sub"> ${esc(fam.name)}家</span>` : ''}</td>
   <td class="c"><button class="${+p.pracDu > 0 ? 'on' : ''}" onclick="setDu('${p.id}')">${+p.pracDu > 0 ? +p.pracDu : ''}</button></td>${PRAC_A.map(k => cell(p, k)).join('')}${KAIZA.map(k => cell(p, '會座-' + k)).join('')}${PRAC_B.map(k => cell(p, k)).join('')}
   <td class="c o"><button class="${p.pracOther ? 'on' : ''}" onclick="setOther('${p.id}')">${esc(p.pracOther || '')}</button></td></tr>`).join('');
   if (!IX().rows.length) return '<div class="muted" style="padding:24px;text-align:center">還沒有資料。到「設定」匯入你的 Excel 名冊。</div>';
-  return `<table>${th}<tbody>${body || `<tr><td colspan="${PRAC_ALL.length + 3}" style="padding:20px" class="muted">沒有符合的人</td></tr>`}</tbody></table>`;
+  /* 表頭、表身各一張表，欄寬寫死才對得齊 */
+  const ws = [112, 50].concat(PRAC_A.map(() => 46), KAIZA.map(() => 50), PRAC_B.map(() => 68), [96]), W = ws.reduce((a, b) => a + b, 0);
+  const cols = `<colgroup>${ws.map(w => `<col style="width:${w}px">`).join('')}</colgroup>`;
+  return `<div class="mxh" id="mxh"><table style="width:${W}px">${cols}${th}</table></div>
+  <div class="mxb" id="mxb" onscroll="mxSync(this)"><table style="width:${W}px">${cols}<tbody>${body || `<tr><td colspan="${ws.length}" style="padding:20px" class="muted">沒有符合的人</td></tr>`}</tbody></table></div>`;
 }
 function savePrac(p) { SMStore.put('people', p); renderPrac(); }
 function togglePrac(pid, k) {
@@ -1505,7 +1512,10 @@ function restore(f) {
 
 /* ═══════ 啟動 ═══════ */
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
-SMStore.attach(() => { renderAll(); uploadPhotos(); }, toast);
+/* 同步每分鐘、每次切回 App 都會跑：資料真的有變才重畫，只是狀態變（同步中／已同步）就只更新右上角 */
+SMStore.attach(changed => { if (changed === true) renderAll(); else renderSyncBtn(); uploadPhotos(); }, toast);
+const setHdrH = () => document.documentElement.style.setProperty('--hdrH', $('header').offsetHeight + 'px');
+setHdrH(); addEventListener('resize', setHdrH);
 renderAll(); uploadPhotos();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
