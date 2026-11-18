@@ -173,7 +173,7 @@ function toast(msg, kind) {
    yearly：{ id: 年度:人id, year, pid,
              戶長那筆：fee 苑費 'v'要繳｜'x'不繳｜'', cert 祈念證 'v'｜'', paid 苑費／祈念證已收, rep 由哪一組代繳, starPaid 星供已收, starSent 星供已發送
              每個人：star 星供, set 套子份數 }
-   ledger：奠供帳 { id, hid 戶長, date, kind 'out'申請｜'in'預存｜'adj'校正, items[{name, amt, memo}], text 內容, stated 你記的結餘, seq } */
+   ledger：奠供帳 { id, hid 戶長, date, kind 'out'申請｜'in'預存｜'adj'校正, items[{name, amt, memo}], text 內容, stated 記的結餘（代支＝負數）, src 'line'＝照貼文的結餘不自己算, photos[{id,gid}], seq } */
 const P = () => SMStore.all('people').filter(p => p.status !== 'non' && p.active !== false);
 const YR = () => SMStore.all('yearly'), LG = () => SMStore.all('ledger');
 const cfgGet = (name, dflt) => { const d = SMStore.get('config', name); return d && d.data != null ? d.data : dflt; };
@@ -913,10 +913,17 @@ const customBooks = () => cfgGet('books', []);
 const bookName = hid => { const p = anyP(hid); if (p) return p.name; const b = customBooks().find(x => x.id === hid); return b ? b.name : '（已不在名冊）'; };
 const bookKind = hid => { const ix = IX(); if (ix.m.has(hid)) return { family: '家族入信', ref: '參考', orphan: '家族入信' }[ix.kind.get(hid)] || '戶長'; if (ix.nm.has(hid)) return '未入信'; return customBooks().some(x => x.id === hid) ? '自訂' : ''; };
 const balHtml = b => b < 0 ? `<span class="bal neg">代支 ${money(-b)}</span>` : `<span class="bal">結餘 ${money(b)}</span>`;
+/* 結餘／代支怎麼算（使用者 2026-11-18 定的規則）：
+   LINE 貼文來的紀錄（src:'line'）有寫結餘或代支，就完全照貼文上的金額，不自己加總；
+   手動填的紀錄，從上一筆的結餘／代支接著算（預存加、申請扣）。 */
+const fixedBal = e => e.src === 'line' && e.stated != null && e.stated !== '';
 function bookOf(hid) {
   const es = LG().filter(e => e.hid === hid).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.seq || 0) - (b.seq || 0));
-  let bal = 0; es.forEach(e => { bal += entDelta(e); e._bal = bal; }); return { es, bal };
+  let bal = 0; es.forEach(e => { bal = fixedBal(e) ? +e.stated : bal + entDelta(e); e._bal = bal; }); return { es, bal };
 }
+/* 「10000」「-500」「代支 500」「代支：$1,020」→ 數字；代支一律是負的 */
+const statedOf = s => { s = String(s == null ? '' : s).trim(); if (!s) return null; const neg = /代支|墊付|代墊|墊款/.test(s); const n = amtOf(s.replace(/代支|墊付|代墊|墊款|結餘|餘額|[:：]/g, '')); return neg ? -Math.abs(n) : n; };
+const statedTxt = v => +v < 0 ? '代支 ' + money(-v) : '結餘 ' + money(+v);
 function openBook(hid) { if (!hid) return; $('#modal').classList.add('hidden'); ui.tab = 'ledger'; ui.lg = hid; ui.q = ''; renderAll(); scrollTo(0, 0); }
 function vLedger() {
   if (ui.lg) return vBook(ui.lg);
@@ -1038,16 +1045,13 @@ async function addPhotos(files) {
 const dropPhotos = ps => (ps || []).forEach(p => { PDB.del(p.id); SMSync.delPhoto(p.gid); });
 const itemHtml = it => `<div class="il"><span>${esc(it.name)}${it.memo ? `<div class="m">${esc(it.memo)}</div>` : ''}</span><span>${money(+it.amt || 0)}</span></div>`;
 function entCard(e) {
-  const k = { out: '申請', in: '預存', adj: '校正' }[e.kind] || '申請', d = entDelta(e), bad = e.stated != null && e.stated !== '' && +e.stated !== e._bal;
-  return `<div class="card ent" style="cursor:pointer" onclick="editEntry('${e.id}')"><div class="hd"><b>${esc(dDot(e.date))}</b><span class="chip ${e.kind === 'out' ? '' : 'pc'}">${k}</span><span class="grow"></span><span class="amt">${d < 0 ? '−' : '＋'}${money(Math.abs(d))}</span></div>
+  const k = { out: '申請', in: '預存', adj: '校正' }[e.kind] || '申請', d = entDelta(e), line = e.src === 'line', fixed = fixedBal(e);
+  const bad = !fixed && e.stated != null && e.stated !== '' && +e.stated !== e._bal;
+  return `<div class="card ent" style="cursor:pointer" onclick="editEntry('${e.id}')"><div class="hd"><b>${esc(dDot(e.date))}</b><span class="chip ${e.kind === 'out' ? '' : 'pc'}">${k}</span>${line ? '<span class="chip">LINE</span>' : ''}<span class="grow"></span>${line ? '' : `<span class="amt">${d < 0 ? '−' : '＋'}${money(Math.abs(d))}</span>`}</div>
   ${(e.items || []).map(itemHtml).join('')}${e.text ? `<div class="pre">${esc(e.text)}</div>` : ''}${phThumbs(e.photos)}
-  <div class="muted" style="margin-top:6px;text-align:right">這筆之後 ${balHtml(e._bal)}${bad ? `<br><span style="color:var(--warn)">你記的結餘 ${money(+e.stated)}，差 ${money(+e.stated - e._bal)}</span> <button class="alt sm" onclick="event.stopPropagation();fixBal('${e.id}')">校正</button>` : ''}</div></div>`;
+  <div class="muted" style="margin-top:6px;text-align:right">這筆之後 ${balHtml(e._bal)}${fixed ? '（照 LINE 貼文）' : ''}${bad ? `<br><span style="color:var(--warn)">記的是${statedTxt(e.stated)}，和接上一筆算的差 ${money(Math.abs(+e.stated - e._bal))}</span> <button class="alt sm" onclick="event.stopPropagation();useStated('${e.id}')">以記的為準</button>` : ''}</div></div>`;
 }
-function fixBal(eid) {
-  const e = LG().find(x => x.id === eid); if (!e) return; const b = bookOf(e.hid).es.find(x => x.id === eid), diff = +e.stated - b._bal;
-  if (!confirm(`在 ${dDot(e.date)} 加一筆「結餘校正」${money(diff)}，讓結餘等於你記的 ${money(+e.stated)}？`)) return;
-  SMStore.put('ledger', { id: uid(), hid: e.hid, date: e.date, kind: 'adj', items: [{ name: '結餘校正', amt: diff, memo: '' }], text: '', stated: null, seq: (e.seq || 0) + 0.5 }); renderAll();
-}
+function useStated(eid) { const e = LG().find(x => x.id === eid); if (!e) return; SMStore.put('ledger', Object.assign({}, e, { src: 'line' })); renderAll(); toast('這筆之後改照記的金額'); }
 const ITEM_BASE = ['布施', '初迴向', '護摩', '超度', '元旦會護摩', '一如慶典護摩', '一如慶典超度', '預存'];
 const itemRow = it => `<div class="irow"><input class="i_name" list="dl_items" placeholder="項目（例：11月布施）" value="${esc(it.name || '')}"><input class="i_amt" inputmode="numeric" placeholder="金額" value="${it.amt != null && it.amt !== '' ? esc(it.amt) : ''}"><input class="i_memo" placeholder="內容（選填）" value="${esc(it.memo || '')}"><button class="alt sm" onclick="this.parentNode.remove()">✕</button></div>`;
 function editEntry(id, preset) {
@@ -1061,7 +1065,9 @@ function editEntry(id, preset) {
   <label>內容（超度名單、地址、祈願內容等，可從 LINE 記事本直接貼上）</label><textarea id="e_text" rows="6">${esc(e.text || '')}</textarea>
   <label>照片（超度、護摩單等，自動壓小存檔，看得清內容即可）</label><div id="e_ph" class="phs"></div>
   <div class="row" style="margin-top:8px"><label class="ck" style="cursor:pointer">📷 拍照<input type="file" accept="image/*" capture="environment" class="hidden" onchange="addPhotos(this.files);this.value=''"></label><label class="ck" style="cursor:pointer">🖼 選照片<input type="file" accept="image/*" multiple class="hidden" onchange="addPhotos(this.files);this.value=''"></label></div>
-  <label>你記的結餘（選填，用來核對）</label><input id="e_stated" inputmode="numeric" value="${e.stated != null ? esc(e.stated) : ''}">
+  <label>結餘或代支（選填）</label><input id="e_stated" placeholder="例：10000；代支填 -500 或「代支 500」" value="${e.stated != null ? esc(+e.stated < 0 ? '代支 ' + (-e.stated) : e.stated) : ''}">
+  <label class="ck" style="margin-top:8px"><input type="checkbox" id="e_src" ${e.src === 'line' ? 'checked' : ''}>照這個金額（LINE 貼文）</label>
+  <div class="muted">不勾＝從上一筆的結餘／代支自動接著算，這欄只用來核對。</div>
   <div class="mbar"><button class="grow" onclick="saveEntry('${id || ''}','${e.hid}')">儲存</button>${id ? `<button class="warn" onclick="delEntry('${id}')">刪除</button>` : ''}<button class="alt" onclick="closeModal()">取消</button></div>`);
   ePh = (e.photos || []).map(p => Object.assign({}, p)); renderEPh();
 }
@@ -1073,7 +1079,7 @@ async function saveEntry(id, hid) {
   const st = $('#e_stated').value.trim(), old = id ? LG().find(x => x.id === id) : null;
   for (const p of ePh) if (p.data) await PDB.put(p.id, { data: p.data });                       /* 照片先存進這台裝置 */
   const keep = new Set(ePh.map(p => p.id)); dropPhotos(((old && old.photos) || []).filter(p => !keep.has(p.id)));   /* 移掉的照片連雲端一起刪 */
-  SMStore.put('ledger', Object.assign({}, old || { id: uid(), seq: Date.now() }, { hid, date, kind, items, text, stated: st === '' ? null : amtOf(st), photos: ePh.map(p => ({ id: p.id, gid: p.gid || '' })) }));
+  SMStore.put('ledger', Object.assign({}, old || { id: uid(), seq: Date.now() }, { hid, date, kind, items, text, stated: statedOf(st), src: $('#e_src').checked ? 'line' : '', photos: ePh.map(p => ({ id: p.id, gid: p.gid || '' })) }));
   ePh = []; closeModal(); toast('已儲存'); uploadPhotos();
 }
 function delEntry(id) {
@@ -1081,18 +1087,24 @@ function delEntry(id) {
   if (!confirm(`刪除這筆紀錄？${n ? `\n裡面 ${n} 張照片也會一起刪除。` : ''}\n刪除後無法復原。`)) return;
   dropPhotos(e && e.photos); SMStore.del('ledger', id); closeModal(); toast('已刪除');
 }
-/* 貼上 LINE 記事：日期一行（2026.11.13）、「-項目：$金額（說明）」、「結餘：$金額」，其他文字當內容 */
+/* 貼上 LINE 記事：日期一行（2026.11.13）、「-項目：$金額（說明）」、「結餘：$金額」或「代支：$金額」，其他文字當內容。
+   結餘／代支照貼文的數字存，帳本上這筆之後的金額就是它，不自己加總。 */
 function parseLineNote(t) {
   const out = []; let cur = null;
-  const dateRe = /^\s*(\d{4})[./-](\d{1,2})[./-](\d{1,2})\s*$/, itemRe = /^\s*[-－•・*]?\s*([^:：$＄]+?)\s*[:：]\s*(?:[$＄]\s*(-?[\d,]+)|(-?[\d,]+)\s*元)\s*(.*)$/;
+  const dateRe = /^\s*(\d{4})[./-](\d{1,2})[./-](\d{1,2})\s*$/;
+  const balRe = /^\s*[-－•・*]?\s*(結餘|餘額|代支|墊付|代墊|墊款)\s*[:：]?\s*(代支|墊付|代墊)?\s*(-?)\s*[$＄]?\s*(-?[\d,]+)\s*元?\s*$/;
+  const itemRe = /^\s*[-－•・*]?\s*([^:：$＄]+?)\s*[:：]\s*(-?)\s*(?:[$＄]\s*(-?[\d,]+)|(-?[\d,]+)\s*元)\s*(.*)$/;
   const strip = s => s.trim().replace(/^[（(]\s*/, '').replace(/\s*[）)]$/, '');
   String(t || '').replace(/\r/g, '').split('\n').forEach(ln => {
     const dm = ln.match(dateRe);
     if (dm) { cur = { date: `${dm[1]}-${pad(dm[2])}-${pad(dm[3])}`, items: [], dep: [], text: [], stated: null }; out.push(cur); return; }
     if (!cur) { if (!ln.trim()) return; cur = { date: todayStr(), items: [], dep: [], text: [], stated: null }; out.push(cur); }
+    const bm = ln.match(balRe);
+    if (bm) { const n = Math.abs(amtOf(bm[4])), neg = /代支|墊付|代墊|墊款/.test(bm[1] + (bm[2] || '')) || !!bm[3] || /^-/.test(bm[4]); cur.stated = neg ? -n : n; return; }
     const im = ln.match(itemRe);
-    if (im) { const name = im[1].trim(), amt = amtOf(im[2] || im[3]), memo = strip(im[4] || '');
-      if (/結餘|餘額/.test(name)) cur.stated = amt; else if (/預存|存入|儲值|收款|匯款|入帳/.test(name)) cur.dep.push({ name, amt, memo }); else cur.items.push({ name, amt, memo }); return; }
+    if (im) { const name = im[1].trim(), amt = Math.abs(amtOf(im[3] || im[4])), memo = strip(im[5] || '');
+      if (/結餘|餘額|代支|墊付|代墊|墊款/.test(name)) { cur.stated = /代支|墊付|代墊|墊款/.test(name) || im[2] || /^-/.test(im[3] || im[4] || '') ? -amt : amt; return; }   /* 「結餘：$10000（備註）」這種後面有字的 */
+      if (/預存|存入|儲值|收款|匯款|入帳/.test(name)) cur.dep.push({ name, amt, memo }); else cur.items.push({ name, amt, memo }); return; }
     if (/^\s*[（(].*[）)]\s*$/.test(ln) && cur.items.length && !cur.text.length) { const it = cur.items[cur.items.length - 1]; it.memo = [it.memo, strip(ln)].filter(Boolean).join('；'); return; }
     cur.text.push(ln);
   });
@@ -1100,25 +1112,22 @@ function parseLineNote(t) {
 }
 let lnParsed = null;
 function pasteLine(hid) {
-  openModal(`<h2>貼上 LINE 記事｜${esc(bookName(hid))}</h2><div class="muted">把 LINE 記事本的內容整段貼上，可以一次貼好幾個日期。會自動抓日期、「項目：$金額」、括號裡的說明、「結餘：$金額」；其他文字（例如超度名單）放進內容。存之前會先給你看。</div>
+  openModal(`<h2>貼上 LINE 記事｜${esc(bookName(hid))}</h2><div class="muted">把 LINE 記事本的內容整段貼上，可以一次貼好幾個日期。會自動抓日期、「項目：$金額」、括號裡的說明、「結餘：$金額」或「代支：$金額」；其他文字（例如超度名單）放進內容。<b>結餘、代支完全照貼文上的金額，不會自己加總。</b>存之前會先給你看。</div>
   <textarea id="lnTxt" rows="10" style="margin-top:8px" placeholder="2026.11.13&#10;-11月布施：$600&#10;-初迴向：$210&#10;結餘：$10000"></textarea>
   <div class="row" style="margin-top:8px"><button class="grow" onclick="previewLine('${hid}')">解析</button><button class="alt" onclick="closeModal()">取消</button></div><div id="lnPrev"></div>`);
 }
 function previewLine(hid) {
   const bl = parseLineNote($('#lnTxt').value).sort((a, b) => a.date.localeCompare(b.date)); if (!bl.length) return toast('沒有讀到內容', 'err');
   const { es } = bookOf(hid), tot = a => a.reduce((s, i) => s + (+i.amt || 0), 0), dup = b => es.some(e => e.date === b.date && e.kind === 'out' && entAmt(e) === tot(b.items));
-  const open = !es.length && bl[0].stated != null ? bl[0].stated + tot(bl[0].items) - tot(bl[0].dep) : null;
-  lnParsed = { hid, bl, open, dup };
+  lnParsed = { hid, bl, dup };
   $('#lnPrev').innerHTML = `<div class="notice" style="margin-top:10px">讀到 ${bl.length} 個日期：${bl.map(b => `<div style="margin-top:8px"><b>${dDot(b.date)}</b>${dup(b) ? '（帳本已有同日同金額，會略過）' : ''}
   ${b.items.map(i => `<div>・${esc(i.name)} ${money(i.amt)}${i.memo ? '（' + esc(i.memo) + '）' : ''}</div>`).join('')}${b.dep.map(i => `<div>・${esc(i.name)} ＋${money(i.amt)}</div>`).join('')}
-  ${b.text ? `<div class="pre">${esc(b.text)}</div>` : ''}${b.stated != null ? `<div>你記的結餘 ${money(b.stated)}</div>` : ''}</div>`).join('')}
-  ${open != null ? `<label class="ck" style="margin-top:8px"><input type="checkbox" id="lnOpen" checked>用最早那筆的結餘，推算期初結餘 ${money(open)}</label>` : ''}</div>
+  ${b.text ? `<div class="pre">${esc(b.text)}</div>` : ''}${b.stated != null ? `<div><b>${statedTxt(b.stated)}</b>（照貼文）</div>` : '<div class="muted">這天沒寫結餘／代支，會從上一筆接著算</div>'}</div>`).join('')}</div>
   <button style="margin-top:8px;width:100%" onclick="saveLine()">存入帳本</button>`;
 }
 function saveLine() {
   const L = lnParsed; if (!L) return; const out = []; let seq = Date.now();
-  const mk = (b, kind, items, extra) => out.push(Object.assign({ id: uid(), hid: L.hid, date: b.date, kind, items, text: '', stated: null, seq: seq++ }, extra || {}));
-  if (L.open != null && $('#lnOpen') && $('#lnOpen').checked) mk(L.bl[0], 'in', [{ name: '期初結餘', amt: L.open, memo: '' }]);
+  const mk = (b, kind, items, extra) => out.push(Object.assign({ id: uid(), hid: L.hid, date: b.date, kind, items, text: '', stated: null, src: 'line', seq: seq++ }, extra || {}));
   L.bl.forEach(b => { if (L.dup(b)) return; if (b.dep.length) mk(b, 'in', b.dep); if (b.items.length || b.text || b.stated != null) mk(b, 'out', b.items, { text: b.text, stated: b.stated }); });
   if (out.length) SMStore.putMany('ledger', out); lnParsed = null; closeModal(); toast('已存入 ' + out.length + ' 筆');
 }
