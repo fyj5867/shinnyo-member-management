@@ -128,15 +128,13 @@ const seatOpts = sel => '<option value="">（未分會座）</option>' + SEATS()
 function filterPeople() {
   const q = ui.q.trim().toLowerCase();
   return P().filter(p => p.active !== false)
-    .filter(p => !ui.seat || (ui.seat === '_none' ? !p.seatId : p.seatId === ui.seat))
     .filter(p => !ui.status || p.status === ui.status)
     .filter(p => !q || [p.name, p.phone, p.code, p.roman, p.sid, p.note].some(x => String(x || '').toLowerCase().includes(q)))
     .sort((a, b) => String(a.name).localeCompare(String(b.name), 'zh-TW'));
 }
-function filterBar(extra) {
+function filterBar(extra, noStatus) {
   return `<div class="row"><div class="grow"><input placeholder="搜尋姓名／電話／編號" value="${esc(ui.q)}" oninput="ui.q=this.value;renderListOnly()"></div>
-  <select style="width:auto" onchange="ui.seat=this.value;renderAll()"><option value="">全部會座</option>${SEATS().map(s => `<option value="${s.id}" ${ui.seat === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}<option value="_none" ${ui.seat === '_none' ? 'selected' : ''}>未分會座</option></select>
-  <select style="width:auto" onchange="ui.status=this.value;renderAll()"><option value="">入信＋非入信</option><option value="member" ${ui.status === 'member' ? 'selected' : ''}>入信</option><option value="non" ${ui.status === 'non' ? 'selected' : ''}>非入信</option></select>${extra || ''}</div>`;
+  ${noStatus ? '' : `<select style="width:auto" onchange="ui.status=this.value;renderAll()"><option value="">入信＋非入信</option><option value="member" ${ui.status === 'member' ? 'selected' : ''}>入信</option><option value="non" ${ui.status === 'non' ? 'selected' : ''}>非入信</option></select>`}${extra || ''}</div>`;
 }
 function renderListOnly() { const l = $('#list'); if (l) l.innerHTML = (tab === 'year' ? yearList() : tab === 'stats' ? statsBody() : tab === 'apply' ? applyList() : ui.scope === 'non' ? nonList() : peopleList()); }
 
@@ -225,7 +223,7 @@ function peopleList() {
     const m = byId(P(), h.mentorId), nc = children(h.id).length, role = roleOf(h);
     const fam = P().filter(x => x.famOf === h.id && x.active !== false && x.status !== 'non').sort((a, b) => byNameZh(a.name, b.name));
     return `<div class="card tap${notCounted(h, y) ? ' unpaid' : ''}" onclick="editPerson('${h.id}')"><div class="t"><span class="chip dark">獨立戶</span>${esc(h.name)} ${h.status === 'non' ? '<span class="chip non">非入信</span>' : ''}${role ? `<span class="chip good">${role}</span>` : ''}${h.deceased ? '<span class="chip bad">歿</span>' : ''}${h.seatRole ? `<span class="chip good">${esc(h.seatRole)}</span>` : ''}${creditChip(h, y)}${pracChips(h)}</div>
-    <div class="s">${esc(seatName(h.seatId) || '未分會座')}${h.phone ? '｜' + esc(h.phone) : ''}${m ? '｜導親：' + esc(m.name) : ''}${nc ? `｜導子 ${nc}` : ''}</div>
+    <div class="s">${h.phone ? esc(h.phone) : '（無電話）'}${m ? '｜導親：' + esc(m.name) : ''}${nc ? `｜導子 ${nc}` : ''}</div>
     ${fam.length ? `<div class="s" style="margin-top:5px"><b>家族入信成員：</b>${fam.map(f => person(f, h)).join('　')}</div>` : ''}</div>`;
   };
   const hs = Array.from(heads.values()).sort((a, b) => byNameZh(a.name, b.name));
@@ -239,7 +237,7 @@ function vPeople() {
   const nM = P().filter(p => p.active !== false && p.status !== 'non').length, nN = P().filter(p => p.active !== false && p.status === 'non').length, non = ui.scope === 'non';
   $('#view').innerHTML = `<div class="row"><h2 class="grow" style="margin:0">${non ? '星供未入信名單' : '信徒'}</h2><button onclick="editPerson(null,'${non ? 'non' : 'member'}')">＋新增</button></div>
   <div class="row" style="margin:8px 0"><button class="sm ${non ? 'alt' : ''}" onclick="ui.scope='member';renderAll()">入信信徒（${nM}）</button><button class="sm ${non ? '' : 'alt'}" onclick="ui.scope='non';renderAll()">星供未入信名單（${nN}）</button></div>
-  <div class="panel">${filterBar(non ? '' : ex)}</div><div id="list">${non ? nonList() : peopleList()}</div>`;
+  <div class="panel">${filterBar(non ? '' : ex, true)}</div><div id="list">${non ? nonList() : peopleList()}</div>`;
 }
 function editPerson(id, st) {
   const p = id ? byId(P(), id) : { id: uid(), status: st || 'member', active: true };
@@ -261,8 +259,7 @@ function editPerson(id, st) {
   <div><label>歿日（有填＝不再列入年度）</label><input id="f_dead" value="${esc(p.deceased)}" placeholder="2025-01-03"></div>
   <div><label>傳授 I</label><input id="f_t1" value="${esc(p.trans1)}"></div><div><label>傳授 II</label><input id="f_t2" value="${esc(p.trans2)}"></div>
   <div><label>傳授 III</label><input id="f_t3" value="${esc(p.trans3)}"></div>
-  <div><label>會座</label><select id="f_seat">${seatOpts(p.seatId)}</select></div>
-  <div><label>會座職務</label><input id="f_role" value="${esc(p.seatRole)}" placeholder="座長／副座長／會員"></div></div>
+</div>
   <label>地址</label><input id="f_addr" value="${esc(p.addr)}">
   <label>導親（引領他結緣的人，輸入姓名；最上層的人留空）</label><input id="f_mentor" list="nameList" value="${esc(mentor ? mentor.name : '')}">
   <label>家族入信：掛在誰的戶下（輸入戶長姓名；自己就是戶長則留空）</label><input id="f_fam" list="nameList" value="${esc(fam ? fam.name : '')}"><datalist id="nameList">${names}</datalist>
@@ -293,7 +290,7 @@ function savePerson(id, isNew) {
   }
   const v = k => $('#f_' + k).value.trim();
   SMStore.put('people', Object.assign({}, old, { id, name, status: $('#f_status').value, roman: v('roman'), phone: v('phone'), email: v('email'), code: v('code'), sid: v('sid'), rank: v('rank'),
-    joinedOn: v('joined'), birth: v('birth'), deceased: v('dead'), trans1: v('t1'), trans2: v('t2'), trans3: v('t3'), seatId: $('#f_seat').value, seatRole: v('role'), addr: v('addr'),
+    joinedOn: v('joined'), birth: v('birth'), deceased: v('dead'), trans1: v('t1'), trans2: v('t2'), trans3: v('t3'), addr: v('addr'),
     mentorId, famOf, idle: $('#f_idle').checked, prac: Array.from(document.querySelectorAll('.f_prac:checked')).map(x => x.value), pracOther: v('pracOther'), note: $('#f_note').value.trim(), active: true }));
   closeModal(); toast('已儲存');
 }
@@ -366,7 +363,7 @@ function yearList() {
       <button class="alt sm" title="指定由誰代為繳費" onclick="pickRep('${m.id}')">${r.rep && byId(P(), r.rep) ? '代繳：' + esc(byId(P(), r.rep).name) : '代繳▾'}</button>
       ${ck('yuan', '苑費')}${ck('cert', '祈年證')}${ck('star', '星供')}<span class="s" style="display:inline-flex;align-items:center;gap:4px">套子 <input class="n" type="number" min="0" value="${num(r.set) || ''}" onchange="setQty('${m.id}',this.value)"></span></div>`;
     }).join('');
-    return `<div class="card"><div class="row"><div class="grow"><span class="t">${esc(g.head.name)}</span> <span class="s">${g.members.length} 人${seatName(g.head.seatId) ? '｜' + esc(seatName(g.head.seatId)) : ''}</span></div><div class="t">${money(f.total)}</div></div>
+    return `<div class="card"><div class="row"><div class="grow"><span class="t">${esc(g.head.name)}</span> <span class="s">${g.members.length} 人</span></div><div class="t">${money(f.total)}</div></div>
     <div style="margin:4px 0">${chips}</div>${rows}
     <div class="items" style="margin-top:8px;background:#f6faf8;border-radius:10px;padding:8px">
     <span class="s">苑費已收</span><input class="n" style="width:92px" value="${esc(hr.yuanPaid || '')}" placeholder="日期/OK" onchange="setHH('${hid}','yuanPaid',this.value.trim())"><button class="alt sm" onclick="setHH('${hid}','yuanPaid','${todayStr()}')">今天</button>
@@ -485,7 +482,6 @@ function statsBody() {
   const personRows = rows.map(s => `<tr><td style="cursor:pointer" onclick="editPerson('${s.p.id}')"><b>${esc(s.p.name)}</b>${s.p.famOf ? ' <span class="muted">家族</span>' : ''}</td><td>${cellN(s.it.yuan)}</td><td>${cellN(s.it.cert)}</td><td>${cellN(s.it.star)}</td><td>${num(s.r.set) ? num(s.r.set) + '×' + money(price(y, 'set')) : ''}</td><td><b>${money(s.total)}</b></td><td>${cellN(s.paid)}</td><td style="color:${s.total - s.paid > 0 ? 'var(--warn)' : 'var(--ok)'}">${money(s.total - s.paid)}</td></tr>`).join('');
   return `<div class="row" style="gap:6px"><div class="card grow" style="margin:4px 0"><div class="s">申請人數</div><div class="t">${rows.length}</div></div><div class="card grow" style="margin:4px 0"><div class="s">應收</div><div class="t">${money(tot.d)}</div></div><div class="card grow" style="margin:4px 0"><div class="s">已收</div><div class="t">${money(tot.p)}</div></div><div class="card grow" style="margin:4px 0"><div class="s">未收</div><div class="t" style="color:var(--warn)">${money(tot.d - tot.p)}</div></div></div>
   <h3>依項目</h3><div class="wrap"><table class="t"><tr><th>項目</th><th>申請</th><th>單價</th><th>應收</th><th>已收</th><th>未收</th></tr>${itemRows}</table></div>
-  <h3>依會座</h3><div class="wrap"><table class="t"><tr><th>會座</th><th>人數</th><th>應收</th><th>已收</th><th>未收</th></tr>${seatRows}</table></div>
   <h3>依個人（${rows.length} 人）</h3><div class="wrap"><table class="t"><tr><th>姓名</th><th>苑費</th><th>祈年證</th><th>星供</th><th>套子</th><th>合計</th><th>已收</th><th>未收</th></tr>${personRows}</table></div>`;
 }
 function vStats() {
@@ -874,7 +870,6 @@ function vSettings() {
   <input id="tk" placeholder="貼上金鑰 ghp_…" autocomplete="off"><input id="pp" type="password" placeholder="自訂同步密語（至少 8 字，要記住）" style="margin-top:6px" autocomplete="new-password">
   <button style="margin-top:8px" onclick="doConnect()">連線並開始同步</button>
   <label>方法二：第二台以後（手機）</label><input id="pc" placeholder="貼上第一台產生的配對碼 SM1.…"><input id="pp2" type="password" placeholder="同步密語（配對碼已含金鑰時可留空）" style="margin-top:6px"><button class="alt" style="margin-top:8px" onclick="doPair()">用配對碼連線</button>`}</div>
-  <div class="panel"><h3 style="margin-top:0">會座</h3><div class="muted">會座名單與座長仍可在這裡管理（個人資料的「會座」欄位保留）。</div><button class="alt sm" style="margin-top:8px" onclick="go('seats')">開啟會座管理</button></div>
   <div class="panel"><h3 style="margin-top:0">單位名稱（列印抬頭）</h3><input id="org" value="${esc(orgName())}" placeholder="例：○○苑"><button class="sm" style="margin-top:8px" onclick="cfgSet('org',{name:$('#org').value.trim()});toast('已儲存')">儲存</button></div>
   <div class="panel"><h3 style="margin-top:0">${y} 年度金額</h3><div class="grid2">${FEE.map(([k, n]) => priceIn(k, n)).join('')}</div>
   <div class="row" style="margin-top:8px"><button class="sm" onclick="savePrices(false)">只存 ${y} 年</button><button class="alt sm" onclick="savePrices(true)">存成各年預設</button></div>
