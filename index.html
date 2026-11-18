@@ -266,9 +266,24 @@ function editPerson(id, st) {
   <label>精進狀態</label><div class="items"><label class="ck ${p.idle ? 'on' : ''}"><input type="checkbox" id="f_idle" ${p.idle ? 'checked' : ''}>未精進</label></div>
   <label>精進項目</label><div class="items">${PRAC.map(k => `<label class="ck"><input type="checkbox" class="f_prac" value="${k}" ${(p.prac || []).includes(k) ? 'checked' : ''}>${k}</label>`).join('')}</div>
   <label>其他精進（自行填寫）</label><input id="f_pracOther" value="${esc(p.pracOther)}">
+  ${isNew || p.famOf ? '' : paidBlock(p)}
   <label>備註</label><textarea id="f_note" rows="3">${esc(p.note)}</textarea>
   ${isNew ? '' : `<h3>關係圖</h3><div class="muted">導子（${kids.length}）：${kids.map(k => esc(k.name)).join('、') || '—'}<br>所屬（${gk.length}）：${gk.map(k => esc(k.name)).join('、') || '—'}${famMem.length ? `<br>家族（${famMem.length}）：${famMem.map(k => esc(k.name)).join('、')}` : ''}</div>`}
   <div class="row" style="margin-top:14px"><button class="grow" onclick="savePerson('${p.id}',${isNew})">儲存</button><button class="alt" onclick="closeModal()">取消</button>${isNew ? '' : `<button class="warn" onclick="removePerson('${p.id}')">刪除</button>`}</div>`);
+}
+/* 苑費勾選：勾了就即時寫入並重新分類（實績／未繳），不必按儲存 */
+function paidBlock(p) {
+  const y = ui.year, py = payerOf(y, p), paid = !!yearRow(y, py.id).yuanPaid, grp = groupsFor().find(g => g.head.id === py.id);
+  const note = py.id !== p.id ? '由「' + esc(py.name) + '」代繳，勾選會記在代表那一筆。' : (grp && grp.members.length > 1 ? '這一組共 ' + grp.members.length + ' 人由他繳費，勾選會套用到整組。' : '');
+  return `<h3>${y} 苑費</h3><div class="items"><label class="ck ${paid ? 'on' : ''}"><input type="checkbox" id="f_paid" ${paid ? 'checked' : ''} onchange="togglePaid('${p.id}',this.checked)">${y} 苑費已繳</label><span id="creditLive">${creditChip(p, y)}</span></div>
+  <div class="muted">年度以畫面上選的年度為準（目前 ${y}）。勾選後立即儲存並重新分類。${note}</div>`;
+}
+function togglePaid(pid, on) {
+  const y = ui.year, p = byId(P(), pid), py = payerOf(y, p), r = yearRow(y, pid);
+  if (on && !r.yuan) { r.yuan = true; SMStore.put('yearly', r); }
+  const pr = yearRow(y, py.id); pr.yuanPaid = on ? (pr.yuanPaid || todayStr()) : ''; SMStore.put('yearly', pr);
+  const lab = $('#f_paid').closest('label'); if (lab) lab.classList.toggle('on', on);
+  $('#creditLive').innerHTML = creditChip(p, y); toast(on ? y + ' 苑費已記為繳交' : '已取消繳交標記');
 }
 function savePerson(id, isNew) {
   const name = $('#f_name').value.trim(); if (!name) return toast('請輸入姓名', 'err');
