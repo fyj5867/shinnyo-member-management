@@ -1,93 +1,830 @@
 <!doctype html>
 <html lang="zh-Hant">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#173b35"><link rel="manifest" href="manifest.webmanifest">
-<title>信徒管理系統</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173b35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="信徒管理">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>信徒管理</title>
 <style>
-:root{--g:#1e554b;--bg:#f3f6f4;--line:#dfe7e2;--muted:#64736c}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1b302b}
-header{background:#173b35;color:white;padding:18px 16px;position:sticky;top:0;z-index:2}
-header b{font-size:18px}header small{display:block;opacity:.8;margin-top:4px}
-main{max-width:1000px;margin:auto;padding:16px 14px 90px}
-h1{font-size:23px;margin:5px 0}h2{font-size:17px;margin:0 0 12px}
-.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
-button{border:0;border-radius:10px;padding:11px 13px;background:var(--g);color:white;font-weight:650;font-size:14px}
-button.alt{background:#e2eee8;color:var(--g)}button:disabled{opacity:.45}
-input,select{width:100%;padding:11px;border:1px solid #d4ded8;border-radius:9px;font-size:15px;background:white}
-label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}
-.row{display:flex;gap:8px;align-items:center;justify-content:space-between}.muted{font-size:12px;color:var(--muted);line-height:1.6}
-.hidden{display:none!important}.nav{display:flex;gap:7px;overflow:auto;margin:12px 0}.nav button{white-space:nowrap;background:white;color:var(--g);border:1px solid var(--line)}.nav button.active{background:var(--g);color:white}
-table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid var(--line);white-space:nowrap}
-.wrap{overflow:auto}.status{display:inline-block;border-radius:20px;background:#e2eee8;color:var(--g);padding:3px 8px;font-size:11px}
-.notice{background:#fff7e7;border:1px solid #ead9b4;color:#6e592d;border-radius:10px;padding:11px;font-size:12px;line-height:1.6}
-@media(min-width:700px){.grid{grid-template-columns:repeat(3,1fr)}main{padding:24px}}
+:root{--g:#1e554b;--gd:#173b35;--bg:#f3f6f4;--line:#dfe7e2;--muted:#64736c;--warn:#b4561b;--ok:#2d7a4f}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans TC",sans-serif;color:#1b302b;font-size:15px}
+header{background:var(--gd);color:#fff;padding:12px 14px;position:sticky;top:0;z-index:5;display:flex;align-items:center;justify-content:space-between;gap:8px}
+header b{font-size:17px}
+#syncBtn{background:rgba(255,255,255,.14);color:#fff;border-radius:20px;padding:6px 11px;font-size:12px}
+#syncBtn.ok::before{content:"● ";color:#7be0a3}#syncBtn.err::before{content:"● ";color:#ff9c7a}#syncBtn.busy::before{content:"● ";color:#ffd77a}#syncBtn.off::before{content:"○ "}
+main{max-width:1000px;margin:auto;padding:12px 12px 100px}
+nav.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:6;padding-bottom:env(safe-area-inset-bottom)}
+nav.tabs button{flex:1;background:none;color:var(--muted);border-radius:0;padding:10px 2px;font-size:12px;font-weight:600}
+nav.tabs button.on{color:var(--g);box-shadow:inset 0 3px 0 var(--g)}
+nav.tabs button i{display:block;font-style:normal;font-size:18px}
+button{border:0;border-radius:10px;padding:10px 13px;background:var(--g);color:#fff;font-weight:650;font-size:14px;cursor:pointer}
+button:disabled{opacity:.45}
+button.alt{background:#e2eee8;color:var(--g)}button.warn{background:#f6e3d8;color:var(--warn)}button.sm{padding:6px 10px;font-size:12px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #d4ded8;border-radius:9px;font-size:15px;background:#fff;font-family:inherit}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;margin:10px 0}
+h2{font-size:17px;margin:0 0 8px}h3{font-size:14px;margin:12px 0 6px}
+.muted{font-size:12px;color:var(--muted);line-height:1.6}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.row>.grow{flex:1;min-width:120px}
+.chip{display:inline-block;border-radius:20px;background:#e2eee8;color:var(--g);padding:2px 8px;font-size:11px;margin:0 3px 0 0}
+.chip.non{background:#f1ebdd;color:#7a6330}.chip.bad{background:#f6e3d8;color:var(--warn)}.chip.good{background:#dcefe3;color:var(--ok)}
+.card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;background:#fff}
+.card .t{font-weight:700}.card .s{font-size:12px;color:var(--muted);margin-top:2px}
+.card.tap{cursor:pointer}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+.items{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;align-items:center}
+.items label.ck,label.ck{display:inline-flex;align-items:center;gap:5px;margin:0;padding:6px 10px;border:1px solid var(--line);border-radius:20px;font-size:13px;color:#1b302b;background:#fafcfb}
+.items label.ck input,label.ck input{width:auto;margin:0}.items label.ck.on{background:#e2eee8;border-color:var(--g);color:var(--g);font-weight:700}
+.items input.n{width:60px;padding:5px 7px}
+.notice{background:#fff7e7;border:1px solid #ead9b4;color:#6e592d;border-radius:10px;padding:10px;font-size:12px;line-height:1.6}
+.hidden{display:none!important}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.modal>div{background:#fff;width:100%;max-width:640px;max-height:92vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px}
+@media(min-width:700px){.modal{align-items:center}.modal>div{border-radius:16px}}
+table.t{width:100%;border-collapse:collapse;font-size:12px}table.t th,table.t td{border:1px solid var(--line);padding:5px 6px;text-align:left;white-space:nowrap}
+.wrap{overflow:auto}
+.tree ul{list-style:none;margin:0;padding-left:18px;border-left:1px dashed #c7d6ce}.tree>ul{border:0;padding:0}
+.tree li{margin:5px 0}.tree .nm{font-weight:600;cursor:pointer}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:76px;background:#173b35;color:#fff;padding:9px 15px;border-radius:20px;font-size:13px;z-index:30;display:none;max-width:90%}
+#toast.err{background:#9b3b12}
+#printArea{display:none}
+@media print{body>*:not(#printArea){display:none!important}#printArea{display:block}
+  #printArea h1{font-size:18px;margin:0 0 4px}#printArea table{width:100%;border-collapse:collapse;font-size:11px}
+  #printArea th,#printArea td{border:1px solid #444;padding:4px 5px;text-align:left}}
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
-<header><b>信徒管理系統</b><small>NB 與手機共用雲端資料｜第二版雲端架構</small></header>
-<main>
-<section id="login" class="panel">
-<h1>管理者登入</h1><p class="muted">請使用已授權的管理者帳戶。尚未設定雲端資料庫時，登入功能不會啟用。</p>
-<label>電子郵件</label><input id="email" type="email" autocomplete="username" placeholder="管理者 Email">
-<label>密碼</label><input id="password" type="password" autocomplete="current-password" placeholder="密碼">
-<div class="row" style="margin-top:12px"><button id="loginBtn" onclick="login()">登入</button><button class="alt" onclick="resetPassword()">忘記密碼</button></div>
-<p id="loginMsg" class="muted"></p>
-</section>
+<header><b id="appTitle">信徒管理</b><button id="syncBtn" class="off" onclick="go('settings')">尚未同步</button></header>
+<main id="view"></main>
+<nav class="tabs" id="tabs"></nav>
+<div id="toast"></div>
+<div id="modal" class="modal hidden"><div id="modalBody"></div></div>
+<div id="printArea"></div>
 
-<section id="app" class="hidden">
-<div class="row"><div><h1>管理首頁</h1><div class="muted" id="who"></div></div><button class="alt" onclick="logout()">登出</button></div>
-<div class="notice">正式資料僅限授權人員使用。此版本未匯入原始 Excel；完成資料欄位確認及權限測試後才可匯入真實資料。</div>
-<div class="nav">
-<button class="active" onclick="tab('people',this)">信徒資料</button>
-<button onclick="tab('star',this)">年度星供</button>
-<button onclick="tab('fees',this)">費用管理</button>
-<button onclick="tab('seats',this)">會座管理</button>
-</div>
-<section id="people" class="panel">
-<div class="row"><h2>信徒／聯絡人</h2><button onclick="addPerson()">新增</button></div>
-<input id="q" placeholder="搜尋姓名" oninput="loadPeople()">
-<div class="wrap"><table><thead><tr><th>姓名</th><th>入信狀態</th><th>會座</th></tr></thead><tbody id="peopleBody"></tbody></table></div>
-<div id="personEditor" class="hidden">
-<h2 style="margin-top:18px">新增資料</h2>
-<label>姓名</label><input id="pname">
-<label>入信狀態</label><select id="pstatus"><option value="member">入信</option><option value="non_member">非入信</option></select>
-<label>所屬會座</label><select id="pseat"><option value="">未分配</option></select>
-<button style="margin-top:12px" onclick="savePerson()">儲存</button>
-</div>
-</section>
-<section id="star" class="panel hidden">
-<h2>年度星供申請</h2><label>申請年度</label><input id="year" type="number" value="2027">
-<p class="muted">此處預計提供入信及非入信統一勾選，正式版將保存每年度獨立申請紀錄。</p>
-<button onclick="alert('下一步將完成年度申請清單與批次匯出。')">年度申請功能</button>
-</section>
-<section id="fees" class="panel hidden">
-<h2>費用管理</h2><p class="muted">收費項目：苑費、祈年證、星供、套子。正式版會按年度記錄應收、實收、日期及經手人。</p>
-</section>
-<section id="seats" class="panel hidden">
-<h2>會座管理</h2><p class="muted">正式版會支援會座建檔、負責人、成員關聯及異動歷史。</p>
-</section>
-</section>
-</main>
-<script src="config.js"></script>
+<script src="sync.js"></script>
+<script src="store.js"></script>
 <script>
-let sb=null, currentUser=null;
-function configured(){return window.APP_CONFIG && APP_CONFIG.supabaseUrl && APP_CONFIG.supabaseAnonKey && !APP_CONFIG.supabaseUrl.includes('YOUR_')}
-function init(){if(configured()&&window.supabase){sb=window.supabase.createClient(APP_CONFIG.supabaseUrl,APP_CONFIG.supabaseAnonKey);sb.auth.getSession().then(({data})=>{if(data.session)enter(data.session.user)})}else{document.getElementById('loginMsg').textContent='尚未設定 Supabase。請先依 README 建立專案並填入 config.js。'}}
-async function login(){if(!sb)return alert('尚未設定雲端資料庫。');let email=document.getElementById('email').value,password=document.getElementById('password').value;let {data,error}=await sb.auth.signInWithPassword({email,password});if(error)return msg(error.message);enter(data.user)}
-async function resetPassword(){if(!sb)return alert('尚未設定雲端資料庫。');let email=document.getElementById('email').value;if(!email)return alert('請先輸入 Email');let {error}=await sb.auth.resetPasswordForEmail(email);msg(error?error.message:'已送出重設密碼郵件（請檢查信箱）。')}
-function msg(t){document.getElementById('loginMsg').textContent=t}
-function enter(user){currentUser=user;document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('who').textContent=user.email;loadSeats();loadPeople()}
-async function logout(){if(sb)await sb.auth.signOut();location.reload()}
-function tab(id,btn){document.querySelectorAll('#app .panel').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active')}
-async function loadSeats(){if(!sb)return;let {data,error}=await sb.from('seats').select('id,name').order('name');if(error)return;let el=document.getElementById('pseat');el.innerHTML='<option value="">未分配</option>'+(data||[]).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}
-async function loadPeople(){if(!sb)return;let q=document.getElementById('q').value;let query=sb.from('people').select('id,full_name,membership_status,seat_id,seats(name)').order('full_name').limit(100);if(q)query=query.ilike('full_name','%'+q+'%');let {data,error}=await query;if(error){document.getElementById('peopleBody').innerHTML='<tr><td colspan="3">讀取失敗：'+esc(error.message)+'</td></tr>';return}document.getElementById('peopleBody').innerHTML=(data||[]).map(p=>`<tr><td>${esc(p.full_name)}</td><td><span class="status">${p.membership_status==='member'?'入信':'非入信'}</span></td><td>${esc(p.seats?.name||'未分配')}</td></tr>`).join('')}
-function addPerson(){document.getElementById('personEditor').classList.remove('hidden')}
-async function savePerson(){let full_name=document.getElementById('pname').value.trim();if(!full_name)return alert('請輸入姓名');let payload={full_name,membership_status:document.getElementById('pstatus').value,seat_id:document.getElementById('pseat').value||null};let {error}=await sb.from('people').insert(payload);if(error)return alert(error.message);document.getElementById('pname').value='';document.getElementById('personEditor').classList.add('hidden');loadPeople()}
-function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-init();
-if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+'use strict';
+/* ═══════ 基本工具 ═══════ */
+const $ = s => document.querySelector(s);
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const num = v => { const n = parseFloat(v); return isFinite(n) ? n : 0; };
+const money = n => (Math.round(n * 100) / 100).toLocaleString('zh-TW');
+const FEE = [['yuan', '苑費'], ['cert', '祈年證'], ['star', '星供'], ['set', '套子']];
+const ST = { member: '入信', non: '非入信' };
+
+function toast(msg, kind) {
+  const t = $('#toast'); t.textContent = msg; t.className = kind === 'err' ? 'err' : ''; t.style.display = 'block';
+  clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', kind === 'err' ? 4500 : 2200);
+}
+
+/* ═══════ 資料存取 ═══════ */
+const P = () => SMStore.all('people'), SEATS = () => SMStore.all('seats'), YR = () => SMStore.all('yearly');
+const byId = (arr, id) => arr.find(x => x.id === id);
+const cfgGet = (name, dflt) => { const d = SMStore.get('config', name); return d && d.data != null ? d.data : dflt; };
+const cfgSet = (name, data) => SMStore.put('config', { id: name, data });
+const orgName = () => cfgGet('org', { name: '' }).name || '';
+function price(year, key) {
+  const p = cfgGet('prices', { def: {}, byYear: {} });
+  const y = p.byYear && p.byYear[year];
+  if (y && y[key] != null && y[key] !== '') return num(y[key]);
+  return num(p.def && p.def[key]);
+}
+function yearRow(year, pid) { return SMStore.get('yearly', year + ':' + pid) || { id: year + ':' + pid, year, pid, yuan: false, cert: false, star: false, set: 0, rep: '', yuanPaid: '', starPaid: '', starSent: false, note: '' }; }
+const dueA = r => (r.yuan ? price(r.year, 'yuan') : 0) + (r.cert ? price(r.year, 'cert') : 0);          /* 苑費＋祈年證 */
+const dueB = r => (r.star ? price(r.year, 'star') : 0) + num(r.set) * price(r.year, 'set');             /* 星供＋套子 */
+const due = r => dueA(r) + dueB(r);
+const hasAny = r => r.yuan || r.cert || r.star || num(r.set) > 0;
+
+/* 導脈：mentorId = 引入信的人。導親 = 引人結緣者；導子 = 導親直接引的人；所屬 = 導子再引入信的人（不論幾代） */
+const children = id => P().filter(p => p.mentorId === id);
+/* 所屬：導子再引入信的人，不論第幾代（對導親而言統稱所屬） */
+const belong = id => { const out = [], seen = new Set([id]); let cur = children(id); while (cur.length) { const nxt = []; for (const c of cur) for (const k of children(c.id)) if (!seen.has(k.id)) { seen.add(k.id); out.push(k); nxt.push(k); } cur = nxt; } return out; };
+function wouldLoop(pid, mentorId) { let cur = mentorId, n = 0; while (cur && n++ < 50) { if (cur === pid) return true; const m = byId(P(), cur); cur = m && m.mentorId; } return false; }
+
+/* ═══════ 導覽 ═══════ */
+const TABS = [['people', '👥', '信徒'], ['year', '📋', '年度'], ['stats', '📊', '統計'], ['lineage', '🌳', '導脈'], ['seats', '🏛', '會座'], ['import', '📥', '匯入'], ['settings', '⚙️', '設定']];
+let tab = 'people';
+const ui = { q: '', seat: '', status: '', year: (new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear()), onlyTicked: false, lineRoot: '' };
+function go(t) { tab = t; renderAll(); scrollTo(0, 0); }
+function renderTabs() { $('#tabs').innerHTML = TABS.map(([k, ic, n]) => `<button class="${k === tab ? 'on' : ''}" onclick="go('${k}')"><i>${ic}</i>${n}</button>`).join(''); }
+function renderAll() {
+  if (!$('#modal').classList.contains('hidden')) { renderSyncBtn(); return; }   /* 編輯中不重畫，避免吃掉輸入 */
+  const o = orgName(); $('#appTitle').textContent = o ? o + '　信徒管理' : '信徒管理';
+  renderTabs(); renderSyncBtn();
+  ({ people: vPeople, year: vYear, stats: vStats, lineage: vLineage, seats: vSeats, import: vImport, settings: vSettings })[tab]();
+}
+function renderSyncBtn() { const s = SMSync.status(); const b = $('#syncBtn'); b.className = s.cls; b.textContent = s.txt; }
+
+const seatName = id => { const s = byId(SEATS(), id); return s ? s.name : ''; };
+const seatOpts = sel => '<option value="">（未分會座）</option>' + SEATS().slice().sort((a, b) => a.name.localeCompare(b.name, 'zh-TW')).map(s => `<option value="${s.id}" ${s.id === sel ? 'selected' : ''}>${esc(s.name)}</option>`).join('');
+function filterPeople() {
+  const q = ui.q.trim().toLowerCase();
+  return P().filter(p => p.active !== false)
+    .filter(p => !ui.seat || (ui.seat === '_none' ? !p.seatId : p.seatId === ui.seat))
+    .filter(p => !ui.status || p.status === ui.status)
+    .filter(p => !q || [p.name, p.phone, p.code, p.roman, p.sid, p.note].some(x => String(x || '').toLowerCase().includes(q)))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name), 'zh-TW'));
+}
+function filterBar(extra) {
+  return `<div class="row"><div class="grow"><input placeholder="搜尋姓名／電話／編號" value="${esc(ui.q)}" oninput="ui.q=this.value;renderListOnly()"></div>
+  <select style="width:auto" onchange="ui.seat=this.value;renderAll()"><option value="">全部會座</option>${SEATS().map(s => `<option value="${s.id}" ${ui.seat === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}<option value="_none" ${ui.seat === '_none' ? 'selected' : ''}>未分會座</option></select>
+  <select style="width:auto" onchange="ui.status=this.value;renderAll()"><option value="">入信＋非入信</option><option value="member" ${ui.status === 'member' ? 'selected' : ''}>入信</option><option value="non" ${ui.status === 'non' ? 'selected' : ''}>非入信</option></select>${extra || ''}</div>`;
+}
+function renderListOnly() { const l = $('#list'); if (l) l.innerHTML = (tab === 'year' ? yearList() : tab === 'stats' ? statsBody() : peopleList()); }
+
+/* ═══════ 信徒 ═══════ */
+const headOf = p => (p.famOf && byId(P(), p.famOf)) || p;          /* 戶長：家族成員掛在戶長名下，沒掛的人自己就是戶長 */
+function roleOf(p) {                                               /* 導親／導子／所屬／家族（對最上層導親而言） */
+  if (p.famOf) return '家族';
+  let d = 0, cur = p, n = 0; while (cur && cur.mentorId && n++ < 60) { cur = byId(P(), cur.mentorId); d++; }
+  return d === 0 ? (children(p.id).length ? '導親' : '') : d === 1 ? '導子' : '所屬';
+}
+function peopleList() {
+  const rows = filterPeople();
+  if (!rows.length) return '<div class="muted" style="padding:20px;text-align:center">沒有資料。可到「匯入」讀取 Excel／PDF／Word／照片，或按「＋新增」。</div>';
+  return `<div class="muted">共 ${rows.length} 人</div>` + rows.map(p => {
+    const m = byId(P(), p.mentorId), nc = children(p.id).length, role = roleOf(p), h = p.famOf ? byId(P(), p.famOf) : null;
+    return `<div class="card tap" onclick="editPerson('${p.id}')"><div class="t">${esc(p.name)} <span class="chip ${p.status === 'non' ? 'non' : ''}">${ST[p.status] || '入信'}</span>${role ? `<span class="chip good">${role}</span>` : ''}${p.deceased ? '<span class="chip bad">歿</span>' : ''}${p.seatRole ? `<span class="chip good">${esc(p.seatRole)}</span>` : ''}</div>
+    <div class="s">${esc(seatName(p.seatId) || '未分會座')}${p.phone ? '｜' + esc(p.phone) : ''}${m ? '｜導親：' + esc(m.name) : ''}${h ? '｜家族：' + esc(h.name) : ''}${nc ? `｜導子 ${nc}` : ''}</div></div>`;
+  }).join('');
+}
+function vPeople() {
+  $('#view').innerHTML = `<div class="row"><h2 class="grow" style="margin:0">信徒</h2><button onclick="editPerson()">＋新增</button></div>
+  <div class="panel">${filterBar()}</div><div id="list">${peopleList()}</div>`;
+}
+function editPerson(id) {
+  const p = id ? byId(P(), id) : { id: uid(), status: 'member', active: true };
+  const isNew = !id;
+  const mentor = byId(P(), p.mentorId), fam = byId(P(), p.famOf);
+  const kids = children(p.id), gk = belong(p.id), famMem = P().filter(x => x.famOf === p.id);
+  const names = P().filter(x => x.id !== p.id).map(x => `<option value="${esc(x.name)}">`).join('');
+  openModal(`<h2>${isNew ? '新增信徒' : esc(p.name)}</h2>
+  <div class="grid2"><div><label>姓名</label><input id="f_name" value="${esc(p.name)}"></div>
+  <div><label>身分</label><select id="f_status"><option value="member" ${p.status !== 'non' ? 'selected' : ''}>入信</option><option value="non" ${p.status === 'non' ? 'selected' : ''}>非入信</option></select></div>
+  <div><label>羅馬拼音</label><input id="f_roman" value="${esc(p.roman)}" placeholder="Fan, yi-chun"></div>
+  <div><label>手機</label><input id="f_phone" type="tel" value="${esc(p.phone)}"></div>
+  <div><label>Email</label><input id="f_email" type="email" value="${esc(p.email)}"></div>
+  <div><label>出生年月日</label><input id="f_birth" value="${esc(p.birth)}" placeholder="1973-05-08"></div>
+  <div><label>入信日期</label><input id="f_joined" value="${esc(p.joinedOn)}" placeholder="2011-12-09"></div>
+  <div><label>信徒編號</label><input id="f_code" value="${esc(p.code)}" placeholder="9705-69-7833"></div>
+  <div><label>S 編號（導親／導子／所屬）</label><input id="f_sid" value="${esc(p.sid)}" placeholder="S0008417"></div>
+  <div><label>院生／教師號碼</label><input id="f_rank" value="${esc(p.rank)}"></div>
+  <div><label>歿日（有填＝不再列入年度）</label><input id="f_dead" value="${esc(p.deceased)}" placeholder="2025-01-03"></div>
+  <div><label>傳授 I</label><input id="f_t1" value="${esc(p.trans1)}"></div><div><label>傳授 II</label><input id="f_t2" value="${esc(p.trans2)}"></div>
+  <div><label>傳授 III</label><input id="f_t3" value="${esc(p.trans3)}"></div>
+  <div><label>會座</label><select id="f_seat">${seatOpts(p.seatId)}</select></div>
+  <div><label>會座職務</label><input id="f_role" value="${esc(p.seatRole)}" placeholder="座長／副座長／會員"></div></div>
+  <label>地址</label><input id="f_addr" value="${esc(p.addr)}">
+  <label>導親（引領他結緣的人，輸入姓名；最上層的人留空）</label><input id="f_mentor" list="nameList" value="${esc(mentor ? mentor.name : '')}">
+  <label>家族入信：掛在誰的戶下（輸入戶長姓名；自己就是戶長則留空）</label><input id="f_fam" list="nameList" value="${esc(fam ? fam.name : '')}"><datalist id="nameList">${names}</datalist>
+  <label>備註</label><textarea id="f_note" rows="3">${esc(p.note)}</textarea>
+  ${isNew ? '' : `<h3>導脈</h3><div class="muted">導子（${kids.length}）：${kids.map(k => esc(k.name)).join('、') || '—'}<br>所屬（${gk.length}）：${gk.map(k => esc(k.name)).join('、') || '—'}${famMem.length ? `<br>家族（${famMem.length}）：${famMem.map(k => esc(k.name)).join('、')}` : ''}</div>`}
+  <div class="row" style="margin-top:14px"><button class="grow" onclick="savePerson('${p.id}',${isNew})">儲存</button><button class="alt" onclick="closeModal()">取消</button>${isNew ? '' : `<button class="warn" onclick="removePerson('${p.id}')">刪除</button>`}</div>`);
+}
+function savePerson(id, isNew) {
+  const name = $('#f_name').value.trim(); if (!name) return toast('請輸入姓名', 'err');
+  const old = isNew ? {} : byId(P(), id);
+  let mentorId = '', famOf = '';
+  const mn = $('#f_mentor').value.trim();
+  if (mn) {
+    const m = P().find(x => x.name === mn && x.id !== id);
+    if (!m) return toast('找不到導親「' + mn + '」，請先新增該人或改名', 'err');
+    if (wouldLoop(id, m.id)) return toast('導脈會形成循環（對方是你的導子／所屬）', 'err');
+    mentorId = m.id;
+  }
+  const fn = $('#f_fam').value.trim();
+  if (fn) {
+    const h = P().find(x => x.name === fn && x.id !== id && !x.famOf);
+    if (!h) return toast('找不到戶長「' + fn + '」（戶長本身不能是別人的家族成員）', 'err');
+    if (P().some(x => x.famOf === id)) return toast('他自己有家族成員，不能再掛到別人戶下', 'err');
+    famOf = h.id;
+  }
+  const v = k => $('#f_' + k).value.trim();
+  SMStore.put('people', Object.assign({}, old, { id, name, status: $('#f_status').value, roman: v('roman'), phone: v('phone'), email: v('email'), code: v('code'), sid: v('sid'), rank: v('rank'),
+    joinedOn: v('joined'), birth: v('birth'), deceased: v('dead'), trans1: v('t1'), trans2: v('t2'), trans3: v('t3'), seatId: $('#f_seat').value, seatRole: v('role'), addr: v('addr'),
+    mentorId, famOf, note: $('#f_note').value.trim(), active: true }));
+  closeModal(); toast('已儲存');
+}
+function removePerson(id) {
+  const p = byId(P(), id), nc = children(id).length, nf = P().filter(x => x.famOf === id).length;
+  if (!confirm(`刪除「${p.name}」？\n其年度申請與收費紀錄也會一併刪除。${nc ? `\n他有 ${nc} 位導子，會變成無導親。` : ''}${nf ? `\n他有 ${nf} 位家族成員，會各自獨立成一戶。` : ''}\n（會同步到所有裝置，無法復原）`)) return;
+  const fix = children(id).map(k => Object.assign({}, k, { mentorId: '' })).concat(P().filter(x => x.famOf === id).map(k => Object.assign({}, k, { famOf: '' })));
+  SMStore.putMany('people', fix, [id]);
+  SMStore.putMany('yearly', [], YR().filter(r => r.pid === id).map(r => r.id));
+  closeModal(); toast('已刪除');
+}
+function openModal(html) { $('#modalBody').innerHTML = html; $('#modal').classList.remove('hidden'); }
+function closeModal() { $('#modal').classList.add('hidden'); renderAll(); }
+
+/* ═══════ 年度申請＋收費（以「戶」為繳費單位，仿原 Excel）═══════
+   一戶＝戶長＋掛在他名下的家族成員。每人各自勾 苑費／祈年證／星供／套子；
+   「苑費已收（含祈年證）」「星供已收（含套子）」「星供已發送」記在整戶（存在戶長那筆）。 */
+const todayStr = () => new Date().toISOString().slice(0, 10);
+const alive = p => p.active !== false && !p.deceased;
+function members(headId) {
+  const h = byId(P(), headId); if (!h) return [];
+  return [h].concat(P().filter(x => x.famOf === headId).sort((a, b) => String(a.name).localeCompare(String(b.name), 'zh-TW'))).filter(alive);
+}
+/* 繳費代表（payer）：預設＝自己所屬戶的戶長；若某人的「代繳人」(rep) 有指定，就改由那個人代為繳費。
+   一組＝同一位代表底下所有人（可跨戶，仿 Excel 星供名單的「組內序 1＝代表」），收費與已收／發送都記在代表那筆。 */
+function payerOf(y, p, seen) {
+  seen = seen || new Set(); if (seen.has(p.id)) return p; seen.add(p.id);
+  const rep = yearRow(y, p.id).rep; if (rep === p.id) return p;
+  const rp = rep && byId(P(), rep);
+  if (rp && alive(rp)) return payerOf(y, rp, seen);
+  const h = headOf(p); return h.id !== p.id && alive(h) ? payerOf(y, h, seen) : p;
+}
+const byNameZh = (a, b) => String(a).localeCompare(String(b), 'zh-TW');
+function groupsFor() {
+  const y = ui.year, by = new Map();
+  P().filter(alive).forEach(p => { const k = payerOf(y, p), o = by.get(k.id) || { head: k, members: [] }; o.members.push(p); by.set(k.id, o); });
+  const shown = new Set(filterPeople().filter(alive).map(p => p.id));
+  return Array.from(by.values()).filter(g => g.members.some(m => shown.has(m.id))).map(g => {
+    g.members.sort((a, b) => (b.id === g.head.id) - (a.id === g.head.id) || byNameZh(headOf(a).name, headOf(b).name) || (a.famOf ? 1 : 0) - (b.famOf ? 1 : 0) || byNameZh(a.name, b.name));
+    return g;
+  }).sort((a, b) => byNameZh(a.head.name, b.head.name));
+}
+function pickRep(pid) {
+  const p = byId(P(), pid), r = yearRow(ui.year, pid), cur = r.rep && byId(P(), r.rep);
+  const v = prompt(`${p.name} 的費用要由誰代為繳費？\n輸入代表人的姓名；留空＝回到自己（家族則回到戶長）。`, cur ? cur.name : ''); if (v == null) return;
+  const name = v.trim(); if (!name) { r.rep = ''; return saveYear(r); }
+  const t = P().filter(x => x.name === name && x.id !== pid && alive(x));
+  if (!t.length) return toast('找不到「' + name + '」', 'err');
+  r.rep = t[0].id; saveYear(r); if (t.length > 1) toast('有同名的人，已取第一位', 'err');
+}
+function groupFigures(g, y) {
+  const hr = yearRow(y, g.head.id); let A = 0, B = 0, any = false;
+  g.members.forEach(m => { const r = yearRow(y, m.id); A += dueA(r); B += dueB(r); if (hasAny(r)) any = true; });
+  return { hr, A, B, total: A + B, paid: (hr.yuanPaid ? A : 0) + (hr.starPaid ? B : 0), any };
+}
+function paidOf(p, y) { const hr = yearRow(y, payerOf(y, p).id), r = yearRow(y, p.id); return (hr.yuanPaid ? dueA(r) : 0) + (hr.starPaid ? dueB(r) : 0); }
+
+function yearList() {
+  const y = ui.year; let gs = groupsFor();
+  if (ui.onlyTicked) gs = gs.filter(g => groupFigures(g, y).any);
+  let tD = 0, tP = 0, nP = 0;
+  const html = gs.map(g => {
+    const f = groupFigures(g, y), hid = g.head.id, hr = f.hr; tD += f.total; tP += f.paid; nP += g.members.length;
+    const chips = [f.A ? (hr.yuanPaid ? '<span class="chip good">苑費已收</span>' : `<span class="chip bad">苑費未收 ${money(f.A)}</span>`) : '',
+      f.B ? (hr.starPaid ? (hr.starSent ? '<span class="chip good">星供已發送</span>' : '<span class="chip bad">星供待發送</span>') : `<span class="chip bad">星供未收 ${money(f.B)}</span>`) : ''].join('');
+    const rows = g.members.map(m => {
+      const r = yearRow(y, m.id), role = roleOf(m);
+      const ck = (k, n) => `<label class="ck ${r[k] ? 'on' : ''}"><input type="checkbox" ${r[k] ? 'checked' : ''} onchange="tick('${m.id}','${k}',this.checked)">${n}</label>`;
+      return `<div class="items" style="border-top:1px dashed var(--line);padding-top:6px"><span class="t" style="cursor:pointer;min-width:64px" onclick="editPerson('${m.id}')">${esc(m.name)}</span>${role ? `<span class="chip good">${role}</span>` : ''}${m.status === 'non' ? '<span class="chip non">非入信</span>' : ''}${m.id === g.head.id ? '<span class="chip good">繳費代表</span>' : ''}
+      <button class="alt sm" title="指定由誰代為繳費" onclick="pickRep('${m.id}')">${r.rep && byId(P(), r.rep) ? '代繳：' + esc(byId(P(), r.rep).name) : '代繳▾'}</button>
+      ${ck('yuan', '苑費')}${ck('cert', '祈年證')}${ck('star', '星供')}<span class="s" style="display:inline-flex;align-items:center;gap:4px">套子 <input class="n" type="number" min="0" value="${num(r.set) || ''}" onchange="setQty('${m.id}',this.value)"></span></div>`;
+    }).join('');
+    return `<div class="card"><div class="row"><div class="grow"><span class="t">${esc(g.head.name)}</span> <span class="s">${g.members.length} 人${seatName(g.head.seatId) ? '｜' + esc(seatName(g.head.seatId)) : ''}</span></div><div class="t">${money(f.total)}</div></div>
+    <div style="margin:4px 0">${chips}</div>${rows}
+    <div class="items" style="margin-top:8px;background:#f6faf8;border-radius:10px;padding:8px">
+    <span class="s">苑費已收</span><input class="n" style="width:92px" value="${esc(hr.yuanPaid || '')}" placeholder="日期/OK" onchange="setHH('${hid}','yuanPaid',this.value.trim())"><button class="alt sm" onclick="setHH('${hid}','yuanPaid','${todayStr()}')">今天</button>
+    <span class="s">星供已收</span><input class="n" style="width:92px" value="${esc(hr.starPaid || '')}" placeholder="日期/OK" onchange="setHH('${hid}','starPaid',this.value.trim())"><button class="alt sm" onclick="setHH('${hid}','starPaid','${todayStr()}')">今天</button>
+    <label class="ck ${hr.starSent ? 'on' : ''}"><input type="checkbox" ${hr.starSent ? 'checked' : ''} onchange="setHH('${hid}','starSent',this.checked)">星供已發送</label></div></div>`;
+  }).join('');
+  return `<div class="muted">${gs.length} 戶／${nP} 人｜應收 ${money(tD)}｜已收 ${money(tP)}｜未收 ${money(tD - tP)}</div>` + (html || '<div class="muted" style="padding:20px;text-align:center">沒有符合的人</div>');
+}
+function vYear() {
+  const y = ui.year, tk = YR().filter(r => r.year === y && r.star).length;
+  const noPrice = FEE.filter(([k]) => !price(y, k)).map(([, n]) => n);
+  const years = [y - 1, y, y + 1];
+  $('#view').innerHTML = `<div class="row"><h2 class="grow" style="margin:0">年度申請與收費</h2>
+  <select style="width:auto" onchange="ui.year=+this.value;renderAll()">${years.map(v => `<option ${v === y ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+  ${noPrice.length ? `<div class="notice" style="margin-top:8px">${esc(noPrice.join('、'))} 尚未設定 ${y} 年金額，應收會算成 0。到「設定」填寫。</div>` : ''}
+  <div class="panel">${filterBar(`<label class="ck"><input type="checkbox" ${ui.onlyTicked ? 'checked' : ''} onchange="ui.onlyTicked=this.checked;renderAll()">只看有勾選</label>`)}
+  <div class="row" style="margin-top:10px"><button class="sm" onclick="exportStar()">⭐ 星供申請名單（全部 ${tk} 人）</button><button class="sm" onclick="exportFees()">💰 苑費管理單</button><button class="alt sm" onclick="carryOver()">帶入去年勾選</button></div>
+  <div class="muted" style="margin-top:6px">以「繳費代表」為單位收費（預設＝戶長；多戶由一人代繳時，在該人那一列按「代繳▾」指定代表）。匯出範圍＝目前篩選的結果；已歿者不列入。</div></div>
+  <div id="list">${yearList()}</div>`;
+}
+function saveYear(r) { SMStore.put('yearly', r); renderListOnly(); }
+function tick(pid, k, v) { const r = yearRow(ui.year, pid); r[k] = v; saveYear(r); }
+function setQty(pid, v) { const r = yearRow(ui.year, pid); r.set = Math.max(0, num(v)); saveYear(r); }
+function setHH(hid, k, v) { const r = yearRow(ui.year, hid); r[k] = v; saveYear(r); }
+function carryOver() {
+  const y = ui.year, prev = YR().filter(r => r.year === y - 1 && hasAny(r));
+  if (!prev.length) return toast((y - 1) + ' 年沒有勾選資料', 'err');
+  if (!confirm(`把 ${y - 1} 年有勾選的 ${prev.length} 人帶入 ${y} 年？\n已有 ${y} 年資料的人不會被覆蓋，已收／發送狀態不帶入。`)) return;
+  const have = new Set(YR().filter(r => r.year === y).map(r => r.pid));
+  const add = prev.filter(r => !have.has(r.pid) && byId(P(), r.pid)).map(r => ({ id: y + ':' + r.pid, year: y, pid: r.pid, yuan: r.yuan, cert: r.cert, star: r.star, set: r.set, rep: r.rep || '', yuanPaid: '', starPaid: '', starSent: false, note: '' }));
+  SMStore.putMany('yearly', add); renderAll(); toast('已帶入 ' + add.length + ' 人');
+}
+
+/* ── 輸出：xlsx 與列印 ── */
+function starSheet() {
+  const y = ui.year;
+  const head = ['序', '代表繳費人', '姓名', '羅馬拼音', '身分', '生日', '信徒編號', '電話', '地址', '會座', '導親', '套子', '備註'];
+  const list = filterPeople().filter(alive).filter(p => yearRow(y, p.id).star)
+    .sort((a, b) => { const pa = payerOf(y, a), pb = payerOf(y, b); return byNameZh(pa.name, pb.name) || (pb.id === b.id) - (pa.id === a.id) || byNameZh(headOf(a).name, headOf(b).name) || (a.famOf ? 1 : 0) - (b.famOf ? 1 : 0) || byNameZh(a.name, b.name); });
+  const rows = list.map((p, i) => { const r = yearRow(y, p.id);
+    return [i + 1, payerOf(y, p).name, p.name, p.roman || '', ST[p.status] || '入信', p.birth || '', p.code || '', p.phone || '', p.addr || '', seatName(p.seatId), (byId(P(), p.mentorId) || {}).name || '', num(r.set) || '', r.note || '']; });
+  return { title: `${y} 年度 星供申請名單`, head, rows, n: rows.length };
+}
+function feeSheet() {
+  const y = ui.year, head = ['戶序', '戶內', '角色', '姓名', '祈年證', '星供套子', '星供費用', '苑費', '合計', '苑費已收', '星供已收', '星供發送'];
+  const rows = []; let sd = 0, sp = 0, n = 0, gi = 0;
+  groupsFor().forEach(g => {
+    const f = groupFigures(g, y); if (!f.any) return; gi++; sd += f.total; sp += f.paid;
+    g.members.forEach((m, i) => { const r = yearRow(y, m.id); n++;
+      rows.push([gi, i + 1, roleOf(m), m.name, r.cert ? price(y, 'cert') : '', num(r.set) || '', r.star ? price(y, 'star') : '', r.yuan ? price(y, 'yuan') : '',
+        i === 0 ? f.total : '', i === 0 ? (f.hr.yuanPaid || '') : '', i === 0 ? (f.hr.starPaid || '') : '', i === 0 ? (f.hr.starSent ? 'OK' : '') : '']); });
+  });
+  rows.push(['', '', '', '合計', '', '', '', '', sd, '已收 ' + sp, '未收 ' + (sd - sp), '']);
+  return { title: `${y} 年度 苑費管理單`, head, rows, n };
+}
+const scopeLabel = () => [ui.seat === '_none' ? '未分會座' : ui.seat ? seatName(ui.seat) : '', ui.status ? ST[ui.status] : ''].filter(Boolean).join('／') || '全部';
+function exportStar() { outputSheet(starSheet()); }
+function exportFees() { outputSheet(feeSheet()); }
+function outputSheet(sh) {
+  if (!sh.n) return toast('目前篩選範圍內沒有勾選的人', 'err');
+  outputSheet.cur = sh;
+  openModal(`<h2>${esc(sh.title)}</h2><div class="muted">範圍：${esc(scopeLabel())}｜${sh.n} 人</div>
+  <div class="wrap" style="margin:8px 0"><table class="t"><tr>${sh.head.map(h => `<th>${h}</th>`).join('')}</tr>${sh.rows.slice(0, 8).map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table></div>
+  ${sh.rows.length > 8 ? '<div class="muted">（預覽前 8 列）</div>' : ''}
+  <div class="row" style="margin-top:12px"><button class="grow" onclick="doXlsx()">下載 Excel</button><button class="grow" onclick="doPrint()">列印／存成 PDF</button><button class="alt" onclick="closeModal()">關閉</button></div>`);
+}
+async function doXlsx() {
+  const sh = outputSheet.cur;
+  try { await loadLib('xlsx'); } catch (e) { return toast('Excel 元件載入失敗（需要網路）', 'err'); }
+  const ws = XLSX.utils.aoa_to_sheet([[sh.title + '　範圍：' + scopeLabel()], sh.head, ...sh.rows]);
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, sh.title.slice(0, 28));
+  XLSX.writeFile(wb, sh.title.replace(/\s/g, '_') + '.xlsx');
+}
+function doPrint() {
+  const sh = outputSheet.cur;
+  $('#printArea').innerHTML = `<h1>${esc(orgName())} ${esc(sh.title)}</h1><div style="font-size:11px;margin-bottom:6px">範圍：${esc(scopeLabel())}　列印日期：${new Date().toLocaleDateString('zh-TW')}</div><table><tr>${sh.head.map(h => `<th>${h}</th>`).join('')}</tr>${sh.rows.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table>`;
+  print();
+}
+
+/* ═══════ 統計：依每個人申請的項目算費用 ═══════
+   每人各項金額＝他勾的項目 × 當年度單價；已收＝所屬戶「苑費已收」「星供已收」對應到他那幾項。 */
+function statRows(y) {
+  return filterPeople().filter(alive).filter(p => hasAny(yearRow(y, p.id)))
+    .sort((a, b) => { const pa = payerOf(y, a), pb = payerOf(y, b); return byNameZh(pa.name, pb.name) || (pb.id === b.id) - (pa.id === a.id) || byNameZh(headOf(a).name, headOf(b).name) || (a.famOf ? 1 : 0) - (b.famOf ? 1 : 0) || byNameZh(a.name, b.name); })
+    .map(p => {
+      const r = yearRow(y, p.id), hr = yearRow(y, payerOf(y, p).id);
+      const it = { yuan: r.yuan ? price(y, 'yuan') : 0, cert: r.cert ? price(y, 'cert') : 0, star: r.star ? price(y, 'star') : 0, set: num(r.set) * price(y, 'set') };
+      const pd = { yuan: hr.yuanPaid ? it.yuan : 0, cert: hr.yuanPaid ? it.cert : 0, star: hr.starPaid ? it.star : 0, set: hr.starPaid ? it.set : 0 };
+      const total = it.yuan + it.cert + it.star + it.set, paid = pd.yuan + pd.cert + pd.star + pd.set;
+      return { p, r, it, pd, total, paid };
+    });
+}
+function statSheet() {
+  const y = ui.year, rows = statRows(y);
+  const head = ['繳費代表', '姓名', '身分', '會座', '苑費', '祈年證', '星供', '套子數', '套子費', '應收合計', '已收', '未收'];
+  const body = rows.map(s => [payerOf(y, s.p).name, s.p.name, ST[s.p.status] || '入信', seatName(s.p.seatId), s.it.yuan || '', s.it.cert || '', s.it.star || '', num(s.r.set) || '', s.it.set || '', s.total, s.paid, s.total - s.paid]);
+  const sum = i => rows.reduce((a, s) => a + (i === 7 ? num(s.r.set) : [0, 0, 0, 0, s.it.yuan, s.it.cert, s.it.star, 0, s.it.set, s.total, s.paid, s.total - s.paid][i]), 0);
+  body.push(['', '合計', '', '', sum(4), sum(5), sum(6), sum(7), sum(8), sum(9), sum(10), sum(11)]);
+  return { title: `${y} 年度 費用統計（依個人申請）`, head, rows: body, n: rows.length };
+}
+function statsBody() {
+  const y = ui.year, rows = statRows(y);
+  if (!rows.length) return '<div class="muted" style="padding:20px;text-align:center">這個範圍內還沒有人勾選申請項目。到「年度」頁勾選後這裡就會統計。</div>';
+  const tot = rows.reduce((a, s) => ({ d: a.d + s.total, p: a.p + s.paid }), { d: 0, p: 0 });
+  /* 依項目 */
+  const itemRows = FEE.map(([k, n]) => {
+    const cnt = rows.reduce((a, s) => a + (k === 'set' ? num(s.r.set) : s.r[k] ? 1 : 0), 0), d = rows.reduce((a, s) => a + s.it[k], 0), p = rows.reduce((a, s) => a + s.pd[k], 0);
+    return `<tr><td>${n}</td><td>${cnt}${k === 'set' ? ' 個' : ' 人'}</td><td>${money(price(y, k))}</td><td>${money(d)}</td><td>${money(p)}</td><td>${money(d - p)}</td></tr>`;
+  }).join('');
+  /* 依會座 */
+  const bySeat = new Map();
+  rows.forEach(s => { const k = seatName(s.p.seatId) || '未分會座', o = bySeat.get(k) || { n: 0, d: 0, p: 0 }; o.n++; o.d += s.total; o.p += s.paid; bySeat.set(k, o); });
+  const seatRows = Array.from(bySeat.entries()).sort((a, b) => a[0].localeCompare(b[0], 'zh-TW')).map(([k, o]) => `<tr><td>${esc(k)}</td><td>${o.n}</td><td>${money(o.d)}</td><td>${money(o.p)}</td><td>${money(o.d - o.p)}</td></tr>`).join('');
+  /* 依個人 */
+  const cellN = v => v ? money(v) : '';
+  const personRows = rows.map(s => `<tr><td style="cursor:pointer" onclick="editPerson('${s.p.id}')"><b>${esc(s.p.name)}</b>${s.p.famOf ? ' <span class="muted">家族</span>' : ''}</td><td>${cellN(s.it.yuan)}</td><td>${cellN(s.it.cert)}</td><td>${cellN(s.it.star)}</td><td>${num(s.r.set) ? num(s.r.set) + '×' + money(price(y, 'set')) : ''}</td><td><b>${money(s.total)}</b></td><td>${cellN(s.paid)}</td><td style="color:${s.total - s.paid > 0 ? 'var(--warn)' : 'var(--ok)'}">${money(s.total - s.paid)}</td></tr>`).join('');
+  return `<div class="row" style="gap:6px"><div class="card grow" style="margin:4px 0"><div class="s">申請人數</div><div class="t">${rows.length}</div></div><div class="card grow" style="margin:4px 0"><div class="s">應收</div><div class="t">${money(tot.d)}</div></div><div class="card grow" style="margin:4px 0"><div class="s">已收</div><div class="t">${money(tot.p)}</div></div><div class="card grow" style="margin:4px 0"><div class="s">未收</div><div class="t" style="color:var(--warn)">${money(tot.d - tot.p)}</div></div></div>
+  <h3>依項目</h3><div class="wrap"><table class="t"><tr><th>項目</th><th>申請</th><th>單價</th><th>應收</th><th>已收</th><th>未收</th></tr>${itemRows}</table></div>
+  <h3>依會座</h3><div class="wrap"><table class="t"><tr><th>會座</th><th>人數</th><th>應收</th><th>已收</th><th>未收</th></tr>${seatRows}</table></div>
+  <h3>依個人（${rows.length} 人）</h3><div class="wrap"><table class="t"><tr><th>姓名</th><th>苑費</th><th>祈年證</th><th>星供</th><th>套子</th><th>合計</th><th>已收</th><th>未收</th></tr>${personRows}</table></div>`;
+}
+function vStats() {
+  const y = ui.year;
+  $('#view').innerHTML = `<div class="row"><h2 class="grow" style="margin:0">費用統計</h2>
+  <select style="width:auto" onchange="ui.year=+this.value;renderAll()">${[y - 1, y, y + 1].map(v => `<option ${v === y ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+  <div class="panel">${filterBar()}<div class="row" style="margin-top:10px"><button class="sm" onclick="outputSheet(statSheet())">匯出／列印 個人費用統計</button></div>
+  <div class="muted" style="margin-top:6px">依每個人在「年度」頁勾選的項目，乘以當年度單價。已收＝所屬繳費代表（預設戶長）「苑費已收（含祈年證）」「星供已收（含套子）」。範圍跟著上面的篩選走。</div></div>
+  <div id="list">${statsBody()}</div>`;
+}
+
+/* ═══════ 導脈 ═══════ */
+function vLineage() {
+  const people = P().filter(p => p.active !== false && !p.famOf);
+  const roots = people.filter(p => !p.mentorId || !byId(people, p.mentorId)).sort((a, b) => String(a.name).localeCompare(String(b.name), 'zh-TW'));
+  const rootSel = ui.lineRoot ? [byId(people, ui.lineRoot)].filter(Boolean) : roots;
+  const node = (p, depth) => { const kids = children(p.id).filter(k => k.active !== false), fam = P().filter(x => x.famOf === p.id && x.active !== false);
+    const lab = depth === 0 ? '導親' : depth === 1 ? '導子' : '所屬';
+    return `<li><span class="nm" onclick="editPerson('${p.id}')">${esc(p.name)}</span> <span class="chip good">${lab}</span><span class="chip ${p.status === 'non' ? 'non' : ''}">${ST[p.status] || '入信'}</span>${p.deceased ? '<span class="chip bad">歿</span>' : ''}${fam.length ? `<div class="muted">家族：${fam.map(f => esc(f.name) + (f.status === 'non' ? '（未入信）' : '')).join('、')}</div>` : ''}${kids.length ? '<ul>' + kids.sort((a, b) => String(a.name).localeCompare(String(b.name), 'zh-TW')).map(k => node(k, depth + 1)).join('') + '</ul>' : ''}</li>`; };
+  const sel = ui.lineRoot && byId(people, ui.lineRoot);
+  $('#view').innerHTML = `<h2>導脈（導親／導子／所屬）</h2><div class="panel">
+  <label style="margin-top:0">從誰開始看</label><select onchange="ui.lineRoot=this.value;renderAll()"><option value="">所有最上層的人（${roots.length}）</option>${people.map(p => `<option value="${p.id}" ${ui.lineRoot === p.id ? 'selected' : ''}>${esc(p.name)}（導子 ${children(p.id).length}／所屬 ${belong(p.id).length}）</option>`).join('')}</select>
+  ${sel ? `<div style="margin-top:8px"><b>導親 1　導子 ${children(sel.id).length}　所屬 ${belong(sel.id).length}</b></div>` : ''}
+  <div class="muted" style="margin-top:6px">在個人資料裡填「導親」就會長出這棵樹；家族成員（掛在戶長名下）顯示在該戶長底下。點名字可編輯。</div></div>
+  <div class="panel tree">${rootSel.length ? '<ul>' + rootSel.map(r => node(r, 0)).join('') + '</ul>' : '<div class="muted">還沒有資料</div>'}</div>`;
+}
+
+/* ═══════ 會座 ═══════ */
+function vSeats() {
+  const y = ui.year, seats = SEATS().slice().sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'));
+  const none = P().filter(p => p.active !== false && !p.seatId);
+  const card = s => { const ms = P().filter(p => p.active !== false && p.seatId === s.id); const ld = byId(P(), s.leaderId) || ms.find(m => /座長/.test(m.seatRole || '') && !/副/.test(m.seatRole));
+    let d = 0, pd = 0; ms.forEach(m => { const r = yearRow(y, m.id); d += due(r); pd += paidOf(m, y); });
+    return `<div class="card"><div class="row"><div class="grow"><div class="t">${esc(s.name)}</div><div class="s">座長：${esc(ld ? ld.name : '—')}｜${ms.length} 人（入信 ${ms.filter(m => m.status !== 'non').length}／非入信 ${ms.filter(m => m.status === 'non').length}）${d ? `｜${y} 應收 ${money(d)} 未收 ${money(d - pd)}` : ''}</div>${s.note ? `<div class="s">${esc(s.note)}</div>` : ''}</div>
+    <button class="alt sm" onclick="ui.seat='${s.id}';go('people')">看名單</button><button class="alt sm" onclick="editSeat('${s.id}')">編輯</button></div></div>`; };
+  $('#view').innerHTML = `<div class="row"><h2 class="grow" style="margin:0">會座</h2><button onclick="editSeat()">＋新增會座</button></div>
+  <div class="muted" style="margin:6px 0">會座＝信徒歸屬的座。每個人在個人資料選會座、填職務；這裡看各座人數與 ${y} 年收費概況。</div>
+  ${seats.map(card).join('') || '<div class="muted" style="padding:16px">尚未建立會座。匯入資料時若有「會座」欄會自動建立。</div>'}
+  ${none.length ? `<div class="card"><div class="t">未分會座</div><div class="s">${none.length} 人</div><button class="alt sm" style="margin-top:6px" onclick="ui.seat='_none';go('people')">看名單</button></div>` : ''}`;
+}
+function editSeat(id) {
+  const s = id ? byId(SEATS(), id) : { id: uid() };
+  const ms = P().filter(p => p.seatId === s.id);
+  openModal(`<h2>${id ? '編輯會座' : '新增會座'}</h2><label>會座名稱</label><input id="s_name" value="${esc(s.name)}">
+  <label>座長</label><select id="s_leader"><option value="">（未指定）</option>${ms.map(m => `<option value="${m.id}" ${s.leaderId === m.id ? 'selected' : ''}>${esc(m.name)}</option>`).join('')}</select>
+  <div class="muted">座長要先把人加入這個座，才會出現在選單。</div><label>備註（聚會時間／地點等）</label><textarea id="s_note" rows="2">${esc(s.note)}</textarea>
+  <div class="row" style="margin-top:14px"><button class="grow" onclick="saveSeat('${s.id}')">儲存</button><button class="alt" onclick="closeModal()">取消</button>${id ? `<button class="warn" onclick="removeSeat('${s.id}')">刪除</button>` : ''}</div>`);
+}
+function saveSeat(id) {
+  const name = $('#s_name').value.trim(); if (!name) return toast('請輸入名稱', 'err');
+  if (SEATS().some(x => x.name === name && x.id !== id)) return toast('已有同名會座', 'err');
+  SMStore.put('seats', Object.assign({}, byId(SEATS(), id) || {}, { id, name, leaderId: $('#s_leader').value, note: $('#s_note').value.trim() })); closeModal();
+}
+function removeSeat(id) {
+  const ms = P().filter(p => p.seatId === id);
+  if (!confirm(`刪除此會座？${ms.length ? `\n其中 ${ms.length} 人會變成「未分會座」。` : ''}`)) return;
+  SMStore.putMany('people', ms.map(m => Object.assign({}, m, { seatId: '' })));
+  SMStore.del('seats', id); closeModal();
+}
+
+/* ═══════ 匯入：Excel／CSV／PDF／Word ═══════ */
+const LIBS = { xlsx: 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js', pdf: 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js', mammoth: 'https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js' };
+const LIBVAR = { xlsx: 'XLSX', pdf: 'pdfjsLib', mammoth: 'mammoth' };
+const libP = {};
+function loadLib(n) {
+  if (window[LIBVAR[n]]) return Promise.resolve();
+  return libP[n] || (libP[n] = new Promise((ok, no) => { const s = document.createElement('script'); s.src = LIBS[n]; s.onload = ok; s.onerror = () => { delete libP[n]; no(new Error('load ' + n)); }; document.head.appendChild(s); }));
+}
+const FIELDS = [['', '（忽略）'], ['name', '姓名'], ['qin', '導親欄（區塊格式）'], ['zi', '導子欄（區塊格式）'], ['sun', '所屬／導孫欄（區塊格式）'], ['fam', '家族入信欄'],
+  ['status', '入信／非入信'], ['joinedOn', '入信日期'], ['phone', '電話／手機'], ['roman', '羅馬拼音'], ['birth', '出生年月日'], ['code', '信徒編號'], ['rank', '院生／教師號碼'],
+  ['grp', '組內序（1＝繳費代表）'], ['seat', '會座'], ['seatRole', '會座職務'], ['mentor', '導親姓名（單欄式）'], ['addr', '地址'], ['email', 'Email'], ['note', '備註'],
+  ['yuan', '苑費（有填＝要繳）'], ['cert', '祈年證'], ['star', '星供費用／申請'], ['set', '套子數'], ['yuanPaid', '苑費已收'], ['starPaid', '星供已收'], ['starSent', '星供發送']];
+const YEAR_FIELDS = ['yuan', 'cert', 'star', 'set', 'yuanPaid', 'starPaid', 'starSent'];
+/* 順序重要：越具體的越前面；比對時先去掉標題裡的空白與換行 */
+const GUESS = [['starPaid', /星供.*已收/], ['starSent', /發送/], ['yuanPaid', /苑費.*已收/], ['rank', /院生|教師/], ['code', /編號|代號/], ['joinedOn', /入信.*(日|期|時間)|日期/],
+  ['fam', /家族/], ['qin', /^導親/], ['zi', /^導子/], ['sun', /導孫|所屬/], ['mentor', /導者|導師|引導|引薦|介紹/], ['seatRole', /職務|職稱/], ['seat', /會座|座別|^座$/],
+  ['status', /入信|身[分份]|類別/], ['roman', /羅馬|拼音/], ['name', /申請者|姓名|名字|^名$/], ['phone', /電話|手機|聯絡/], ['birth', /生日|出生|生辰/], ['addr', /地址|住址/],
+  ['star', /星供.*費|星供$/], ['set', /套子/], ['cert', /祈[念年]/], ['yuan', /苑費/], ['note', /備註|註記|^註$/]];
+const imp = { rows: [], hdr: true, map: [], file: '', sheets: null, sheet: 0, year: new Date().getFullYear() };
+
+function vImport() {
+  $('#view').innerHTML = `<h2>匯入資料</h2><div class="panel">
+  <div class="muted"><b>檔案只在你這支裝置的瀏覽器裡解析，不會上傳到任何地方</b>（拍照選 Claude 辨識除外）。支援 Excel（.xlsx/.xls）、CSV／文字檔（.csv/.txt/.tsv，Big5 也行）、PDF（要有可選取的文字，掃描圖片讀不到）、Word（.docx；舊的 .doc 請先另存 .docx），也可以直接貼上文字。程式會依標題和內容猜每一欄是什麼，你核對後才寫入。同名（且電話不衝突）的人會合併、只補空白欄位，不會重複，也不會蓋掉你手改過的資料。同款表格匯入第二次會記得你上次的欄位對應。</div>
+  <input type="file" id="impFile" style="margin-top:10px" accept=".xlsx,.xls,.csv,.txt,.tsv,.pdf,.docx" onchange="readFile(this.files[0])">
+  <textarea id="pasteBox" rows="3" style="margin-top:8px" placeholder="或直接貼上文字（可從 Excel、Word、LINE 複製過來）"></textarea><button class="alt sm" style="margin-top:6px" onclick="readPaste()">解析貼上的文字</button></div>
+  <div class="panel"><h3 style="margin-top:0">📷 拍照讀取</h3>
+  <div class="muted">拍名冊、申請表或手寫單。讀出來會先變成表格讓你核對、改欄位，確認才寫入。<b>印刷體準確、手寫字較差，務必核對。</b></div>
+  <label>辨識方式</label><select id="ocrEng" onchange="ocrEngChange()"><option value="local" ${ocrEng() === 'local' ? 'selected' : ''}>本機辨識（照片不離開這支手機，較不準）</option><option value="claude" ${ocrEng() === 'claude' ? 'selected' : ''}>Claude 視覺（較準；照片會傳到 Anthropic）</option></select>
+  <div id="ocrKeyBox" class="${ocrEng() === 'claude' ? '' : 'hidden'}"><div class="notice" style="margin:8px 0">使用 Claude 辨識時，<b>照片裡的姓名、電話、地址會送到 Anthropic 處理</b>。只在你確認可以這樣處理信徒資料時使用。金鑰只存在這台裝置，不會同步。</div>
+  <input id="ocrKey" type="password" placeholder="Anthropic API Key（sk-ant-…）" autocomplete="off" value="${esc(LSget('sm.aikey') || '')}" onchange="LSset('sm.aikey',this.value.trim())"></div>
+  <div class="row" style="margin-top:10px"><label class="ck" style="cursor:pointer;background:var(--g);color:#fff;border-color:var(--g);font-weight:700">📷 拍照<input type="file" accept="image/*" capture="environment" class="hidden" onchange="readPhoto(this.files[0]);this.value=''"></label>
+  <label class="ck" style="cursor:pointer">🖼 選圖片<input type="file" accept="image/*" class="hidden" onchange="readPhoto(this.files[0]);this.value=''"></label></div>
+  <div id="ocrStat" class="muted" style="margin-top:8px"></div></div>
+  <div id="impBody">${imp.rows.length ? impBody() : ''}</div>`;
+}
+/* ═══════ 拍照讀取（本機 Tesseract／Claude 視覺）═══════ */
+const LSget = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const LSset = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
+const ocrEng = () => LSget('sm.ocr') || 'local';
+function ocrEngChange() { const v = $('#ocrEng').value; LSset('sm.ocr', v); $('#ocrKeyBox').classList.toggle('hidden', v !== 'claude'); }
+function loadImg(file, max) {      /* 縮圖＋轉 JPEG：手機原圖動輒 10MB，縮到長邊 max 較快也較省 */
+  return new Promise((ok, no) => { const u = URL.createObjectURL(file), im = new Image();
+    im.onload = () => { const s = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement('canvas'); c.width = Math.round(im.width * s); c.height = Math.round(im.height * s);
+      c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); URL.revokeObjectURL(u); ok(c); };
+    im.onerror = () => { URL.revokeObjectURL(u); no(new Error('無法讀取這張圖片')); }; im.src = u; });
+}
+async function readPhoto(f) {
+  if (!f) return; const st = $('#ocrStat'); const eng = ocrEng();
+  try {
+    let rows;
+    if (eng === 'claude') {
+      const key = (LSget('sm.aikey') || '').trim(); if (!key) throw new Error('請先填 Anthropic API Key');
+      st.textContent = '照片上傳辨識中…'; rows = await ocrClaude(await loadImg(f, 1800), key);
+    } else {
+      st.textContent = '載入辨識引擎（第一次要下載中文字庫，約十幾 MB，請用 Wi-Fi）…';
+      rows = await ocrLocal(await loadImg(f, 2200), p => { st.textContent = '辨識中 ' + Math.round(p * 100) + '%'; });
+    }
+    if (!rows.length) throw new Error('沒有辨識到文字，請拍清楚一點、光線均勻、對正');
+    st.textContent = `辨識出 ${rows.length} 列。請在下方核對欄位與內容；辨識錯的字，匯入後到信徒資料修正。`;
+    imp.file = f.name || '照片'; imp.sheets = null; imp.sheet = 0; setImpRows(rows);
+  } catch (e) { st.innerHTML = `<span style="color:#b4561b">${esc(/^load/.test(e.message) ? '辨識元件載入失敗（需要網路）' : e.message)}</span>`; }
+}
+async function ocrLocal(canvas, onProg) {
+  if (!window.Tesseract) await new Promise((ok, no) => { const s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'; s.onload = ok; s.onerror = () => no(new Error('load tesseract')); document.head.appendChild(s); });
+  const w = await Tesseract.createWorker('chi_tra+eng', 1, { logger: m => { if (m.status === 'recognizing text') onProg(m.progress); } });
+  try { const { data } = await w.recognize(canvas);
+    const join = s => s.replace(/([㐀-鿿])[ \t]+(?=[㐀-鿿])/g, '$1').trim();   /* Tesseract 會在中文字之間插空格 */
+    return data.text.split('\n').map(l => l.trim()).filter(Boolean).map(l => {
+      const cells = l.split(/\t|\s{2,}/).map(join).filter(Boolean);       /* 先用寬間距切欄，再去除字內空格 */
+      return cells.length > 1 ? cells : join(l).split(/\s+/); }); }
+  finally { await w.terminate(); }
+}
+async function ocrClaude(canvas, key) {
+  const b64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+  const res = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'content-type': 'application/json', 'anthropic-dangerous-direct-browser-access': 'true' },
+    body: JSON.stringify({ model: 'claude-sonnet-5-5', max_tokens: 4096, messages: [{ role: 'user', content: [
+      { type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } },
+      { type: 'text', text: '這是信徒名冊或申請表的照片。請把表格逐列轉成 JSON 二維陣列，第一列放欄位標題（若照片沒有標題列，就自行依內容命名，如 姓名、電話、地址、生日、會座、導親、入信/非入信、備註）。只輸出 JSON 陣列本身，不要任何說明或 markdown。看不清楚的格子填空字串，不要猜測或編造。' }] }] }) });
+  if (!res.ok) throw new Error(res.status === 401 ? 'API Key 無效' : res.status === 429 ? '用量或頻率超限，稍後再試' : 'Claude 辨識失敗（' + res.status + '）');
+  const txt = ((await res.json()).content || []).map(c => c.text || '').join('');
+  const m = txt.match(/\[[\s\S]*\]/); if (!m) throw new Error('沒有讀到表格，請拍清楚一點');
+  let arr; try { arr = JSON.parse(m[0]); } catch (e) { throw new Error('辨識結果格式不完整，請再試一次'); }
+  return arr.filter(Array.isArray);
+}
+async function readFile(f) {
+  if (!f) return;
+  const ext = f.name.split('.').pop().toLowerCase(); imp.file = f.name; imp.sheets = null; imp.sheet = 0;
+  $('#impBody').innerHTML = '<div class="muted">讀取中…</div>';
+  try {
+    let rows;
+    if (ext === 'pdf') rows = await readPdf(f);
+    else if (ext === 'docx') rows = await readDocx(f);
+    else if (ext === 'doc') throw new Error('舊版 .doc 無法直接讀，請用 Word 另存成 .docx 再匯入');
+    else if (['txt', 'tsv', 'csv'].includes(ext)) rows = parseText(await readText(f));
+    else { await loadLib('xlsx'); const wb = XLSX.read(await f.arrayBuffer(), { type: 'array', cellDates: true });
+      imp.sheets = wb.SheetNames.map(n => ({ n, rows: XLSX.utils.sheet_to_json(wb.Sheets[n], { header: 1, raw: true, defval: '' }) })).filter(s => s.rows.length);
+      if (!imp.sheets.length) throw new Error('檔案裡沒有資料'); rows = imp.sheets[0].rows; }
+    setImpRows(rows);
+  } catch (e) { $('#impBody').innerHTML = `<div class="notice">讀取失敗：${esc(e.message)}${/^load/.test(e.message) ? '（讀檔元件要連網下載）' : ''}${/^xlsx?$/.test(ext) ? '<br>如果這個 Excel 有設定開啟密碼，請先在 Excel 開啟、另存一份不加密的副本再匯入（副本含個資，用完請刪除）。' : ''}</div>`; }
+}
+async function readText(f) {     /* 台灣 Excel 另存的 CSV 常是 Big5：先試 UTF-8，不行再用 Big5 */
+  const b = await f.arrayBuffer();
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(b).replace(/^﻿/, ''); } catch (e) { return new TextDecoder('big5').decode(b); }
+}
+function parseText(t) {
+  const lines = String(t).split(/\r?\n/).filter(l => l.trim()), top = lines.slice(0, 10), first = top.join('\n');
+  const tabs = (first.match(/\t/g) || []).length, commas = (first.match(/,/g) || []).length;
+  const delim = tabs >= top.length ? '\t' : commas >= top.length ? ',' : null;
+  return lines.map(l => {
+    if (!delim) return /\s{2,}/.test(l) ? l.trim().split(/\s{2,}/) : l.trim().split(/\s+/);
+    const out = []; let cur = '', q = false;
+    for (let i = 0; i < l.length; i++) { const c = l[i]; if (c === '"') { if (q && l[i + 1] === '"') { cur += '"'; i++; } else q = !q; } else if (c === delim && !q) { out.push(cur); cur = ''; } else cur += c; }
+    out.push(cur); return out;
+  });
+}
+function readPaste() {
+  const t = $('#pasteBox').value; if (!t.trim()) return toast('請先貼上文字', 'err');
+  imp.file = '貼上的文字'; imp.sheets = null; imp.sheet = 0; setImpRows(parseText(t));
+}
+/* 欄位對應：先套用你以前確認過的同款表格；其次看標題；標題認不出的欄，再看內容長相（手機、信徒編號、羅馬拼音、地址） */
+const CONTENT = [['phone', v => /^(\+?886-?|0)9\d{2}[- ]?\d{3}[- ]?\d{3}$/.test(v)], ['code', v => /^\d{4}-\d{2}-\d{4}$/.test(v)],
+  ['roman', v => /^[A-Za-z][A-Za-z' .-]*,\s*[A-Za-z]/.test(v)], ['addr', v => v.length >= 8 && /[縣市區鄉鎮路街段巷弄號樓]/.test(v)]];
+function contentFill(map) {
+  const sample = imp.rows.slice(1, 40), used = new Set(map.filter(Boolean));
+  map.forEach((f, i) => {
+    if (f) return;
+    const vals = sample.map(r => cell(r[i])).filter(Boolean); if (vals.length < 2) return;
+    for (const [k, test] of CONTENT) if (!used.has(k) && vals.filter(test).length / vals.length >= 0.6) { map[i] = k; used.add(k); break; }
+  });
+  return map;
+}
+function grpGuess(map) {      /* 沒有標題的欄，內容全是整數且有多個 1＝組內序 */
+  if (map.includes('grp')) return map;
+  const rows = imp.rows.slice(1);
+  for (let i = 0; i < map.length; i++) { if (map[i] || cell(imp.rows[0][i])) continue;
+    const v = rows.map(r => cell(r[i])).filter(Boolean); if (v.length < 4 || !v.every(x => /^\d{1,3}$/.test(x))) continue;
+    if (v.filter(x => x === '1').length >= 2 && map.includes('star')) { map[i] = 'grp'; break; } }
+  return map;
+}
+const tplKey = () => imp.rows[0].map(hdrKey).join('|');
+function autoMap() {
+  if (!imp.hdr) return imp.rows[0].map((_, i) => i === 0 ? 'name' : '');
+  try { const t = JSON.parse(LSget('sm.maptpl') || '{}')[tplKey()]; if (t && t.length === imp.rows[0].length) return t.slice(); } catch (e) {}
+  const m = guessMap(imp.rows[0]);
+  /* 只有「導親」欄、沒有導子／所屬／家族欄＝單欄式名冊，導親欄是「引他入信的人」，不是區塊格式 */
+  if (m.includes('qin') && !['zi', 'sun', 'fam'].some(k => m.includes(k)) && !m.includes('mentor')) m[m.indexOf('qin')] = 'mentor';
+  return grpGuess(contentFill(m));
+}
+function saveTpl() {      /* 只存「標題文字→欄位種類」，不含任何人的資料；下次同款表格自動套用 */
+  if (!imp.hdr) return;
+  try { const all = JSON.parse(LSget('sm.maptpl') || '{}'); all[tplKey()] = imp.map; LSset('sm.maptpl', JSON.stringify(all)); } catch (e) {}
+}
+const hdrKey = c => String(c || '').replace(/\s/g, '');
+const hdrHits = row => row.filter(c => { const k = hdrKey(c); return k && GUESS.some(([, re]) => re.test(k)); }).length;
+function guessMap(h) {
+  const used = new Set();
+  return h.map(c => { if (!imp.hdr) return ''; const k = hdrKey(c); for (const [f, re] of GUESS) if (re.test(k) && !used.has(f)) { used.add(f); return f; } return ''; });
+}
+function guessYear() {
+  const yi = imp.map.indexOf('yuan'); const m = yi >= 0 && hdrKey(imp.rows[0][yi]).match(/(20\d\d)/);
+  const fm = String(imp.file || '').match(/(20\d\d)\s*年/);
+  imp.year = fm ? +fm[1] : m ? +m[1] : ui.year;
+}
+const i0 = f => imp.map.indexOf(f);
+function setImpRows(rows) {
+  rows = rows.map(r => r.map(c => c instanceof Date ? c.toISOString().slice(0, 10) : String(c == null ? '' : c).trim())).filter(r => r.some(c => c));
+  if (!rows.length) { $('#impBody').innerHTML = '<div class="notice">沒有讀到資料</div>'; return; }
+  /* 標題列不一定在第一列（你的表上面有計數列）：前 8 列裡挑最像標題的那一列，它之前的列丟掉 */
+  let best = -1, bi = 0;
+  rows.slice(0, 8).forEach((r, i) => { const h = hdrHits(r); if (h > best) { best = h; bi = i; } });
+  imp.hdr = best >= 2 || (best >= 1 && bi === 0);
+  if (imp.hdr) rows = rows.slice(bi);
+  const w = Math.max(...rows.map(r => r.length)); imp.rows = rows.map(r => r.concat(Array(w - r.length).fill('')));
+  imp.map = autoMap();
+  guessYear();
+  $('#impBody').innerHTML = impBody();
+}
+function impRemap() { imp.map = autoMap(); guessYear(); $('#impBody').innerHTML = impBody(); }
+const impOk = () => imp.map.includes('name') || ['qin','zi','sun','fam'].some(k => imp.map.includes(k));
+function impBody() {
+  const rows = imp.rows, h = rows[0], data = imp.hdr ? rows.slice(1) : rows;
+  return `<div class="panel"><div class="t">${esc(imp.file)}　共 ${data.length} 列</div>
+  ${imp.sheets && imp.sheets.length > 1 ? `<label>工作表</label><select onchange="imp.sheet=+this.value;setImpRows(imp.sheets[+this.value].rows)">${imp.sheets.map((s, i) => `<option value="${i}" ${i === imp.sheet ? 'selected' : ''}>${esc(s.n)}（${s.rows.length} 列）</option>`).join('')}</select>` : ''}
+  <label class="ck" style="margin-top:10px"><input type="checkbox" ${imp.hdr ? 'checked' : ''} onchange="imp.hdr=this.checked;impRemap()">第一列是欄位標題</label>
+  ${['qin','zi','sun'].some(k=>imp.map.includes(k))?'<div class="notice" style="margin-top:8px">偵測到<b>區塊格式</b>（導親／導子／所屬欄＋家族入信欄）：有名字落在導親／導子／所屬欄的那一列，是一戶的戶長；後面只有家族欄有名字的列，歸在該戶長名下。導子的導親＝最上層導親；所屬的導親＝上一位導子（或同列導親欄的名字）。匯入後請到「導脈」核對。</div>':''}${YEAR_FIELDS.some(k=>imp.map.includes(k))?'<label>勾選／收費狀態要記到哪一年度</label><input type="number" value="'+imp.year+'" onchange="imp.year=+this.value" style="width:120px">':''}<h3>對應欄位（每欄選它代表什麼）</h3><div class="wrap"><table class="t"><tr>${h.map((c, i) => `<th><select onchange="imp.map[${i}]=this.value;$('#impBody').innerHTML=impBody()">${FIELDS.map(([k, n]) => `<option value="${k}" ${imp.map[i] === k ? 'selected' : ''}>${n}</option>`).join('')}</select><div class="muted">${imp.hdr ? esc(c) : '欄 ' + (i + 1)}</div></th>`).join('')}</tr>
+  ${data.slice(0, 6).map(r => `<tr>${r.map(c => `<td>${esc(c.slice(0, 24))}</td>`).join('')}</tr>`).join('')}</table></div>
+  <div class="muted">${impOk() ? '' : '<b style="color:#b4561b">還沒指定「姓名」欄。</b>'}預覽前 6 列。</div>
+  <div class="row" style="margin-top:10px"><button class="grow" ${impOk() ? '' : 'disabled'} onclick="doImport()">確認匯入</button></div></div>`;
+}
+function parseDate(v) {
+  v = String(v || '').trim(); if (!v) return '';
+  if (/^\d{5}(\.\d+)?$/.test(v)) return new Date(Math.round((+v - 25569) * 864e5)).toISOString().slice(0, 10);   /* Excel 序號 */
+  const m = v.match(/^(\d{2,4})\s*[\/.\-年]\s*(\d{1,2})\s*[\/.\-月]\s*(\d{1,2})/); if (!m) return '';
+  let y = +m[1]; if (y < 200) y += 1911;     /* 民國年 */
+  return `${y}-${String(m[2]).padStart(2, '0')}-${String(m[3]).padStart(2, '0')}`;
+}
+const cell = v => String(v == null ? '' : v).replace(/\s+/g, ' ').trim();
+const splitSid = s => { const m = s.match(/S\d{7}/i), dead = /[(（]\s*歿\s*[)）]/.test(s); return { name: s.replace(/[(（]\s*歿\s*[)）]/g, '').replace(/S\d{7}/ig, '').replace(/[()（）]/g, '').trim(), sid: m ? m[0].toUpperCase() : '', dead }; };
+const xlDate = v => /^\d{5}$/.test(v) && +v > 30000 && +v < 80000 ? new Date(Math.round((+v - 25569) * 864e5)).toISOString().slice(0, 10) : v;
+const ADDR_RE = /[\u4e00-\u9fa5]{2,3}[縣市][^\s]{2,40}?號[^\s]*/, MAIL_RE = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/;
+const DATE_RE = '(\\d{4}[./-]\\d{1,2}[./-]\\d{1,2})';
+const TRANS = [['trans3', new RegExp('傳授\\s*(?:III|Ⅲ)[^\\d]{0,3}' + DATE_RE)], ['trans2', new RegExp('傳授\\s*(?:II|Ⅱ)(?![IⅠⅡⅢ])[^\\d]{0,3}' + DATE_RE)], ['trans1', new RegExp('傳授\\s*(?:I|Ⅰ)(?![IⅠⅡⅢ])[^\\d]{0,3}' + DATE_RE)]];
+const truthy = v => !!v && !/^(0|否|無|n|no|x|-)$/i.test(v);
+
+function doImport() {
+  saveTpl();
+  const col = k => imp.map.indexOf(k), data = imp.hdr ? imp.rows.slice(1) : imp.rows;
+  const g = (r, k) => { const i = col(k); return i < 0 ? '' : cell(r[i]); };
+  const people = P().map(p => Object.assign({}, p)), seatByName = new Map(SEATS().map(s => [s.name, s])), newSeats = [];
+  const yearly = new Map(), Y = imp.year;
+  const yr = pid => { const id = Y + ':' + pid; if (!yearly.has(id)) yearly.set(id, Object.assign({}, yearRow(Y, pid))); return yearly.get(id); };
+  const touched = new Map(); let added = 0, merged = 0, skipped = 0, stubs = 0, fams = 0;
+  const block = ['qin', 'zi', 'sun'].some(k => col(k) >= 0);
+  const ensure = (name, phone) => {
+    let p = people.find(x => x.name === name && (!phone || !x.phone || x.phone === phone)), isNew = !p;
+    if (isNew) { p = { id: uid(), name, status: 'member', active: true }; people.push(p); added++; } else if (!touched.has(p.id)) merged++;
+    touched.set(p.id, p); return { p, isNew };
+  };
+  const links = []; let root = null, lastZi = null, head = null, curRep = null; const hasGrp = col('grp') >= 0;
+  for (const r of data) {
+    let role = '', famRow = false, nonMember = false, nmRaw = '', qinName = '';
+    const nameCol = g(r, 'name');
+    if (block) {
+      const lin = [['qin', g(r, 'qin')], ['zi', g(r, 'zi')], ['sun', g(r, 'sun')]].filter(([, v]) => v);
+      const main = lin.find(([k]) => k !== 'qin') || lin[0], famCol = g(r, 'fam');
+      if (main && /^[（(]?未入信[)）]?$/.test(main[1])) { famRow = nonMember = true; nmRaw = nameCol || famCol; }
+      else if (main) { role = main[0]; nmRaw = main[1]; const q = lin.find(([k]) => k === 'qin'); if (q && q !== main) qinName = splitSid(q[1]).name; }
+      else if (famCol) { famRow = true; nmRaw = famCol; }
+      else if (nameCol) { famRow = true; nmRaw = nameCol; }
+    } else nmRaw = nameCol;
+    const { name, sid, dead } = splitSid(nmRaw);
+    if (!name || /^(姓名|合計|總計|導親|導子|導孫|所屬)$/.test(name) || /御守/.test(name)) { skipped++; continue; }
+    const phone = g(r, 'phone').replace(/[^\d+\-() ]/g, '');
+    const { p, isNew } = ensure(name, phone);
+    const set = (k, v) => { if (v && !p[k]) p[k] = v; };      /* 只補空白，不蓋掉手改過的 */
+    if (dead && !p.deceased) p.deceased = '歿';
+    set('phone', phone); set('sid', sid); set('email', g(r, 'email')); set('roman', g(r, 'roman')); set('addr', g(r, 'addr')); set('code', g(r, 'code')); set('rank', g(r, 'rank')); set('seatRole', g(r, 'seatRole'));
+    set('joinedOn', parseDate(g(r, 'joinedOn')) || g(r, 'joinedOn')); const b = g(r, 'birth'); set('birth', parseDate(b) || b);
+    const st = g(r, 'status'); if (nonMember) p.status = 'non'; else if (st && isNew) p.status = /非|否|未/.test(st) ? 'non' : 'member';
+    const nt = g(r, 'note');
+    if (nt) {
+      const dm = nt.match(new RegExp('歿\\s*' + DATE_RE)) || nt.match(new RegExp(DATE_RE + '\\s*[(（]\\s*歿')); if (dm && (!p.deceased || p.deceased === '歿')) p.deceased = parseDate(dm[1]); else if (/歿/.test(nt) && !p.deceased) p.deceased = '歿';
+      const am = nt.match(ADDR_RE); if (am) set('addr', am[0]); const em = nt.match(MAIL_RE); if (em) set('email', em[0]);
+      const sm = nt.match(/S\d{7}/i); if (sm) set('sid', sm[0].toUpperCase());
+      TRANS.forEach(([k, re]) => { const m = nt.match(re); if (m) set(k, parseDate(m[1])); });
+      if (!String(p.note || '').includes(nt)) p.note = p.note ? p.note + '；' + nt : nt;
+    }
+    const sn = g(r, 'seat');
+    if (sn && !p.seatId) { let s = seatByName.get(sn); if (!s) { s = { id: uid(), name: sn }; seatByName.set(sn, s); newSeats.push(s); } p.seatId = s.id; }
+    /* 導脈／家族 */
+    if (famRow) { if (head && head.id !== p.id && !p.famOf && !head.famOf) { p.famOf = head.id; fams++; } }
+    else if (block) {
+      head = p;
+      if (role === 'qin') { root = p; lastZi = null; }
+      else if (role === 'zi') { lastZi = p; const mn = qinName || (root && root.name); if (mn && mn !== p.name) links.push([p, mn]); }
+      else if (role === 'sun') { const mn = qinName || (lastZi && lastZi.name) || (root && root.name); if (mn && mn !== p.name) links.push([p, mn]); }
+    } else { head = p; const mn = g(r, 'mentor'); if (mn && mn !== p.name) links.push([p, mn]); }
+    /* 繳費代表：有「組內序」欄時，1＝新一組的代表，>1＝跟著上一位代表，空白＝自己 */
+    let payer = head;
+    if (hasGrp) { const n = num(g(r, 'grp')); if (n === 1) curRep = p; else if (!(n > 1 && curRep)) curRep = null; payer = curRep || p; if (payer.id !== p.id) yr(p.id).rep = payer.id; else if (p.famOf) yr(p.id).rep = p.id; }
+    /* 年度勾選與收費狀態（收費狀態記在繳費代表那筆；沒有組內序欄就記在戶長） */
+    if (col('yuan') >= 0 && truthy(g(r, 'yuan'))) yr(p.id).yuan = true;
+    if (col('cert') >= 0 && truthy(g(r, 'cert'))) yr(p.id).cert = true;
+    if (col('star') >= 0 && truthy(g(r, 'star'))) yr(p.id).star = true;
+    if (col('set') >= 0) { const raw = num(g(r, 'set').replace(/[^\d.]/g, '')), ps = price(Y, 'set'); const q = ps > 0 && raw >= ps && raw % ps === 0 ? raw / ps : raw; if (q > 0) yr(p.id).set = q; }
+    if (payer) { ['yuanPaid', 'starPaid'].forEach(k => { const v = xlDate(g(r, k)); if (v) yr(payer.id)[k] = v; }); if (truthy(g(r, 'starSent'))) yr(payer.id).starSent = true; }
+  }
+  for (const [p, mn] of links) {
+    if (p.mentorId) continue;
+    let m = people.find(x => x.name === mn);
+    if (!m) { m = { id: uid(), name: mn, status: 'member', active: true, note: '（由匯入的導親欄自動建立）' }; people.push(m); touched.set(m.id, m); stubs++; }
+    p.mentorId = m.id;
+  }
+  const byid = new Map(people.map(p => [p.id, p]));     /* 循環保護：匯入若造成循環，斷開那一條 */
+  for (const p of people) { let cur = p, n = 0; while (cur && cur.mentorId && n < 60) { cur = byid.get(cur.mentorId); n++; } if (n >= 60) { p.mentorId = ''; touched.set(p.id, p); } }
+  if (!SMStore.putMany('seats', newSeats) || !SMStore.putMany('people', Array.from(touched.values())) || !SMStore.putMany('yearly', Array.from(yearly.values()))) return toast('儲存失敗：瀏覽器空間不足', 'err');
+  imp.rows = [];
+  $('#view').innerHTML = `<div class="panel"><h2>匯入完成</h2><div>新增 ${added} 人｜合併更新 ${merged} 人${fams ? `｜家族成員 ${fams} 人` : ''}${stubs ? `｜由導親欄補建 ${stubs} 人` : ''}${newSeats.length ? `｜新增 ${newSeats.length} 個會座` : ''}${yearly.size ? `｜${Y} 年度資料 ${yearly.size} 筆` : ''}${skipped ? `｜略過 ${skipped} 列` : ''}</div>
+  <div class="muted" style="margin-top:6px">請到「導脈」核對導親／導子／所屬有沒有排對，到「年度」${yearly.size ? `（選 ${Y}）` : ''}核對各戶。判斷錯的人，點進去修改導親或戶長即可。</div><div class="row" style="margin-top:10px"><button onclick="go('lineage')">看導脈</button><button class="alt" onclick="ui.year=${Y};go('year')">看年度</button><button class="alt" onclick="go('people')">看名單</button></div></div>`;
+  toast('匯入完成');
+}
+async function readPdf(f) {
+  await loadLib('pdf'); pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  const doc = await pdfjsLib.getDocument({ data: await f.arrayBuffer() }).promise, out = [];
+  for (let n = 1; n <= doc.numPages; n++) {
+    const items = (await (await doc.getPage(n)).getTextContent()).items.filter(i => i.str.trim());
+    const lines = []; items.sort((a, b) => b.transform[5] - a.transform[5] || a.transform[4] - b.transform[4]);
+    for (const it of items) { const y = it.transform[5], L = lines.find(l => Math.abs(l.y - y) < 3); if (L) L.t.push(it); else lines.push({ y, t: [it] }); }
+    for (const L of lines) { L.t.sort((a, b) => a.transform[4] - b.transform[4]);
+      const cells = []; let cur = null;                                        /* 依水平間距切欄 */
+      for (const it of L.t) { const x = it.transform[4]; if (cur && x - cur.end < 8) { cur.s += it.str; cur.end = x + it.width; } else { cur = { s: it.str, end: x + it.width }; cells.push(cur); } }
+      out.push(cells.map(c => c.s.trim())); }
+  }
+  if (!out.length) throw new Error('這份 PDF 沒有可讀的文字（可能是掃描圖片）。請改用 Excel／Word，或先 OCR 成可選取文字的 PDF');
+  return out;
+}
+async function readDocx(f) {
+  await loadLib('mammoth');
+  const html = (await mammoth.convertToHtml({ arrayBuffer: await f.arrayBuffer() })).value;
+  const dom = new DOMParser().parseFromString(html, 'text/html'), rows = [];
+  dom.querySelectorAll('table tr').forEach(tr => rows.push([...tr.children].map(td => td.textContent.trim())));
+  if (!rows.length) dom.querySelectorAll('p').forEach(p => { const t = p.textContent.trim(); if (t) rows.push(/\t|\s{2,}/.test(t) ? t.split(/\t|\s{2,}/) : t.split(/\s+/)); });
+  if (!rows.length) throw new Error('Word 裡沒有讀到表格或文字');
+  return rows;
+}
+
+/* ═══════ 設定、同步、備份 ═══════ */
+function vSettings() {
+  const info = SMSync.info(), y = ui.year, pr = cfgGet('prices', { def: {}, byYear: {} }), py = (pr.byYear && pr.byYear[y]) || {};
+  const priceIn = (k, n) => `<div><label>${n}</label><input type="number" min="0" id="pr_${k}" value="${py[k] != null ? py[k] : ''}" placeholder="${pr.def && pr.def[k] != null ? '預設 ' + pr.def[k] : '0'}"></div>`;
+  $('#view').innerHTML = `<h2>設定</h2>
+  <div class="panel"><h3 style="margin-top:0">跨裝置同步</h3>${info ? `<div class="muted">已連線 GitHub：${esc(info.login)}（${info.encrypted ? '已加密' : '未加密'}）<br>${info.lastSync ? '最近同步 ' + new Date(info.lastSync).toLocaleString('zh-TW') : ''}</div>
+  <div class="row" style="margin-top:8px"><button class="sm" onclick="SMSync.now(true)">立即同步</button><button class="alt sm" onclick="showPair()">配對碼（加第二台裝置）</button><button class="warn sm" onclick="if(confirm('中斷此裝置的同步？本機資料會保留。')){SMSync.disconnect();renderAll()}">中斷</button></div>
+  ${SMSync.needsPassphrase() ? '<div class="notice" style="margin-top:8px">雲端資料有加密，請輸入同步密語：<input id="pp" type="password" style="margin:6px 0"><button class="sm" onclick="usePass()">確定</button></div>' : ''}`
+  : `<div class="notice">信徒資料是高度隱私資訊：<b>資料存在你自己的加密私密 Gist</b>，網站原始碼裡沒有任何人名。沒有同步密語就不會上傳；密語忘記就無法解開，請另外記下。</div>
+  <label>方法一：第一台裝置</label><div class="muted">① <a href="${SMSync.TOKEN_URL}" target="_blank" rel="noopener">建立 GitHub 金鑰（只勾 gist）</a> → 複製 ghp_ 開頭那串</div>
+  <input id="tk" placeholder="貼上金鑰 ghp_…" autocomplete="off"><input id="pp" type="password" placeholder="自訂同步密語（至少 8 字，要記住）" style="margin-top:6px" autocomplete="new-password">
+  <button style="margin-top:8px" onclick="doConnect()">連線並開始同步</button>
+  <label>方法二：第二台以後（手機）</label><input id="pc" placeholder="貼上第一台產生的配對碼 SM1.…"><input id="pp2" type="password" placeholder="同步密語（配對碼已含金鑰時可留空）" style="margin-top:6px"><button class="alt" style="margin-top:8px" onclick="doPair()">用配對碼連線</button>`}</div>
+  <div class="panel"><h3 style="margin-top:0">單位名稱（列印抬頭）</h3><input id="org" value="${esc(orgName())}" placeholder="例：○○苑"><button class="sm" style="margin-top:8px" onclick="cfgSet('org',{name:$('#org').value.trim()});toast('已儲存')">儲存</button></div>
+  <div class="panel"><h3 style="margin-top:0">${y} 年度金額</h3><div class="grid2">${FEE.map(([k, n]) => priceIn(k, n)).join('')}</div>
+  <div class="row" style="margin-top:8px"><button class="sm" onclick="savePrices(false)">只存 ${y} 年</button><button class="alt sm" onclick="savePrices(true)">存成各年預設</button></div>
+  <div class="muted" style="margin-top:6px">金額只存在你的加密資料裡，不在網站程式碼中。</div></div>
+  <div class="panel"><h3 style="margin-top:0">備份</h3><div class="row"><button class="alt sm" onclick="backup()">下載備份 JSON</button><button class="alt sm" onclick="$('#rf').click()">從備份還原</button><input id="rf" type="file" accept=".json" class="hidden" onchange="restore(this.files[0])"></div>
+  <div class="muted" style="margin-top:6px">備份檔含完整個資，請存在私人位置，不要放進 GitHub。</div></div>
+  <div class="muted" style="text-align:center">目前 ${P().length} 人｜${SEATS().length} 會座｜${YR().length} 筆年度資料</div>`;
+}
+function savePrices(asDef) {
+  const y = ui.year, pr = cfgGet('prices', { def: {}, byYear: {} }); pr.def = pr.def || {}; pr.byYear = pr.byYear || {}; pr.byYear[y] = pr.byYear[y] || {};
+  FEE.forEach(([k]) => { const v = $('#pr_' + k).value; pr.byYear[y][k] = v === '' ? null : num(v); if (asDef && v !== '') pr.def[k] = num(v); });
+  cfgSet('prices', pr); toast('已儲存'); renderAll();
+}
+async function doConnect() {
+  const pass = $('#pp').value; if (pass.length < 8) return toast('同步密語至少 8 個字', 'err');
+  try { const r = await SMSync.connect($('#tk').value, pass); toast(r.created ? '已建立加密雲端資料庫' : '已連上既有資料庫'); } catch (e) { toast(e.code === 'needpass' ? '雲端已有資料，請輸入原本的密語' : e.message, 'err'); }
+  renderAll();
+}
+async function doPair() {
+  try { await SMSync.connect($('#pc').value, $('#pp2').value); toast('已連線'); } catch (e) { toast(e.code === 'needpass' ? '請輸入同步密語' : e.message, 'err'); }
+  renderAll();
+}
+async function usePass() { try { await SMSync.setPassphrase($('#pp').value); } catch (e) { toast(e.message, 'err'); } renderAll(); }
+function showPair() {
+  openModal(`<h2>配對碼</h2><div class="notice">這串碼<b>等同你的金鑰＋密語</b>，拿到的人能讀寫所有信徒資料。只貼進你自己的第二台裝置，用完刪掉訊息。</div>
+  <textarea id="pcv" rows="5" readonly style="margin-top:8px;font-size:12px">${esc(SMSync.pairCode())}</textarea>
+  <div class="row" style="margin-top:10px"><button class="grow" onclick="$('#pcv').select();navigator.clipboard&&navigator.clipboard.writeText($('#pcv').value);toast('已複製')">複製</button><button class="alt" onclick="closeModal()">關閉</button></div>`);
+}
+function backup() {
+  const blob = new Blob([JSON.stringify(SMStore.read(), null, 1)], { type: 'application/json' }), a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = 'members-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function restore(f) {
+  if (!f) return; const rd = new FileReader();
+  rd.onload = () => { try { const d = JSON.parse(rd.result); if (!d || !Array.isArray(d.people)) throw 0;
+    if (!confirm(`備份含 ${d.people.length} 人。與目前資料「合併」（同一筆以較新者為準），確定？`)) return;
+    SMStore.write(SMSync.mergeData(SMStore.read(), Object.assign({ deleted: {} }, d))); SMSync.schedule(500); renderAll(); toast('已還原'); } catch (e) { toast('這不是有效的備份檔', 'err'); } };
+  rd.readAsText(f);
+}
+
+/* ═══════ 啟動 ═══════ */
+$('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
+SMStore.attach(() => renderAll(), toast);
+renderAll();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
-</body></html>
+</body>
+</html>
