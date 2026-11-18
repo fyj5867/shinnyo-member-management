@@ -98,7 +98,8 @@ function price(year, key) {
   return num(p.def && p.def[key]);
 }
 function yearRow(year, pid) { return SMStore.get('yearly', year + ':' + pid) || { id: year + ':' + pid, year, pid, yuan: false, cert: false, star: false, set: 0, rep: '', yuanPaid: '', starPaid: '', starSent: false, note: '' }; }
-const dueA = r => (r.yuan ? price(r.year, 'yuan') : 0) + (r.cert ? price(r.year, 'cert') : 0);          /* 苑費＋祈年證 */
+const nonPid = pid => { const p = IX().m.get(pid); return !!p && p.status === 'non'; };      /* 未入信者只申請星供 */
+const dueA = r => nonPid(r.pid) ? 0 : (r.yuan ? price(r.year, 'yuan') : 0) + (r.cert ? price(r.year, 'cert') : 0);          /* 苑費＋祈年證 */
 const dueB = r => (r.star ? price(r.year, 'star') : 0) + num(r.set) * price(r.year, 'set');             /* 星供＋套子 */
 const due = r => dueA(r) + dueB(r);
 const hasAny = r => r.yuan || r.cert || r.star || num(r.set) > 0;
@@ -195,20 +196,22 @@ function scopedPeople(st) {
 }
 /* 自動修正：只修「答案唯一」的錯；答案不唯一的列進 dataIssues() 讓你決定 */
 function fixData(auto) {
-  const ix = IX(), yrAll = YR(), ppl = [], yrs = [];
+  const ix = IX(), yrAll = YR(), ppl = [], yfix = new Map(), ymod = (r, o) => yfix.set(r.id, Object.assign({}, yfix.get(r.id) || r, o));
   P().forEach(p => {
     if (!p.famOf) return;
     if (p.status === 'non') {                                   /* 規則 1：未入信者移出家族，原戶長改記為代繳人（費用歸屬不變） */
       ppl.push(Object.assign({}, p, { famOf: '' }));
-      yrAll.filter(r => r.pid === p.id && !r.rep).forEach(r => yrs.push(Object.assign({}, r, { rep: p.famOf })));
+      yrAll.filter(r => r.pid === p.id && !r.rep).forEach(r => ymod(r, { rep: p.famOf }));
     } else if (p.famOf === p.id) ppl.push(Object.assign({}, p, { famOf: '' }));     /* 掛在自己名下＝沒掛 */
     else { const h = ix.head.get(p.id); if (h && h.id !== p.famOf) ppl.push(Object.assign({}, p, { famOf: h.id })); }   /* 規則 2：攤平到最上層戶長 */
   });
-  if (!ppl.length) return auto ? 0 : toast('沒有需要自動修正的資料');
-  SMStore.putMany('people', ppl); if (yrs.length) SMStore.putMany('yearly', yrs);
-  toast('已自動修正 ' + ppl.length + ' 人的分類（未入信移出家族／家族成員改掛最上層戶長）');
+  const nonIds = new Set(P().filter(p => p.status === 'non').map(p => p.id));          /* 未入信者只申請星供：苑費／祈年證勾選取消 */
+  yrAll.forEach(r => { if (nonIds.has(r.pid) && (r.yuan || r.cert)) ymod(r, { yuan: false, cert: false }); });
+  if (!ppl.length && !yfix.size) return auto ? 0 : toast('沒有需要自動修正的資料');
+  if (ppl.length) SMStore.putMany('people', ppl); if (yfix.size) SMStore.putMany('yearly', Array.from(yfix.values()));
+  toast(ppl.length ? '已自動修正 ' + ppl.length + ' 人的分類（未入信移出家族／家族成員改掛最上層戶長）' : '未入信者只申請星供：已取消 ' + yfix.size + ' 筆苑費／祈年證勾選');
   if (!auto) renderAll();
-  return ppl.length;
+  return ppl.length + yfix.size;
 }
 /* 需要你決定的資料問題：[人, 說明] */
 function dataIssues() {
@@ -458,7 +461,7 @@ function groupsFor() {
   P().filter(alive).forEach(p => { const k = payerOf(y, p), o = by.get(k.id) || { head: k, members: [] }; o.members.push(p); by.set(k.id, o); });
   const shown = new Set(filterPeople().filter(alive).map(p => p.id));
   return Array.from(by.values()).filter(g => g.members.some(m => shown.has(m.id))).map(g => {
-    g.members.sort((a, b) => (b.id === g.head.id) - (a.id === g.head.id) || byNameZh(headOf(a).name, headOf(b).name) || (a.famOf ? 1 : 0) - (b.famOf ? 1 : 0) || byNameZh(a.name, b.name));
+    g.members.sort((a, b) => (b.id === g.head.id) - (a.id === g.head.id) || (a.status === 'non') - (b.status === 'non') || byNameZh(headOf(a).name, headOf(b).name) || (a.famOf ? 1 : 0) - (b.famOf ? 1 : 0) || byNameZh(a.name, b.name));
     return g;
   }).sort((a, b) => byNameZh(a.head.name, b.head.name));
 }
@@ -486,16 +489,16 @@ function yearList() {
     const chips = [f.A ? (hr.yuanPaid ? '<span class="chip good">苑費已收</span>' : `<span class="chip bad">苑費未收 ${money(f.A)}</span>`) : '',
       f.B ? (hr.starPaid ? (hr.starSent ? '<span class="chip good">星供已發送</span>' : '<span class="chip bad">星供待發送</span>') : `<span class="chip bad">星供未收 ${money(f.B)}</span>`) : ''].join('');
     const rows = g.members.map(m => {
-      const r = yearRow(y, m.id), role = roleOf(m);
+      const r = yearRow(y, m.id), role = roleOf(m), non = m.status === 'non';
       const ck = (k, n) => `<label class="ck ${r[k] ? 'on' : ''}"><input type="checkbox" ${r[k] ? 'checked' : ''} onchange="tick('${m.id}','${k}',this.checked)">${n}</label>`;
-      return `<div class="items" style="border-top:1px dashed var(--line);padding-top:6px"><span class="t" style="cursor:pointer;min-width:64px" onclick="editPerson('${m.id}')">${esc(m.name)}</span>${role ? `<span class="chip good">${role}</span>` : ''}${m.status === 'non' ? '<span class="chip non">非入信</span>' : ''}${m.id === g.head.id ? '<span class="chip good">繳費代表</span>' : ''}
+      return `<div class="items" style="border-top:1px dashed var(--line);padding-top:6px"><span class="t" style="cursor:pointer;min-width:64px" onclick="editPerson('${m.id}')">${esc(m.name)}</span>${role ? `<span class="chip good">${role}</span>` : ''}${non ? '<span class="chip non">未入信・只申請星供</span>' : ''}${m.id === g.head.id ? '<span class="chip good">繳費代表</span>' : ''}
       <button class="alt sm" title="指定由誰代為繳費" onclick="pickRep('${m.id}')">${r.rep && byId(P(), r.rep) ? '代繳：' + esc(byId(P(), r.rep).name) : '代繳▾'}</button><button class="warn sm" title="刪除這個人" onclick="removePerson('${m.id}')">刪除</button>
-      ${ck('yuan', '苑費')}${ck('cert', '祈年證')}${ck('star', '星供')}<span class="s" style="display:inline-flex;align-items:center;gap:4px">套子 <input class="n" type="number" min="0" value="${num(r.set) || ''}" onchange="setQty('${m.id}',this.value)"></span></div>`;
+      ${non ? '' : ck('yuan', '苑費') + ck('cert', '祈年證')}${ck('star', '星供')}<span class="s" style="display:inline-flex;align-items:center;gap:4px">套子 <input class="n" type="number" min="0" value="${num(r.set) || ''}" onchange="setQty('${m.id}',this.value)"></span></div>`;
     }).join('');
     return `<div class="card"><div class="row"><div class="grow"><span class="t">${esc(g.head.name)}</span> <span class="s">${g.members.length} 人</span></div><div class="t">${money(f.total)}</div></div>
     <div style="margin:4px 0">${chips}</div>${rows}
     <div class="items" style="margin-top:8px;background:#f6faf8;border-radius:10px;padding:8px">
-    <span class="s">苑費已收</span><input class="n" style="width:92px" value="${esc(hr.yuanPaid || '')}" placeholder="日期/OK" onchange="setHH('${hid}','yuanPaid',this.value.trim())"><button class="alt sm" onclick="setHH('${hid}','yuanPaid','${todayStr()}')">今天</button>
+    ${g.members.some(m => m.status !== 'non') ? `<span class="s">苑費已收</span><input class="n" style="width:92px" value="${esc(hr.yuanPaid || '')}" placeholder="日期/OK" onchange="setHH('${hid}','yuanPaid',this.value.trim())"><button class="alt sm" onclick="setHH('${hid}','yuanPaid','${todayStr()}')">今天</button>` : ''}
     <span class="s">星供已收</span><input class="n" style="width:92px" value="${esc(hr.starPaid || '')}" placeholder="日期/OK" onchange="setHH('${hid}','starPaid',this.value.trim())"><button class="alt sm" onclick="setHH('${hid}','starPaid','${todayStr()}')">今天</button>
     <label class="ck ${hr.starSent ? 'on' : ''}"><input type="checkbox" ${hr.starSent ? 'checked' : ''} onchange="setHH('${hid}','starSent',this.checked)">星供已發送</label></div></div>`;
   }).join('');
@@ -510,7 +513,7 @@ function vYear() {
   ${noPrice.length ? `<div class="notice" style="margin-top:8px">${esc(noPrice.join('、'))} 尚未設定 ${y} 年金額，應收會算成 0。到「設定」填寫。</div>` : ''}
   <div class="panel">${filterBar(`<label class="ck"><input type="checkbox" ${ui.onlyTicked ? 'checked' : ''} onchange="ui.onlyTicked=this.checked;renderAll()">只看有勾選</label>`)}
   <div class="row" style="margin-top:10px"><button class="sm" onclick="exportStar()">⭐ 星供申請名單（全部 ${tk} 人）</button><button class="sm" onclick="exportFees()">💰 苑費管理單</button><button class="alt sm" onclick="carryOver()">帶入去年勾選</button></div>
-  <div class="muted" style="margin-top:6px">以「繳費代表」為單位收費（預設＝戶長；多戶由一人代繳時，在該人那一列按「代繳▾」指定代表）。匯出範圍＝目前篩選的結果；已歿者不列入。</div></div>
+  <div class="muted" style="margin-top:6px">未入信者只申請星供：不收苑費／祈年證，也不會出現在苑費管理單，只列在星供申請名單。以「繳費代表」為單位收費（預設＝戶長；多戶由一人代繳時，在該人那一列按「代繳▾」指定代表）。匯出範圍＝目前篩選的結果；已歿者不列入。</div></div>
   <div id="list">${yearList()}</div>`;
 }
 function saveYear(r) { SMStore.put('yearly', r); renderListOnly(); }
@@ -527,21 +530,26 @@ function carryOver() {
 }
 
 /* ── 輸出：xlsx 與列印 ── */
+/* 星供申請名單＋計費：入信、未入信都列；費用只算星供＋套子，已收／發送看繳費代表那筆 */
 function starSheet() {
-  const y = ui.year;
-  const head = ['序', '代表繳費人', '姓名', '羅馬拼音', '身分', '生日', '信徒編號', '電話', '地址', '會座', '導親', '套子', '備註'];
-  const list = filterPeople().filter(alive).filter(p => yearRow(y, p.id).star)
-    .sort((a, b) => { const pa = payerOf(y, a), pb = payerOf(y, b); return byNameZh(pa.name, pb.name) || (pb.id === b.id) - (pa.id === a.id) || byNameZh(headOf(a).name, headOf(b).name) || (a.famOf ? 1 : 0) - (b.famOf ? 1 : 0) || byNameZh(a.name, b.name); });
-  const rows = list.map((p, i) => { const r = yearRow(y, p.id);
-    return [i + 1, payerOf(y, p).name, p.name, p.roman || '', ST[p.status] || '入信', p.birth || '', p.code || '', p.phone || '', p.addr || '', seatName(p.seatId), (byId(P(), p.mentorId) || {}).name || '', num(r.set) || '', r.note || '']; });
-  return { title: `${y} 年度 星供申請名單`, head, rows, n: rows.length };
+  const y = ui.year, ps = price(y, 'star'), pset = price(y, 'set');
+  const head = ['序', '代表繳費人', '姓名', '羅馬拼音', '身分', '生日', '信徒編號', '電話', '地址', '導親', '星供費用', '套子數', '套子費', '小計', '星供已收', '星供發送', '備註'];
+  const list = filterPeople().filter(alive).filter(p => yearRow(y, p.id).star || num(yearRow(y, p.id).set) > 0)
+    .sort((a, b) => { const pa = payerOf(y, a), pb = payerOf(y, b); return byNameZh(pa.name, pb.name) || (pb.id === b.id) - (pa.id === a.id) || (a.status === 'non') - (b.status === 'non') || byNameZh(headOf(a).name, headOf(b).name) || (a.famOf ? 1 : 0) - (b.famOf ? 1 : 0) || byNameZh(a.name, b.name); });
+  let sd = 0, sp = 0;
+  const rows = list.map((p, i) => { const r = yearRow(y, p.id), py = payerOf(y, p), hr = yearRow(y, py.id), d = dueB(r); sd += d; if (hr.starPaid) sp += d;
+    return [i + 1, py.name, p.name, p.roman || '', p.status === 'non' ? '未入信' : '入信', p.birth || '', p.code || '', p.phone || '', p.addr || '', (byId(P(), p.mentorId) || {}).name || '', r.star ? ps : '', num(r.set) || '', num(r.set) ? num(r.set) * pset : '', d, hr.starPaid || '', hr.starSent ? 'OK' : '', r.note || '']; });
+  rows.push(['', '', '合計', '', '', '', '', '', '', '', '', '', '', sd, '已收 ' + sp, '未收 ' + (sd - sp), '']);
+  return { title: `${y} 年度 星供申請名單`, head, rows, n: list.length };
 }
+/* 苑費管理單：只列入信者（未入信者只出現在星供申請名單） */
 function feeSheet() {
   const y = ui.year, head = ['戶序', '戶內', '角色', '姓名', '祈年證', '星供套子', '星供費用', '苑費', '合計', '苑費已收', '星供已收', '星供發送'];
   const rows = []; let sd = 0, sp = 0, n = 0, gi = 0;
   groupsFor().forEach(g => {
-    const f = groupFigures(g, y); if (!f.any) return; gi++; sd += f.total; sp += f.paid;
-    g.members.forEach((m, i) => { const r = yearRow(y, m.id); n++;
+    const ms = g.members.filter(m => m.status !== 'non'); if (!ms.length) return;
+    const f = groupFigures({ head: g.head, members: ms }, y); if (!f.any) return; gi++; sd += f.total; sp += f.paid;
+    ms.forEach((m, i) => { const r = yearRow(y, m.id); n++;
       rows.push([gi, i + 1, roleOf(m), m.name, r.cert ? price(y, 'cert') : '', num(r.set) || '', r.star ? price(y, 'star') : '', r.yuan ? price(y, 'yuan') : '',
         i === 0 ? f.total : '', i === 0 ? (f.hr.yuanPaid || '') : '', i === 0 ? (f.hr.starPaid || '') : '', i === 0 ? (f.hr.starSent ? 'OK' : '') : '']); });
   });
@@ -579,7 +587,7 @@ function statRows(y) {
     .sort((a, b) => { const pa = payerOf(y, a), pb = payerOf(y, b); return byNameZh(pa.name, pb.name) || (pb.id === b.id) - (pa.id === a.id) || byNameZh(headOf(a).name, headOf(b).name) || (a.famOf ? 1 : 0) - (b.famOf ? 1 : 0) || byNameZh(a.name, b.name); })
     .map(p => {
       const r = yearRow(y, p.id), hr = yearRow(y, payerOf(y, p).id);
-      const it = { yuan: r.yuan ? price(y, 'yuan') : 0, cert: r.cert ? price(y, 'cert') : 0, star: r.star ? price(y, 'star') : 0, set: num(r.set) * price(y, 'set') };
+      const non = p.status === 'non', it = { yuan: r.yuan && !non ? price(y, 'yuan') : 0, cert: r.cert && !non ? price(y, 'cert') : 0, star: r.star ? price(y, 'star') : 0, set: num(r.set) * price(y, 'set') };
       const pd = { yuan: hr.yuanPaid ? it.yuan : 0, cert: hr.yuanPaid ? it.cert : 0, star: hr.starPaid ? it.star : 0, set: hr.starPaid ? it.set : 0 };
       const total = it.yuan + it.cert + it.star + it.set, paid = pd.yuan + pd.cert + pd.star + pd.set;
       return { p, r, it, pd, total, paid };
@@ -945,8 +953,8 @@ function doImport() {
     let payer = head;
     if (hasGrp) { const n = num(g(r, 'grp')); if (n === 1) curRep = p; else if (!(n > 1 && curRep)) curRep = null; payer = curRep || p; if (payer.famOf) payer = byId(people, payer.famOf) || payer; if (payer.id !== p.id && !(p.famOf && p.famOf === payer.id)) yr(p.id).rep = payer.id; }
     /* 年度勾選與收費狀態（收費狀態記在繳費代表那筆；沒有組內序欄就記在戶長） */
-    if (col('yuan') >= 0 && truthy(g(r, 'yuan'))) yr(p.id).yuan = true;
-    if (col('cert') >= 0 && truthy(g(r, 'cert'))) yr(p.id).cert = true;
+    if (p.status !== 'non' && col('yuan') >= 0 && truthy(g(r, 'yuan'))) yr(p.id).yuan = true;
+    if (p.status !== 'non' && col('cert') >= 0 && truthy(g(r, 'cert'))) yr(p.id).cert = true;
     if (col('star') >= 0 && truthy(g(r, 'star'))) yr(p.id).star = true;
     if (col('set') >= 0) { const raw = num(g(r, 'set').replace(/[^\d.]/g, '')), ps = price(Y, 'set'); const q = ps > 0 && raw >= ps && raw % ps === 0 ? raw / ps : raw; if (q > 0) yr(p.id).set = q; }
     if (payer) { ['yuanPaid', 'starPaid'].forEach(k => { const v = xlDate(g(r, k)); if (v) yr(payer.id)[k] = v; }); if (truthy(g(r, 'starSent'))) yr(payer.id).starSent = true; }
