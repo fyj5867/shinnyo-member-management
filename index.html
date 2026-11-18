@@ -223,6 +223,9 @@ function pracMatch(p) {
   return !ui.prac || (p.prac || []).includes(ui.prac);
 }
 const pracChips = p => pracOf(p).map(k => `<span class="chip prac">${esc(k)}</span>`).join('');
+const jkey = p => { const d = String(p.joinedOn || '').replace(/\D/g, ''); return d ? (d + '00000000').slice(0, 8) : '99999999'; };   /* 入信日期排序用；沒填的排最後 */
+const byJoined = (a, b) => jkey(a).localeCompare(jkey(b)) || byNameZh(a.name, b.name);
+const infoLine = p => [p.code ? '編號 ' + esc(p.code) : '', p.joinedOn ? '入信 ' + esc(p.joinedOn) : '', p.birth ? '生日 ' + esc(p.birth) : '', p.phone ? esc(p.phone) : ''].filter(Boolean).join('｜');
 function peopleList() {
   const rows = scopedPeople('member').filter(pracMatch), y = ui.year;
   if (!rows.length) return '<div class="muted" style="padding:20px;text-align:center">沒有資料。可到「匯入」讀取 Excel／PDF／Word／照片，或按「＋新增」。</div>';
@@ -230,14 +233,14 @@ function peopleList() {
   const person = (p, hd) => `<span class="nm2" onclick="event.stopPropagation();editPerson('${p.id}')">${esc(p.name)}</span>${p.status === 'non' ? '<span class="chip non">非入信</span>' : ''}${p.deceased ? '<span class="chip bad">歿</span>' : ''}${p.idle && !hd.idle ? '<span class="chip bad">未精進</span>' : ''}${pracChips(p)}`;
   const card = h => {
     const m = byId(P(), h.mentorId), nc = children(h.id).length, role = roleOf(h);
-    const fam = P().filter(x => x.famOf === h.id && x.active !== false && x.status !== 'non').sort((a, b) => byNameZh(a.name, b.name));
+    const fam = P().filter(x => x.famOf === h.id && x.active !== false && x.status !== 'non').sort(byJoined);
     return `<div class="card tap${notCounted(h, y) ? ' unpaid' : ''}" onclick="editPerson('${h.id}')"><div class="t"><span class="chip dark">獨立戶</span>${esc(h.name)} ${h.status === 'non' ? '<span class="chip non">非入信</span>' : ''}${role ? `<span class="chip good">${role}</span>` : ''}${h.deceased ? '<span class="chip bad">歿</span>' : ''}${h.seatRole ? `<span class="chip good">${esc(h.seatRole)}</span>` : ''}${creditChip(h, y)}${pracChips(h)}</div>
-    <div class="s">${h.phone ? esc(h.phone) : '（無電話）'}${m ? '｜導親：' + esc(m.name) : ''}${nc ? `｜導子 ${nc}` : ''}</div>
-    ${fam.length ? `<div class="s" style="margin-top:5px"><b>家族入信成員：</b>${fam.map(f => person(f, h)).join('　')}</div>` : ''}</div>`;
+    <div class="s">${infoLine(h) || '（尚無編號／日期／電話）'}${m ? '｜導親：' + esc(m.name) : ''}${nc ? `｜導子 ${nc}` : ''}</div>
+    ${fam.length ? `<div class="s" style="margin-top:5px"><b>家族入信成員：</b>${fam.map(f => `<div style="margin-top:3px">${person(f, h)}<span class="muted">${infoLine(f)}</span></div>`).join('')}</div>` : ''}</div>`;
   };
-  const hs = Array.from(heads.values()).sort((a, b) => byNameZh(a.name, b.name));
+  const hs = Array.from(heads.values()).sort(byJoined);
   const sec = (t, list) => list.length ? `<h3 class="sec">${t}（${list.length} 戶）</h3>` + list.map(card).join('') : '';
-  return `<div class="muted">共 ${rows.length} 人／${hs.length} 戶（年度標示以 ${y} 年為準；淡色＝${y} 苑費未繳，不計實績）</div>` + sec('精進中', hs.filter(h => !h.idle)) + sec('未精進', hs.filter(h => h.idle));
+  return `<div class="muted">共 ${rows.length} 人／${hs.length} 戶（依入信日期排序；年度標示以 ${y} 年為準；淡色＝${y} 苑費未繳，不計實績）</div>` + sec('精進中', hs.filter(h => !h.idle)) + sec('未精進', hs.filter(h => h.idle));
 }
 function vPeople() {
   const ex = `<select style="width:auto" onchange="ui.idle=this.value;renderAll()"><option value="">全部精進狀態</option><option value="active" ${ui.idle === 'active' ? 'selected' : ''}>精進中</option><option value="idle" ${ui.idle === 'idle' ? 'selected' : ''}>未精進</option></select>
