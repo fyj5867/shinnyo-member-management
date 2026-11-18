@@ -90,6 +90,11 @@ label.ck input{width:auto;margin:0}
 .mbar .grow{flex:1}
 .edit{padding:4px 10px;font-size:12px;background:#e2eee8;color:var(--g);border-radius:8px;font-weight:700}
 .card.cov{margin-left:18px;border-left:4px solid #e3c98f}
+.phs{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.ph{width:76px;height:76px;object-fit:cover;border-radius:8px;border:1px solid var(--line);background:#f1f4f2;cursor:pointer}
+.phw{position:relative}.phx{position:absolute;top:-7px;right:-7px;width:24px;height:24px;padding:0;border-radius:50%;background:#9b3b12;color:#fff;font-size:12px}
+.phmiss{font-size:11px;color:var(--muted);padding:8px;border:1px dashed var(--line);border-radius:8px}
+a.btnlink{display:inline-block;text-align:center;border-radius:10px;padding:10px 13px;background:var(--g);color:#fff;font-weight:650;text-decoration:none}
 .nonhd{margin-top:8px;padding:5px 8px;background:#f8f3e6;color:#7a6330;border-radius:8px;font-size:12px;font-weight:700}
 .amtb{background:none;color:#1b302b;font-weight:800;font-size:14px;padding:6px 2px;border-radius:0;border-bottom:1.5px dashed #9fb5aa;text-align:right;white-space:nowrap}
 .frm{display:flex;gap:8px;align-items:center;margin-top:10px}.frm label.ck{flex:none;min-width:96px}.frm .lab{flex:none;min-width:96px;font-size:13px;padding-left:11px}.frm input:not([type=checkbox]){flex:1;min-width:0}
@@ -618,7 +623,7 @@ function starCard(g, y) {
   const due = [g].concat(g.covers).some(x => x.hr.fee === 'v' || x.hr.cert === 'v');
   const flags = g.payer ? `<span class="muted">由「${esc(g.payer.head.name)}」代繳，收款、發送跟著那組</span>`
     : `${due ? `<button class="fchip sm ${hr.paid ? 'pd' : ''}" onclick="grpFlag('${h.id}','paid')">苑費${hr.paid ? '已收 ' + esc(md(hr.paid)) : '收款'}</button>` : ''}<button class="fchip sm ${hr.starPaid ? 'pd' : ''}" onclick="grpFlag('${h.id}','starPaid')">星供${hr.starPaid ? '已收 ' + esc(md(hr.starPaid)) : '收款'}</button><button class="fchip sm ${hr.starSent ? 'pd' : ''}" onclick="grpFlag('${h.id}','starSent')">${hr.starSent ? '已發送' : '發送'}</button>`;
-  return `<div class="card${g.payer ? ' cov' : ''}">${g.payer ? `<div class="muted" style="margin-bottom:4px">↳ 由「${esc(g.payer.head.name)}」代繳</div>` : ''}<div class="hd"><a class="nm1" onclick="${g.non ? `editNon('${h.id}')` : `editPerson('${h.id}')`}">${esc(h.name)}</a>${g.non ? '<span class="chip non">未入信</span>' : '<span class="muted">這戶</span>'}<span class="grow"></span><span class="amt" style="font-size:16px">${g.payer ? '小計 ' + money(g.own) : '合計 ' + money(g.total)}</span></div>
+  return `<div class="card${g.payer ? ' cov' : ''}">${g.payer ? `<div class="muted" style="margin-bottom:4px">↳ 由「${esc(g.payer.head.name)}」代繳</div>` : ''}<div class="hd"><a class="nm1" onclick="${g.non ? `editNon('${h.id}')` : `editPerson('${h.id}')`}">${esc(h.name)}</a>${g.non ? '<span class="chip non">未入信</span>' : ''}<span class="grow"></span><span class="amt" style="font-size:16px">${g.payer ? '小計 ' + money(g.own) : '合計 ' + money(g.total)}</span></div>
   ${yuan ? `<div class="row" style="margin-top:6px;gap:6px">${yuan}</div>` : ''}
   <div class="srow th"><span>星供</span><span>姓名</span><span>星供套</span><span style="text-align:right">金額</span></div>${(g.non ? g.ms : mem).map(row).join('')}
   ${!g.non && non.length ? `<div class="nonhd">未入信 ${non.length} 人（由這組代繳）</div>${non.map(row).join('')}` : ''}
@@ -666,7 +671,7 @@ function grpFlag(hid, key) {
 }
 function pickPayer(hid) {
   const { gs, by } = starGroups(ui.year), g = by.get(hid); if (!g) return;
-  const opts = gs.filter(x => x !== g && !x.payer).map(x => `<option value="${x.head.id}" ${g.hr.rep === x.head.id ? 'selected' : ''}>${esc(x.head.name)}${x.non ? '（未入信）' : ' 這戶'}</option>`).join('');
+  const opts = gs.filter(x => x !== g && !x.payer).map(x => `<option value="${x.head.id}" ${g.hr.rep === x.head.id ? 'selected' : ''}>${esc(x.head.name)}${x.non ? '（未入信）' : ''}</option>`).join('');
   openModal(`<h2>「${esc(g.head.name)}」這組由誰付？</h2><div class="muted">選了以後，這組的費用算進付錢那組的合計，收款和發送也跟著那組。</div>
   <select id="py" style="margin-top:10px"><option value="">自己付</option>${opts}</select>
   <div class="row" style="margin-top:12px"><button class="grow" onclick="savePayer('${hid}')">儲存</button><button class="alt" onclick="closeModal()">取消</button></div>`);
@@ -676,7 +681,7 @@ function savePayer(hid) { const r = yrOf(ui.year, hid); r.rep = $('#py').value =
 function editNon(id, preset) {
   const ix = IX(), old = id ? ix.nm.get(id) : null; if (id && !old) return;
   const p = old || Object.assign({ name: '', grp: '' }, preset || {}), y = ui.year, fol = old ? [...ix.nm.values()].filter(x => x.grp === old.id) : [];
-  const gopts = starGroups(y).gs.filter(g => !old || g.head.id !== old.id).map(g => `<option value="${g.head.id}" ${g.head.id === p.grp ? 'selected' : ''}>${esc(g.head.name)}${g.non ? '（未入信）' : ' 這戶'}</option>`).join('');
+  const gopts = starGroups(y).gs.filter(g => !old || g.head.id !== old.id).map(g => `<option value="${g.head.id}" ${g.head.id === p.grp ? 'selected' : ''}>${esc(g.head.name)}${g.non ? '（未入信）' : ''}</option>`).join('');
   const f = (k, l, ph) => `<div><label>${l}</label><input id="n_${k}" value="${esc(p[k] || '')}" placeholder="${ph || ''}"></div>`;
   openModal(`<h2>${old ? esc(old.name) + ' <span class="chip non">未入信</span>' : '新增未入信申請者'}</h2>
   <div class="muted">未入信者只用在星供申請與計費，不算信徒，不出現在名冊和實踐。</div>
@@ -909,14 +914,16 @@ function vLedger() {
   if (ui.lg) return vBook(ui.lg);
   $('#view').innerHTML = `<div class="bar"><span class="seg2"><button class="${ui.lgView === 'book' ? 'on' : ''}" onclick="ui.lgView='book';renderAll()">帳本</button><button class="${ui.lgView === 'month' ? 'on' : ''}" onclick="ui.lgView='month';renderAll()">依月份</button></span>
   ${ui.lgView === 'book' ? `<input class="grow" placeholder="搜尋姓名" value="${esc(ui.q)}" oninput="ui.q=this.value;renderBooks()">` : '<span class="grow"></span>'}<button class="sm" onclick="newBook()">＋開帳本</button></div><div id="lglist"></div>`;
-  ui.lgView === 'month' ? ($('#lglist').innerHTML = monthHtml()) : renderBooks();
+  if (ui.lgView === 'month') { $('#lglist').innerHTML = monthHtml(); hydratePhotos($('#lglist')); } else renderBooks();
 }
 function renderBooks() {
   const l = $('#lglist'); if (!l) return; const q = ui.q.trim().toLowerCase();
   const ids = [...new Set(LG().map(e => e.hid).concat(customBooks().map(b => b.id)))];
   const books = ids.map(h => { const b = bookOf(h); return { hid: h, name: bookName(h), kind: bookKind(h), bal: b.bal, last: b.es.length ? b.es[b.es.length - 1].date : '', n: b.es.length }; }).sort((a, b) => (b.last || '').localeCompare(a.last || '') || byNameZh(a.name, b.name));
   const pos = books.reduce((a, b) => a + Math.max(0, b.bal), 0), neg = books.reduce((a, b) => a + Math.min(0, b.bal), 0);
-  l.innerHTML = `<div class="panel sum"><div class="big">預存結餘<b>${money(pos)}</b><span class="lvc">代支 <b>${money(-neg)}</b>｜${books.length} 本帳</span></div>
+  const phs = LG().flatMap(e => e.photos || []), pend = phs.filter(p => !p.gid).length;
+  const phLine = phs.length ? `<div class="muted">照片 ${phs.length} 張${pend ? `（${SMSync.connected() ? pend + ' 張等待上傳' : pend + ' 張只在這台裝置，開同步後會自動上傳'}）` : '，都已上傳'}</div>` : '';
+  l.innerHTML = `<div class="panel sum"><div class="big">預存結餘<b>${money(pos)}</b><span class="lvc">代支 <b>${money(-neg)}</b>｜${books.length} 本帳</span></div>${phLine}
   <div class="muted" style="margin-top:4px">每個人都可以有自己的帳本（戶長、家族入信、未入信），也可以自己取名開帳本。預存（收款）加、申請（布施、超度、護摩…）扣；結餘變負的就是你代支的金額。</div></div>
   ${books.filter(b => !q || b.name.toLowerCase().includes(q)).map(b => `<div class="card" style="cursor:pointer" onclick="openBook('${b.hid}')"><div class="hd"><b>${esc(b.name)}</b>${b.kind ? `<span class="chip${b.kind === '未入信' ? ' non' : ''}">${b.kind}</span>` : ''}<span class="grow"></span>${balHtml(b.bal)}</div><div class="muted">${b.n} 筆${b.last ? '｜最近 ' + esc(dDot(b.last)) : ''}</div></div>`).join('')
     || '<div class="muted" style="padding:20px;text-align:center">還沒有帳本。按「＋開帳本」選人或自己取名，或在個人資料裡按「奠供帳」。</div>'}`;
@@ -947,7 +954,7 @@ function renameBook(id) {
 function delBook(id) {
   const b = customBooks().find(x => x.id === id); if (!b) return; const es = LG().filter(e => e.hid === id);
   if (!confirm(`刪除帳本「${b.name}」？${es.length ? `\n裡面 ${es.length} 筆紀錄會一起刪除，無法復原。` : ''}`)) return;
-  if (es.length) SMStore.putMany('ledger', [], es.map(e => e.id));
+  if (es.length) { es.forEach(e => dropPhotos(e.photos)); SMStore.putMany('ledger', [], es.map(e => e.id)); }
   cfgSet('books', customBooks().filter(x => x.id !== id)); ui.lg = ''; renderAll(); toast('已刪除帳本');
 }
 function vBook(hid) {
@@ -957,12 +964,75 @@ function vBook(hid) {
   <div class="panel sum"><div class="big">${esc(bookName(hid))}${kind && kind !== '自訂' ? ` <span class="chip${kind === '未入信' ? ' non' : ''}">${kind}</span>` : ''}</div>${sub ? `<div class="muted">${sub}</div>` : ''}<div style="margin-top:6px;font-size:20px">${balHtml(bal)}</div>
   <div class="row" style="margin-top:8px"><button class="sm" onclick="editEntry('',{hid:'${hid}',kind:'out'})">＋申請（支出）</button><button class="alt sm" onclick="editEntry('',{hid:'${hid}',kind:'in'})">＋預存（收款）</button><button class="alt sm" onclick="pasteLine('${hid}')">貼上 LINE 記事</button><button class="alt sm" onclick="printBook('${hid}')">列印</button></div></div>
   ${es.slice().reverse().map(entCard).join('') || '<div class="muted" style="padding:20px;text-align:center">還沒有紀錄。可以一筆一筆加，或把 LINE 記事本的內容整段貼上。</div>'}`;
+  hydratePhotos($('#view'));
 }
+/* ═══════ 奠供帳照片：壓小存檔（看得清單據上的字即可）═══════
+   參考飲食紀錄 App 的做法：先用 canvas 重畫成小張 JPEG 再存。單據要看得清字，所以長邊留 1000px、品質 0.5，一張約 50～90KB。
+   這台裝置存在 IndexedDB（容量大，不佔 localStorage 那幾 MB）；有開同步時，每張另外上傳成一份加密私密 Gist。
+   帳本紀錄只記 photos:[{id, gid}]，跟著主資料同步；其他裝置要看時才下載。 */
+const PH_MAX = 1000, PH_Q = 0.5;
+const PDB = (() => {
+  let p = null; const mem = new Map();
+  const open = () => p || (p = new Promise((ok, no) => { try { const r = indexedDB.open('sm-photos', 1); r.onupgradeneeded = () => r.result.createObjectStore('p'); r.onsuccess = () => ok(r.result); r.onerror = () => no(r.error); } catch (e) { no(e); } }));
+  const run = (mode, fn) => open().then(db => new Promise((ok, no) => { const t = db.transaction('p', mode), req = fn(t.objectStore('p')); t.oncomplete = () => ok(req && req.result); t.onerror = () => no(t.error); }));
+  return { get: k => run('readonly', s => s.get(k)).catch(() => mem.get(k)), put: (k, v) => run('readwrite', s => s.put(v, k)).catch(() => { mem.set(k, v); }), del: k => run('readwrite', s => s.delete(k)).catch(() => { mem.delete(k); }) };
+})();
+async function shrinkPhoto(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('讀不了這張照片')); i.src = url; });
+    const enc = (max, q) => { const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.max(1, Math.round(img.naturalWidth * s)), h = Math.max(1, Math.round(img.naturalHeight * s));
+      const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h); return c.toDataURL('image/jpeg', q); };
+    /* 目標一張 100KB 以內（base64 約 136000 字）：先降品質，再縮尺寸；紙張紋路多的照片才會走到後面幾級 */
+    let d = enc(PH_MAX, PH_Q); if (d.length > 136000) d = enc(PH_MAX, 0.4); if (d.length > 136000) d = enc(900, 0.4); if (d.length > 160000) d = enc(800, 0.4);
+    return d;
+  } finally { URL.revokeObjectURL(url); }
+}
+const phKB = d => Math.round(String(d || '').length * 0.75 / 1024);
+let phBusy = false, ePh = [];
+async function uploadPhotos() {                                            /* 有開同步就把還沒上傳的照片傳上去；失敗下次再試 */
+  if (phBusy || !SMSync.connected() || !LG().some(e => (e.photos || []).some(p => !p.gid))) return; phBusy = true;
+  try {
+    for (const e of LG()) {
+      if (!(e.photos || []).some(p => !p.gid)) continue;
+      const done = new Map();
+      for (const p of e.photos) { if (p.gid) continue; const rec = await PDB.get(p.id); if (rec && rec.data) done.set(p.id, await SMSync.putPhoto(rec.data)); }
+      const cur = done.size && LG().find(x => x.id === e.id);
+      if (cur) SMStore.put('ledger', Object.assign({}, cur, { photos: (cur.photos || []).map(p => done.has(p.id) ? Object.assign({}, p, { gid: done.get(p.id) }) : p) }));
+    }
+  } catch (err) { console.warn('photo upload', err); } finally { phBusy = false; }
+}
+async function photoData(id, gid) {
+  const rec = await PDB.get(id); if (rec && rec.data) return rec.data;
+  if (!gid || !SMSync.connected()) return null;
+  try { const d = await SMSync.getPhoto(gid); if (d) await PDB.put(id, { data: d }); return d; } catch (e) { return null; }
+}
+function hydratePhotos(root) {
+  (root || document).querySelectorAll('img[data-ph]:not([src])').forEach(async img => {
+    const d = await photoData(img.dataset.ph, img.dataset.g);
+    if (d) img.src = d; else img.replaceWith(Object.assign(document.createElement('span'), { className: 'phmiss', textContent: img.dataset.g ? '照片下載失敗' : '照片在別台裝置，還沒上傳' }));
+  });
+}
+const phThumbs = ps => ps && ps.length ? `<div class="phs">${ps.map(p => `<img class="ph" data-ph="${p.id}" data-g="${p.gid || ''}" alt="照片" onclick="event.stopPropagation();viewPhoto('${p.id}','${p.gid || ''}')">`).join('')}</div>` : '';
+async function viewPhoto(id, gid) {
+  const d = await photoData(id, gid); if (!d) return toast('這張照片還在別台裝置，等它上傳後再看', 'err');
+  openModal(`<img src="${d}" alt="照片" style="width:100%;border-radius:10px;display:block"><div class="muted" style="margin-top:6px">約 ${phKB(d)}KB，可以兩指放大</div>
+  <div class="mbar"><a class="btnlink grow" href="${d}" download="奠供帳照片-${todayStr()}.jpg">下載</a><button class="alt" onclick="closeModal()">關閉</button></div>`);
+}
+function renderEPh() {
+  const b = $('#e_ph'); if (!b) return;
+  b.innerHTML = ePh.map((p, i) => `<div class="phw"><img class="ph" ${p.data ? `src="${p.data}"` : `data-ph="${p.id}" data-g="${p.gid || ''}"`} alt="照片"><button class="phx" title="移除這張" onclick="ePh.splice(${i},1);renderEPh()">✕</button></div>`).join('') || '<span class="muted">還沒有照片</span>';
+  hydratePhotos(b);
+}
+async function addPhotos(files) {
+  for (const f of [...(files || [])]) { try { const d = await shrinkPhoto(f); ePh.push({ id: 'ph' + uid(), gid: '', data: d }); renderEPh(); toast(`照片已壓縮成約 ${phKB(d)}KB`); } catch (e) { toast(e.message, 'err'); } }
+}
+const dropPhotos = ps => (ps || []).forEach(p => { PDB.del(p.id); SMSync.delPhoto(p.gid); });
 const itemHtml = it => `<div class="il"><span>${esc(it.name)}${it.memo ? `<div class="m">${esc(it.memo)}</div>` : ''}</span><span>${money(+it.amt || 0)}</span></div>`;
 function entCard(e) {
   const k = { out: '申請', in: '預存', adj: '校正' }[e.kind] || '申請', d = entDelta(e), bad = e.stated != null && e.stated !== '' && +e.stated !== e._bal;
   return `<div class="card ent" style="cursor:pointer" onclick="editEntry('${e.id}')"><div class="hd"><b>${esc(dDot(e.date))}</b><span class="chip ${e.kind === 'out' ? '' : 'pc'}">${k}</span><span class="grow"></span><span class="amt">${d < 0 ? '−' : '＋'}${money(Math.abs(d))}</span></div>
-  ${(e.items || []).map(itemHtml).join('')}${e.text ? `<div class="pre">${esc(e.text)}</div>` : ''}
+  ${(e.items || []).map(itemHtml).join('')}${e.text ? `<div class="pre">${esc(e.text)}</div>` : ''}${phThumbs(e.photos)}
   <div class="muted" style="margin-top:6px;text-align:right">這筆之後 ${balHtml(e._bal)}${bad ? `<br><span style="color:var(--warn)">你記的結餘 ${money(+e.stated)}，差 ${money(+e.stated - e._bal)}</span> <button class="alt sm" onclick="event.stopPropagation();fixBal('${e.id}')">校正</button>` : ''}</div></div>`;
 }
 function fixBal(eid) {
@@ -981,18 +1051,28 @@ function editEntry(id, preset) {
   <label>項目、金額、內容</label><div id="e_items">${items.map(itemRow).join('')}</div><button class="alt sm" onclick="$('#e_items').insertAdjacentHTML('beforeend',itemRow({}))">＋項目</button>
   <datalist id="dl_items">${sugg.map(s => `<option value="${esc(s)}">`).join('')}</datalist>
   <label>內容（超度名單、地址、祈願內容等，可從 LINE 記事本直接貼上）</label><textarea id="e_text" rows="6">${esc(e.text || '')}</textarea>
+  <label>照片（超度、護摩單等，自動壓小存檔，看得清內容即可）</label><div id="e_ph" class="phs"></div>
+  <div class="row" style="margin-top:8px"><label class="ck" style="cursor:pointer">📷 拍照<input type="file" accept="image/*" capture="environment" class="hidden" onchange="addPhotos(this.files);this.value=''"></label><label class="ck" style="cursor:pointer">🖼 選照片<input type="file" accept="image/*" multiple class="hidden" onchange="addPhotos(this.files);this.value=''"></label></div>
   <label>你記的結餘（選填，用來核對）</label><input id="e_stated" inputmode="numeric" value="${e.stated != null ? esc(e.stated) : ''}">
   <div class="mbar"><button class="grow" onclick="saveEntry('${id || ''}','${e.hid}')">儲存</button>${id ? `<button class="warn" onclick="delEntry('${id}')">刪除</button>` : ''}<button class="alt" onclick="closeModal()">取消</button></div>`);
+  ePh = (e.photos || []).map(p => Object.assign({}, p)); renderEPh();
 }
-function saveEntry(id, hid) {
+async function saveEntry(id, hid) {
   const date = $('#e_date').value; if (!date) return toast('請填日期', 'err');
   const kind = $('#e_kind').value, items = [...document.querySelectorAll('#e_items .irow')].map(r => { const a = amtOf(r.querySelector('.i_amt').value);
     return { name: r.querySelector('.i_name').value.trim(), amt: kind === 'adj' ? a : Math.abs(a), memo: r.querySelector('.i_memo').value.trim() }; }).filter(it => it.name || it.amt);
-  const text = $('#e_text').value.replace(/\s+$/, ''); if (!items.length && !text) return toast('至少填一個項目或內容', 'err');
+  const text = $('#e_text').value.replace(/\s+$/, ''); if (!items.length && !text && !ePh.length) return toast('至少填一個項目、內容或照片', 'err');
   const st = $('#e_stated').value.trim(), old = id ? LG().find(x => x.id === id) : null;
-  SMStore.put('ledger', Object.assign({}, old || { id: uid(), seq: Date.now() }, { hid, date, kind, items, text, stated: st === '' ? null : amtOf(st) })); closeModal(); toast('已儲存');
+  for (const p of ePh) if (p.data) await PDB.put(p.id, { data: p.data });                       /* 照片先存進這台裝置 */
+  const keep = new Set(ePh.map(p => p.id)); dropPhotos(((old && old.photos) || []).filter(p => !keep.has(p.id)));   /* 移掉的照片連雲端一起刪 */
+  SMStore.put('ledger', Object.assign({}, old || { id: uid(), seq: Date.now() }, { hid, date, kind, items, text, stated: st === '' ? null : amtOf(st), photos: ePh.map(p => ({ id: p.id, gid: p.gid || '' })) }));
+  ePh = []; closeModal(); toast('已儲存'); uploadPhotos();
 }
-function delEntry(id) { if (!confirm('刪除這筆紀錄？刪除後無法復原。')) return; SMStore.del('ledger', id); closeModal(); toast('已刪除'); }
+function delEntry(id) {
+  const e = LG().find(x => x.id === id), n = e && e.photos ? e.photos.length : 0;
+  if (!confirm(`刪除這筆紀錄？${n ? `\n裡面 ${n} 張照片也會一起刪除。` : ''}\n刪除後無法復原。`)) return;
+  dropPhotos(e && e.photos); SMStore.del('ledger', id); closeModal(); toast('已刪除');
+}
 /* 貼上 LINE 記事：日期一行（2026.11.13）、「-項目：$金額（說明）」、「結餘：$金額」，其他文字當內容 */
 function parseLineNote(t) {
   const out = []; let cur = null;
@@ -1042,7 +1122,7 @@ function monthHtml() {
   return `<div class="panel sum"><div class="row"><select style="width:auto" onchange="ui.lgMonth=this.value;renderAll()">${(months.length ? months : [m]).map(x => `<option ${x === m ? 'selected' : ''}>${x}</option>`).join('')}</select><span class="grow"></span><button class="alt sm" onclick="printMonth('${m}')">列印</button></div>
   <div class="big" style="margin-top:6px">${m.slice(0, 4)} 年 ${+m.slice(5)} 月申請<b>${es.length}</b>筆<span class="lvc">共 <b>${money(es.reduce((a, e) => a + entAmt(e), 0))}</b></span></div>
   <div class="muted" style="margin-top:4px">${[...tot.entries()].map(([k, o]) => `${esc(k)} ${o.n} 筆 ${money(o.amt)}`).join('｜') || '這個月沒有申請'}</div></div>
-  ${es.map(e => `<div class="card ent" style="cursor:pointer" onclick="openBook('${e.hid}')"><div class="hd"><b>${esc(bookName(e.hid))}</b><span class="muted">${esc(dDot(e.date))}</span><span class="grow"></span><span class="amt">${money(entAmt(e))}</span></div>${(e.items || []).map(itemHtml).join('')}${e.text ? `<div class="pre">${esc(e.text)}</div>` : ''}</div>`).join('')}`;
+  ${es.map(e => `<div class="card ent" style="cursor:pointer" onclick="openBook('${e.hid}')"><div class="hd"><b>${esc(bookName(e.hid))}</b><span class="muted">${esc(dDot(e.date))}</span><span class="grow"></span><span class="amt">${money(entAmt(e))}</span></div>${(e.items || []).map(itemHtml).join('')}${e.text ? `<div class="pre">${esc(e.text)}</div>` : ''}${phThumbs(e.photos)}</div>`).join('')}`;
 }
 function printLedger(title, es, withName) {
   $('#printArea').innerHTML = `<h1>${esc(orgName())} ${esc(title)}</h1><div class="pm">列印日期 ${dotDate()}</div><table><tr><th>日期</th>${withName ? '<th>戶</th>' : ''}<th>類型</th><th>項目</th><th>金額</th><th>內容</th>${withName ? '' : '<th>結餘</th>'}</tr>
@@ -1388,7 +1468,7 @@ function vSettings() {
   <label>方法二：第二台以後（手機）</label><input id="pc" placeholder="貼上第一台產生的配對碼 SM1.…"><input id="pp2" type="password" placeholder="同步密語（配對碼已含金鑰時可留空）" style="margin-top:6px"><button class="alt" style="margin-top:8px" onclick="doPair()">用配對碼連線</button>`}</div>
   <div class="panel"><h3>單位名稱（列印抬頭）</h3><input id="org" value="${esc(orgName())}" placeholder="例：○○苑"><button class="sm" style="margin-top:8px" onclick="cfgSet('org',{name:$('#org').value.trim()});toast('已儲存')">儲存</button></div>
   <div class="panel"><h3>備份</h3><div class="row"><button class="alt sm" onclick="backup()">下載備份 JSON</button><button class="alt sm" onclick="$('#rf').click()">從備份還原</button><input id="rf" type="file" accept=".json" class="hidden" onchange="restore(this.files[0])"></div>
-  <div class="muted" style="margin-top:6px">備份檔含完整個資，請存在私人位置，不要放進 GitHub。</div></div>
+  <div class="muted" style="margin-top:6px">備份檔含完整個資，請存在私人位置，不要放進 GitHub。奠供帳的照片不在備份檔裡：照片存在拍照的裝置，開同步後另外加密存在雲端。</div></div>
   <div class="muted" style="text-align:center">目前 ${IX().m.size} 人｜${YR().length} 筆年度資料</div>`;
 }
 function savePrices(asDef) {
@@ -1425,8 +1505,8 @@ function restore(f) {
 
 /* ═══════ 啟動 ═══════ */
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
-SMStore.attach(() => renderAll(), toast);
-renderAll();
+SMStore.attach(() => { renderAll(); uploadPhotos(); }, toast);
+renderAll(); uploadPhotos();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>

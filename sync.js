@@ -236,10 +236,13 @@ async function connect(raw, pass) {
 
   const user = await gh('GET', '/user', null, token);
 
-  if (!gistId) {
-    const list = await gh('GET', '/gists?per_page=100', null, token);
-    const found = (list || []).find(x => x.description === GIST_DESC);
-    if (found) gistId = found.id;
+  if (!gistId) {                       /* 照片一張一份 Gist，數量多時主資料可能不在第一頁，要往後翻 */
+    for (let page = 1; page <= 10 && !gistId; page++) {
+      const list = await gh('GET', '/gists?per_page=100&page=' + page, null, token);
+      const found = (list || []).find(x => x.description === GIST_DESC);
+      if (found) gistId = found.id;
+      if (!list || list.length < 100) break;
+    }
   }
 
   /* 金鑰：配對碼帶過來的優先，否則用密語推導 */
@@ -303,6 +306,27 @@ function disconnect() {
   onChange();
 }
 
+/* ══════ 照片：一張一份加密私密 Gist ══════
+   不放進主資料：localStorage 只有幾 MB，而且 GitHub 每次存檔都把整份內容回傳，照片一多手機會很慢。
+   一張一份，上傳、下載、刪除都只搬那一張；主資料只記照片的 Gist id。 */
+const PHOTO_DESC = '信徒管理 加密照片（請勿刪除）', PHOTO_FILE = 'photo.json';
+async function putPhoto(text) {
+  if (!cfg) throw new Error('尚未開啟同步');
+  if (!cfg.ek) throw syncErr('needpass', null);
+  const box = await sealText(text, cfg.ek);
+  const g = await gh('POST', '/gists', { description: PHOTO_DESC, public: false,
+    files: { [PHOTO_FILE]: { content: JSON.stringify({ app: 'shinnyo-photo', enc: 1, salt: cfg.esalt, iv: box.iv, ct: box.ct }) } } });
+  return g.id;
+}
+async function getPhoto(gid) {
+  if (!cfg || !gid) return null;
+  const g = await gh('GET', '/gists/' + gid), f = g && g.files && g.files[PHOTO_FILE]; if (!f) return null;
+  const txt = f.truncated && f.raw_url ? await fetch(f.raw_url, { cache: 'no-store' }).then(r => r.text()) : f.content;
+  const d = JSON.parse(txt), keys = [{ salt: cfg.esalt, ek: cfg.ek }].concat(cfg.prevKeys || []), k = keys.find(x => x.salt === d.salt) || keys[0];
+  return openText(d.iv, d.ct, k.ek);
+}
+async function delPhoto(gid) { if (!cfg || !gid) return; try { await gh('DELETE', '/gists/' + gid); } catch (e) {} }
+
 /* ══════ 狀態 ══════ */
 function status() {
   if (!cfg)                    return { cls: 'off',  txt: '尚未開啟' };
@@ -359,7 +383,7 @@ const API = {
   connected: () => !!cfg,
   info: () => cfg ? { login: cfg.login, gistId: cfg.gistId, lastSync: cfg.lastSync, encrypted: !!cfg.ek } : null,
   needsPassphrase: () => state.err === 'needpass',
-  connect, disconnect, setPassphrase, now, schedule, status, pairCode, readPairCode,
+  connect, disconnect, setPassphrase, now, schedule, status, pairCode, readPairCode, putPhoto, getPhoto, delPhoto,
   toast(msg) { if (msg) console.log('[sync]', msg); }      /* 頁面可用 init({toast}) 蓋掉 */
 };
 window.SMSync = API;
