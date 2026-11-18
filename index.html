@@ -149,10 +149,19 @@ function roleOf(p) {                                               /* 導親／�
 function scopedPeople(st) {
   const keep = ui.status; ui.status = ''; const rows = filterPeople().filter(p => st === 'non' ? p.status === 'non' : p.status !== 'non'); ui.status = keep; return rows;
 }
+function fixNonFamily() {
+  const bad = P().filter(p => p.status === 'non' && p.famOf);
+  if (!bad.length) return toast('沒有需要修正的人');
+  if (!confirm('有 ' + bad.length + ' 位未入信者被掛成家族入信成員。'+String.fromCharCode(10)+'要全部改成獨立的未入信名單嗎？原本的繳費歸屬會保留（改記為由原戶長代繳）。')) return;
+  const yrs = [], ppl = bad.map(p => Object.assign({}, p, { famOf: '' }));
+  bad.forEach(p => YR().filter(r => r.pid === p.id && !r.rep).forEach(r => yrs.push(Object.assign({}, r, { rep: p.famOf }))));
+  SMStore.putMany('people', ppl); if (yrs.length) SMStore.putMany('yearly', yrs); renderAll(); toast('已修正 ' + bad.length + ' 人');
+}
 function nonList() {
   const y = ui.year, rows = scopedPeople('non');
   if (!rows.length) return '<div class="muted" style="padding:20px;text-align:center">還沒有未入信名單。匯入星供名單時標示「(未入信)」的人會自動放在這裡。</div>';
-  return `<div class="muted">共 ${rows.length} 人（只用於星供申請，不計入信徒人數、關係圖與實績）</div>` + rows.map(p => {
+  const nb = P().filter(p => p.status === 'non' && p.famOf).length;
+  return `<div class="muted">共 ${rows.length} 人（只用於星供申請，不計入信徒人數、關係圖與實績）</div>${nb ? `<div class="notice" style="margin:6px 0">有 ${nb} 位未入信者被掛成家族入信成員。<button class="sm" onclick="fixNonFamily()">一鍵改回獨立名單</button></div>` : ''}` + rows.map(p => {
     const h = headOf(p), pay = payerOf(y, p), r = yearRow(y, p.id);
     return `<div class="card tap" onclick="editPerson('${p.id}')"><div class="t">${esc(p.name)} <span class="chip non">未入信</span>${r.star ? `<span class="chip good">${y} 星供</span>` : ''}${p.deceased ? '<span class="chip bad">歿</span>' : ''}</div>
     <div class="s">${h.id !== p.id ? '隨 ' + esc(h.name) + ' 申請' : '獨立'}${pay.id !== p.id ? '｜代表繳費：' + esc(pay.name) : ''}${p.phone ? '｜' + esc(p.phone) : ''}</div></div>`;
@@ -300,6 +309,7 @@ function savePerson(id, isNew) {
     mentorId = m.id;
   }
   const fn = $('#f_fam').value.trim(); let moveFam = [];
+  if (fn && $('#f_status').value === 'non') return toast('未入信者不能設為家族入信成員（要代為申請星供，請到「年度」頁用「代繳▾」指定）', 'err');
   if (fn) {
     let h = P().find(x => x.name === fn && x.id !== id);
     if (!h) return toast('找不到戶長「' + fn + '」，請先新增該人或改名', 'err');
@@ -823,7 +833,7 @@ function doImport() {
     const sn = g(r, 'seat');
     if (sn && !p.seatId) { let s = seatByName.get(sn); if (!s) { s = { id: uid(), name: sn }; seatByName.set(sn, s); newSeats.push(s); } p.seatId = s.id; }
     /* 關係圖／家族 */
-    if (famRow) { if (head && head.id !== p.id && !p.famOf && !head.famOf) { p.famOf = head.id; fams++; } }
+    if (famRow) { if (head && head.id !== p.id) { if (p.status === 'non') { if (!hasGrp) yr(p.id).rep = head.id; } else if (!p.famOf && !head.famOf) { p.famOf = head.id; fams++; } } }   /* 未入信者不算家族入信，只記「由誰代為申請」 */
     else if (block) {
       head = p;
       if (role === 'qin') { root = p; lastZi = null; }
