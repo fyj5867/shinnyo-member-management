@@ -262,7 +262,7 @@ function editPerson(id, st) {
 </div>
   <label>地址</label><input id="f_addr" value="${esc(p.addr)}">
   <label>導親（引領他結緣的人，輸入姓名；最上層的人留空）</label><input id="f_mentor" list="nameList" value="${esc(mentor ? mentor.name : '')}">
-  <label>家族入信：掛在誰的戶下（輸入戶長姓名；自己就是戶長則留空）</label><input id="f_fam" list="nameList" value="${esc(fam ? fam.name : '')}"><datalist id="nameList">${names}</datalist>
+  <label>分類：獨立戶 → 此欄留空；家族入信成員 → 輸入所屬戶的戶長姓名</label><input id="f_fam" list="nameList" value="${esc(fam ? fam.name : '')}"><datalist id="nameList">${names}</datalist>
   <label>精進狀態</label><div class="items"><label class="ck ${p.idle ? 'on' : ''}"><input type="checkbox" id="f_idle" ${p.idle ? 'checked' : ''}>未精進</label></div>
   <label>精進項目</label><div class="items">${PRAC.map(k => `<label class="ck"><input type="checkbox" class="f_prac" value="${k}" ${(p.prac || []).includes(k) ? 'checked' : ''}>${k}</label>`).join('')}</div>
   <label>其他精進（自行填寫）</label><input id="f_pracOther" value="${esc(p.pracOther)}">
@@ -281,17 +281,21 @@ function savePerson(id, isNew) {
     if (wouldLoop(id, m.id)) return toast('關係圖會形成循環（對方是你的導子／所屬）', 'err');
     mentorId = m.id;
   }
-  const fn = $('#f_fam').value.trim();
+  const fn = $('#f_fam').value.trim(); let moveFam = [];
   if (fn) {
-    const h = P().find(x => x.name === fn && x.id !== id && !x.famOf);
-    if (!h) return toast('找不到戶長「' + fn + '」（戶長本身不能是別人的家族成員）', 'err');
-    if (P().some(x => x.famOf === id)) return toast('他自己有家族成員，不能再掛到別人戶下', 'err');
+    let h = P().find(x => x.name === fn && x.id !== id);
+    if (!h) return toast('找不到戶長「' + fn + '」，請先新增該人或改名', 'err');
+    h = headOf(h);                                   /* 輸入的人若本身是家族成員，就掛到他的戶長底下 */
+    if (h.id === id) return toast('不能掛在自己（或自己的家族成員）名下', 'err');
+    const mine = P().filter(x => x.famOf === id);
+    if (mine.length) { if (!confirm('「' + name + '」目前有 ' + mine.length + ' 位家族入信成員，要一起改掛到「' + h.name + '」戶下嗎？')) return; moveFam = mine.map(k => Object.assign({}, k, { famOf: h.id })); }
     famOf = h.id;
   }
   const v = k => $('#f_' + k).value.trim();
   SMStore.put('people', Object.assign({}, old, { id, name, status: $('#f_status').value, roman: v('roman'), phone: v('phone'), email: v('email'), code: v('code'), sid: v('sid'), rank: v('rank'),
     joinedOn: v('joined'), birth: v('birth'), deceased: v('dead'), trans1: v('t1'), trans2: v('t2'), trans3: v('t3'), addr: v('addr'),
     mentorId, famOf, idle: $('#f_idle').checked, prac: Array.from(document.querySelectorAll('.f_prac:checked')).map(x => x.value), pracOther: v('pracOther'), note: $('#f_note').value.trim(), active: true }));
+  if (moveFam.length) SMStore.putMany('people', moveFam);
   closeModal(); toast('已儲存');
 }
 function removePerson(id) {
