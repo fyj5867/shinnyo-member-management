@@ -1,5 +1,5 @@
 // 信徒管理 Service Worker — 外殼離線快取（同源 network-first）。改版時把 CACHE +1，手機才會拿到新版。
-const CACHE = 'members-v28';
+const CACHE = 'members-v29';
 const SHELL = ['./', './index.html', './sync.js', './store.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', e => e.waitUntil(caches.open(CACHE).then(c => Promise.allSettled(SHELL.map(u => c.add(u)))).then(() => self.skipWaiting())));
 self.addEventListener('activate', e => e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())));
