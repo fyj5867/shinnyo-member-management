@@ -89,6 +89,8 @@ label.ck input{width:auto;margin:0}
 .mbar{position:sticky;bottom:-16px;margin:14px -16px -16px;padding:10px 16px calc(12px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line);display:flex;gap:8px;flex-wrap:wrap;z-index:2}
 .mbar .grow{flex:1}
 .edit{padding:4px 10px;font-size:12px;background:#e2eee8;color:var(--g);border-radius:8px;font-weight:700}
+.card.cov{margin-left:18px;border-left:4px solid #e3c98f}
+.nonhd{margin-top:8px;padding:5px 8px;background:#f8f3e6;color:#7a6330;border-radius:8px;font-size:12px;font-weight:700}
 .amtb{background:none;color:#1b302b;font-weight:800;font-size:14px;padding:6px 2px;border-radius:0;border-bottom:1.5px dashed #9fb5aa;text-align:right;white-space:nowrap}
 .frm{display:flex;gap:8px;align-items:center;margin-top:10px}.frm label.ck{flex:none;min-width:96px}.frm .lab{flex:none;min-width:96px;font-size:13px;padding-left:11px}.frm input:not([type=checkbox]){flex:1;min-width:0}
 .srow.th{border-top:0;font-size:11px;color:var(--muted);padding:2px 0}
@@ -347,7 +349,7 @@ const TABS = [['roster', '👥', '名冊'], ['prac', '🙏', '實踐'], ['star',
 const LSget = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const LSset = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
 const ui = { tab: 'roster', year: new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear(), q: '', f: '', pf: '', fold: false, flip: new Set(),
-  view: LSget('sm.view') || 'card', sAll: false, sel: new Set(), fAll: false, fUnpaid: false, lg: '', lgView: 'book', lgMonth: '' };
+  view: LSget('sm.view') || 'card', sAll: false, sNon: false, sel: new Set(), fAll: false, fUnpaid: false, lg: '', lgView: 'book', lgMonth: '' };
 let imp = null, simp = null;
 function go(t) { ui.tab = t; ui.q = ''; if (t !== 'ledger') ui.lg = ''; renderAll(); scrollTo(0, 0); }
 function renderAll() {
@@ -575,30 +577,51 @@ function starSumHtml({ gs }) {
   ${miss ? `<div class="notice" style="margin-top:6px">還有單價沒填，會算成 $0。填一次就好，之後每個人預設都用這個金額；個別不同的再點那個人的金額改。</div>` : ''}
   <div class="grid2">${FEES.map(([k, nm]) => `<div><label>${nm}</label><input type="number" min="0" inputmode="numeric" id="pr_${k}" value="${py[k] != null ? py[k] : ''}" placeholder="${(pr.def || {})[k] != null && (pr.def || {})[k] !== '' ? '預設 ' + pr.def[k] : '金額'}"></div>`).join('')}</div>
   <div class="row" style="margin-top:8px"><button class="sm" onclick="savePrices(false)">儲存 ${y} 年單價</button><button class="alt sm" onclick="savePrices(true)">存成各年預設</button></div></details>
-  <div class="chips"><button class="fchip ${ui.sAll ? '' : 'on'}" onclick="ui.sAll=false;renderStar()">只看有申請</button><button class="fchip ${ui.sAll ? 'on' : ''}" onclick="ui.sAll=true;renderStar()">全部（勾新的申請）</button></div>
+  <div class="chips"><button class="fchip ${ui.sAll ? '' : 'on'}" onclick="ui.sAll=false;renderStar()">只看有申請</button><button class="fchip ${ui.sAll ? 'on' : ''}" onclick="ui.sAll=true;renderStar()">全部（勾新的申請）</button><button class="fchip ${ui.sNon ? 'on' : ''}" onclick="ui.sNon=!ui.sNon;renderStar()">未入信依代繳人</button></div>
   ${dupNotice()}
   <div class="muted" style="margin-top:6px">點「星」切換申請，星供套按 − ＋。點苑費、祈念證或右邊的金額，可以改這一筆的金額、加「其他」項目。某組由別人付，按「代繳」選付錢的那組。</div></div>`;
 }
+/* 排列：付錢的那組在前，它代繳的組緊接在下面（縮排）；組內先列入信的人，未入信者集中在後面。
+   「未入信依代繳人」：只列未入信者，依實際付錢的人分組。 */
+const starHit = (p, q) => !q || [p.name, p.roman].some(x => String(x || '').toLowerCase().includes(q));
 function starListHtml({ gs }) {
   const y = ui.year, q = ui.q.trim().toLowerCase();
-  const show = gs.filter(g => (ui.sAll || g.any || g.covers.some(c => c.any)) && (!q || g.ms.some(p => [p.name, p.roman].some(x => String(x || '').toLowerCase().includes(q)))));
-  return show.map(g => starCard(g, y)).join('') || `<div class="muted" style="padding:20px;text-align:center">${gs.length ? '這年還沒有人申請。按「全部」可以勾新的申請，或匯入星供表。' : '還沒有資料。'}</div>`;
+  if (ui.sNon) return nonByPayerHtml(gs, y, q);
+  const vis = g => (ui.sAll || g.any) && g.ms.some(p => starHit(p, q)), out = [];
+  gs.forEach(g => { if (g.payer) return; const cv = g.covers.filter(vis); if (vis(g) || cv.length) { out.push(starCard(g, y)); cv.forEach(c => out.push(starCard(c, y))); } });
+  return out.join('') || `<div class="muted" style="padding:20px;text-align:center">${gs.length ? '這年還沒有人申請。按「全部」可以勾新的申請，或匯入星供表。' : '還沒有資料。'}</div>`;
+}
+function nonByPayerHtml(gs, y, q) {
+  const by = new Map();
+  gs.forEach(g => g.ms.forEach(p => { if (p.status !== 'non' || !starHit(p, q)) return; const r = yrOf(y, p.id); if (!ui.sAll && !r.star && !r.set && !(r.extra || []).length) return;
+    const pay = (g.payer || g).head; if (!by.has(pay.id)) by.set(pay.id, { pay, list: [] }); by.get(pay.id).list.push(p); }));
+  if (!by.size) return '<div class="muted" style="padding:20px;text-align:center">沒有未入信的申請者</div>';
+  let n = 0, tot = 0;
+  const cards = [...by.values()].map(({ pay, list }) => { const amt = list.reduce((a, p) => a + sumItems(feeItems(y, p)), 0); n += list.length; tot += amt;
+    return `<div class="card"><div class="hd"><span class="muted">代繳人</span><a class="nm1" onclick="${pay.status === 'non' ? `editNon('${pay.id}')` : `editPerson('${pay.id}')`}">${esc(pay.name)}</a>${pay.status === 'non' ? '<span class="chip non">未入信</span>' : ''}<span class="grow"></span><span class="amt">${list.length} 人 ${money(amt)}</span></div>
+    <div class="srow th"><span>星供</span><span>姓名</span><span>星供套</span><span style="text-align:right">金額</span></div>${list.map(p => starRow(p, y)).join('')}
+    <div class="gfoot"><span class="grow"></span><button class="alt sm" onclick="editNon('',{grp:'${pay.id}'})">＋未入信</button></div></div>`; }).join('');
+  return `<div class="muted" style="padding:4px 4px 0">未入信 ${n} 人，${by.size} 位代繳人，共 ${money(tot)}。要換代繳人，點名字改「代繳人」。</div>` + cards;
+}
+function starRow(p, y) {
+  const ix = IX(), r = yrOf(y, p.id), amt = sumItems(feeItems(y, p).filter(x => x[2] !== 'a')), ex = (r.extra || []).filter(x => x.name || +x.amt);
+  const tag = p.status === 'non' ? '<span class="chip non">未入信</span>' : ix.kind.get(p.id) === 'family' ? '<span class="lv lvf">家族</span>' : `<span class="lv lv${lvIdx(p)}">${lvOf(p)}</span>`;
+  return `<div class="srow"><button class="fee ${r.star ? 'v' : ''}" title="星供：點一下切換" onclick="toggleStar('${p.id}')">${r.star ? '星' : ''}</button>
+  <div class="nm" style="flex-wrap:wrap"><a onclick="${p.status === 'non' ? `editNon('${p.id}')` : `editPerson('${p.id}')`}">${esc(p.name)}</a>${tag}${ex.length ? `<span class="sub">＋${ex.map(x => esc(x.name || '其他') + ' ' + money(+x.amt || 0)).join('、')}</span>` : ''}</div>
+  <div class="qty"><button onclick="setSet('${p.id}',-1)">−</button><span>${r.set || ''}</span><button onclick="setSet('${p.id}',1)">＋</button></div><button class="amtb" title="改金額、加其他項目" onclick="editFees('${p.id}')">${amt ? money(amt) : '金額'}</button></div>`;
 }
 function starCard(g, y) {
-  const ix = IX(), h = g.head, hr = g.hr;
-  const tag = p => p.status === 'non' ? '<span class="chip non">未入信</span>' : ix.kind.get(p.id) === 'family' ? '<span class="lv lvf">家族</span>' : `<span class="lv lv${lvIdx(p)}">${lvOf(p)}</span>`;
-  const row = p => { const r = yrOf(y, p.id), amt = sumItems(feeItems(y, p).filter(x => x[2] !== 'a')), ex = (r.extra || []).filter(x => x.name || +x.amt);
-    return `<div class="srow"><button class="fee ${r.star ? 'v' : ''}" title="星供：點一下切換" onclick="toggleStar('${p.id}')">${r.star ? '星' : ''}</button>
-    <div class="nm" style="flex-wrap:wrap"><a onclick="${p.status === 'non' ? `editNon('${p.id}')` : `editPerson('${p.id}')`}">${esc(p.name)}</a>${tag(p)}${ex.length ? `<span class="sub">＋${ex.map(x => esc(x.name || '其他') + ' ' + money(+x.amt || 0)).join('、')}</span>` : ''}</div>
-    <div class="qty"><button onclick="setSet('${p.id}',-1)">−</button><span>${r.set || ''}</span><button onclick="setSet('${p.id}',1)">＋</button></div><button class="amtb" title="改金額、加其他項目" onclick="editFees('${p.id}')">${amt ? money(amt) : '金額'}</button></div>`; };
+  const h = g.head, hr = g.hr, row = p => starRow(p, y);
+  const mem = g.ms.filter(p => p.status !== 'non'), non = g.ms.filter(p => p.status === 'non');
   const ya = amtOr(hr.feeAmt, price(y, 'yuan')), ca = amtOr(hr.certAmt, price(y, 'cert'));
   const yuan = !g.non && !h.deceased ? `<button class="fchip sm ${hr.fee}" onclick="editFees('${h.id}')">苑費 ${hr.fee === 'v' ? money(ya) : hr.fee === 'x' ? '不繳' : '未定'}</button><button class="fchip sm ${hr.cert ? 'c' : ''}" onclick="editFees('${h.id}')">祈念證 ${hr.cert ? money(ca) : '—'}</button>` : '';
   const due = [g].concat(g.covers).some(x => x.hr.fee === 'v' || x.hr.cert === 'v');
   const flags = g.payer ? `<span class="muted">由「${esc(g.payer.head.name)}」代繳，收款、發送跟著那組</span>`
     : `${due ? `<button class="fchip sm ${hr.paid ? 'pd' : ''}" onclick="grpFlag('${h.id}','paid')">苑費${hr.paid ? '已收 ' + esc(md(hr.paid)) : '收款'}</button>` : ''}<button class="fchip sm ${hr.starPaid ? 'pd' : ''}" onclick="grpFlag('${h.id}','starPaid')">星供${hr.starPaid ? '已收 ' + esc(md(hr.starPaid)) : '收款'}</button><button class="fchip sm ${hr.starSent ? 'pd' : ''}" onclick="grpFlag('${h.id}','starSent')">${hr.starSent ? '已發送' : '發送'}</button>`;
-  return `<div class="card"><div class="hd"><a class="nm1" onclick="${g.non ? `editNon('${h.id}')` : `editPerson('${h.id}')`}">${esc(h.name)}</a>${g.non ? '<span class="chip non">未入信</span>' : '<span class="muted">這戶</span>'}<span class="grow"></span><span class="amt" style="font-size:16px">${g.payer ? '' : '合計 ' + money(g.total)}</span></div>
+  return `<div class="card${g.payer ? ' cov' : ''}">${g.payer ? `<div class="muted" style="margin-bottom:4px">↳ 由「${esc(g.payer.head.name)}」代繳</div>` : ''}<div class="hd"><a class="nm1" onclick="${g.non ? `editNon('${h.id}')` : `editPerson('${h.id}')`}">${esc(h.name)}</a>${g.non ? '<span class="chip non">未入信</span>' : '<span class="muted">這戶</span>'}<span class="grow"></span><span class="amt" style="font-size:16px">${g.payer ? '小計 ' + money(g.own) : '合計 ' + money(g.total)}</span></div>
   ${yuan ? `<div class="row" style="margin-top:6px;gap:6px">${yuan}</div>` : ''}
-  <div class="srow th"><span>星供</span><span>姓名</span><span>星供套</span><span style="text-align:right">金額</span></div>${g.ms.map(row).join('')}
+  <div class="srow th"><span>星供</span><span>姓名</span><span>星供套</span><span style="text-align:right">金額</span></div>${(g.non ? g.ms : mem).map(row).join('')}
+  ${!g.non && non.length ? `<div class="nonhd">未入信 ${non.length} 人（由這組代繳）</div>${non.map(row).join('')}` : ''}
   <div class="gfoot"><span class="muted">本組 ${money(g.own)}${g.covers.length ? `＋代繳 ${g.covers.map(c => esc(c.head.name) + ' ' + money(c.own)).join('、')}` : ''}</span><span class="grow"></span>
   <button class="alt sm" onclick="pickPayer('${h.id}')">${g.payer ? '代繳：' + esc(g.payer.head.name) : '代繳▾'}</button><button class="alt sm" onclick="editNon('',{grp:'${h.id}'})">＋未入信</button></div>
   <div class="row" style="margin-top:6px;gap:6px">${flags}</div></div>`;
@@ -659,7 +682,7 @@ function editNon(id, preset) {
   <div class="muted">未入信者只用在星供申請與計費，不算信徒，不出現在名冊和實踐。</div>
   <div class="grid2">${f('name', '姓名')}${f('roman', '羅馬拼音')}${f('birth', '出生年月日', '1980.01.01')}${f('phone', '電話')}</div>
   <label>地址</label><input id="n_addr" value="${esc(p.addr || '')}">
-  <label>跟哪一組一起申請</label><select id="n_grp"><option value="">自成一組</option>${gopts}</select>
+  <label>代繳人（跟哪一組一起申請）</label><select id="n_grp"><option value="">自成一組（自己付）</option>${gopts}</select>
   ${fol.length ? `<div class="muted">跟著這組的還有 ${fol.length} 人：${fol.map(x => esc(x.name)).join('、')}（改組時一起移過去）</div>` : ''}
   ${old ? '' : `<div style="margin-top:10px"><label class="ck"><input type="checkbox" id="n_star" checked>申請 ${y} 星供</label></div>`}
   <label>備註</label><textarea id="n_note" rows="3">${esc(p.note || '')}</textarea>
