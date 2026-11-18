@@ -103,11 +103,51 @@ const dueB = r => (r.star ? price(r.year, 'star') : 0) + num(r.set) * price(r.ye
 const due = r => dueA(r) + dueB(r);
 const hasAny = r => r.yuan || r.cert || r.star || num(r.set) > 0;
 
-/* 關係圖：mentorId = 引入信的人。導親 = 引人結緣者；導子 = 導親直接引的人；所屬 = 導子再引入信的人（不論幾代） */
-const children = id => P().filter(p => p.mentorId === id);
-/* 所屬：導子再引入信的人，不論第幾代（對導親而言統稱所屬） */
-const belong = id => { const out = [], seen = new Set([id]); let cur = children(id); while (cur.length) { const nxt = []; for (const c of cur) for (const k of children(c.id)) if (!seen.has(k.id)) { seen.add(k.id); out.push(k); nxt.push(k); } cur = nxt; } return out; };
-function wouldLoop(pid, mentorId) { let cur = mentorId, n = 0; while (cur && n++ < 50) { if (cur === pid) return true; const m = byId(P(), cur); cur = m && m.mentorId; } return false; }
+/* ═══════ 分類規則（整個 App 唯一的判定來源，各頁面一律呼叫這裡）═══════
+   1. 未入信：只放在未入信名單。不能是家族入信、不能當戶長、不能當導親；不算信徒人數、關係圖、實績。
+   2. 家族入信：掛在一位「入信」戶長名下。永遠不是獨立戶、不是關係圖節點、不算實績，苑費跟戶長繳。
+      戶長本身若也掛在別人名下，一律往上攤平到最上層戶長（不會有「家族的家族」）。
+   3. 獨立戶：入信、沒有掛戶長的人。關係圖、導子／所屬、實績都以獨立戶為單位。
+   4. 導親以「戶」計：導親若是某戶的家族成員，算在那一戶的戶長名下；家族成員自己填的導親不採用。
+   5. 戶長無效（找不到、是未入信、互相掛）的人列為「待確認」：不當獨立戶、不算實績，等你指定戶長。 */
+let _ix = null;
+function IX() {
+  if (_ix) return _ix;
+  const all = P(), m = new Map(all.map(p => [p.id, p])), isMem = p => !!p && p.status !== 'non';
+  const topHead = p => { const seen = new Set([p.id]); let cur = m.get(p.famOf); while (cur) { if (seen.has(cur.id) || !isMem(cur)) return null; if (!cur.famOf) return cur; seen.add(cur.id); cur = m.get(cur.famOf); } return null; };
+  const head = new Map(), kind = new Map(), fam = new Map(), mh = new Map(), kids = new Map();
+  all.forEach(p => {
+    if (!isMem(p)) return kind.set(p.id, 'non');
+    if (!p.famOf) return kind.set(p.id, 'house');
+    const h = topHead(p); if (!h) return kind.set(p.id, 'orphan');
+    kind.set(p.id, 'family'); head.set(p.id, h); if (!fam.has(h.id)) fam.set(h.id, []); fam.get(h.id).push(p);
+  });
+  all.forEach(p => {
+    if (kind.get(p.id) !== 'house') return;
+    const t = m.get(p.mentorId); if (!isMem(t)) return;
+    const k = kind.get(t.id), hh = k === 'family' ? head.get(t.id) : k === 'house' ? t : null;
+    if (!hh || hh.id === p.id) return;
+    mh.set(p.id, hh); if (!kids.has(hh.id)) kids.set(hh.id, []); kids.get(hh.id).push(p);
+  });
+  _ix = { m, kind, head, fam, mh, kids };
+  queueMicrotask(() => { _ix = null; });
+  return _ix;
+}
+['put', 'putMany', 'del'].forEach(k => { const f = SMStore[k]; SMStore[k] = function () { _ix = null; return f.apply(this, arguments); }; });
+/* kind：non 未入信｜house 獨立戶｜family 家族入信｜orphan 家族入信但戶長無效（待確認） */
+const kindOf = p => IX().kind.get(p.id) || (p.status === 'non' ? 'non' : p.famOf ? 'orphan' : 'house');
+const headOf = p => IX().head.get(p.id) || p;                       /* 家族入信 → 最上層戶長；其他人 → 自己 */
+const famOfHead = id => (IX().fam.get(id) || []).slice();           /* 某戶的家族入信成員 */
+const mentorHouse = p => IX().mh.get(p.id) || null;                 /* 獨立戶的導親（已換算成戶長） */
+/* 關係圖：導子＝直接引的獨立戶；所屬＝導子再引的各代獨立戶（不含導子本身） */
+const children = id => (IX().kids.get(id) || []).slice();
+const belong = id => { const out = [], first = children(id), seen = new Set([id].concat(first.map(k => k.id))); let cur = first; while (cur.length) { const nxt = []; for (const c of cur) for (const k of children(c.id)) if (!seen.has(k.id)) { seen.add(k.id); out.push(k); nxt.push(k); } cur = nxt; } return out; };
+function wouldLoop(pid, mentorId) {
+  const mine = new Set([pid].concat(famOfHead(pid).map(x => x.id))), seen = new Set();
+  let cur = byId(P(), mentorId); cur = cur && headOf(cur);
+  while (cur && !seen.has(cur.id)) { if (mine.has(cur.id)) return true; seen.add(cur.id); cur = mentorHouse(cur); }
+  return false;
+}
 
 /* ═══════ 導覽 ═══════ */
 const TABS = [['people', '👥', '信徒'], ['year', '📋', '年度'], ['stats', '📊', '統計'], ['lineage', '🌳', '關係圖'], ['apply', '📝', '申請'], ['import', '📥', '匯入'], ['settings', '⚙️', '設定']];
@@ -116,7 +156,7 @@ const ui = { q: '', seat: '', status: '', year: (new Date().getMonth() >= 9 ? ne
 function go(t) { tab = t; renderAll(); scrollTo(0, 0); }
 function renderTabs() { $('#tabs').innerHTML = TABS.map(([k, ic, n]) => `<button class="${k === tab ? 'on' : ''}" onclick="go('${k}')"><i>${ic}</i>${n}</button>`).join(''); }
 function renderAll() {
-  try { fixNonFamily(true); } catch (e) {}     /* 未入信者一律不能是家族入信：舊資料自動修正 */
+  _ix = null; try { fixData(true); } catch (e) { console.error(e); }     /* 分類規則：答案唯一的錯自動修正 */
   if (!$('#modal').classList.contains('hidden')) { renderSyncBtn(); return; }   /* 編輯中不重畫，避免吃掉輸入 */
   const o = orgName(); $('#appTitle').textContent = o ? o + '　信徒管理' : '信徒管理';
   renderTabs(); renderSyncBtn();
@@ -140,34 +180,71 @@ function filterBar(extra, noStatus) {
 function renderListOnly() { const l = $('#list'); if (l) l.innerHTML = (tab === 'year' ? yearList() : tab === 'stats' ? statsBody() : tab === 'apply' ? applyList() : ui.scope === 'non' ? nonList() : peopleList()); }
 
 /* ═══════ 信徒 ═══════ */
-const headOf = p => (p.famOf && byId(P(), p.famOf)) || p;          /* 戶長：家族成員掛在戶長名下，沒掛的人自己就是戶長 */
-function roleOf(p) {                                               /* 導親／導子／所屬／家族（對最上層導親而言） */
-  if (p.famOf && p.status !== 'non') return '家族入信';
-  let d = 0, cur = p, n = 0; while (cur && cur.mentorId && n++ < 60) { cur = byId(P(), cur.mentorId); d++; }
+function roleOf(p) {                                               /* 家族入信／導親／導子／所屬（以戶計，見分類規則） */
+  const k = kindOf(p);
+  if (k === 'non') return '';
+  if (k === 'family') return '家族入信';
+  if (k === 'orphan') return '戶長待確認';
+  let d = 0, cur = p; const seen = new Set([p.id]);
+  while ((cur = mentorHouse(cur)) && !seen.has(cur.id)) { seen.add(cur.id); d++; }
   return d === 0 ? (children(p.id).length ? '導親' : '') : d === 1 ? '導子' : '所屬';
 }
 /* ═══════ 星供未入信名單（單獨管理，不計入信徒人數／關係圖／實績）═══════ */
 function scopedPeople(st) {
   const keep = ui.status; ui.status = ''; const rows = filterPeople().filter(p => st === 'non' ? p.status === 'non' : p.status !== 'non'); ui.status = keep; return rows;
 }
-function fixNonFamily(auto) {
-  const bad = P().filter(p => p.status === 'non' && p.famOf);
-  if (!bad.length) return auto ? 0 : toast('沒有需要修正的人');
-  if (!auto && !confirm('有 ' + bad.length + ' 位未入信者被掛成家族入信成員。'+String.fromCharCode(10)+'要全部改成獨立的未入信名單嗎？原本的繳費歸屬會保留（改記為由原戶長代繳）。')) return;
-  const yrs = [], ppl = bad.map(p => Object.assign({}, p, { famOf: '' }));
-  bad.forEach(p => YR().filter(r => r.pid === p.id && !r.rep).forEach(r => yrs.push(Object.assign({}, r, { rep: p.famOf }))));
+/* 自動修正：只修「答案唯一」的錯；答案不唯一的列進 dataIssues() 讓你決定 */
+function fixData(auto) {
+  const ix = IX(), yrAll = YR(), ppl = [], yrs = [];
+  P().forEach(p => {
+    if (!p.famOf) return;
+    if (p.status === 'non') {                                   /* 規則 1：未入信者移出家族，原戶長改記為代繳人（費用歸屬不變） */
+      ppl.push(Object.assign({}, p, { famOf: '' }));
+      yrAll.filter(r => r.pid === p.id && !r.rep).forEach(r => yrs.push(Object.assign({}, r, { rep: p.famOf })));
+    } else if (p.famOf === p.id) ppl.push(Object.assign({}, p, { famOf: '' }));     /* 掛在自己名下＝沒掛 */
+    else { const h = ix.head.get(p.id); if (h && h.id !== p.famOf) ppl.push(Object.assign({}, p, { famOf: h.id })); }   /* 規則 2：攤平到最上層戶長 */
+  });
+  if (!ppl.length) return auto ? 0 : toast('沒有需要自動修正的資料');
   SMStore.putMany('people', ppl); if (yrs.length) SMStore.putMany('yearly', yrs);
-  if (auto) return toast('已把 ' + bad.length + ' 位未入信者移出家族入信（未入信者不能是家族入信）');
-  renderAll(); toast('已修正 ' + bad.length + ' 人');
+  toast('已自動修正 ' + ppl.length + ' 人的分類（未入信移出家族／家族成員改掛最上層戶長）');
+  if (!auto) renderAll();
+  return ppl.length;
 }
+/* 需要你決定的資料問題：[人, 說明] */
+function dataIssues() {
+  const ix = IX(), out = [], live = P().filter(p => p.active !== false);
+  live.forEach(p => {
+    const k = ix.kind.get(p.id);
+    if (k === 'orphan') { const t = ix.m.get(p.famOf); out.push([p, !t ? '掛的戶長已不存在，請重新指定戶長或清空（改為獨立戶）' : t.status === 'non' ? '掛的戶長「' + t.name + '」是未入信者，未入信者不能當戶長' : '戶長互相掛來掛去，找不到最上層戶長']); }
+    if (k === 'house' && p.mentorId) {
+      const t = ix.m.get(p.mentorId);
+      if (!t) out.push([p, '填的導親已不存在']);
+      else if (t.status === 'non') out.push([p, '導親「' + t.name + '」是未入信者，未入信者不能當導親']);
+    }
+  });
+  live.filter(p => ix.kind.get(p.id) === 'house').forEach(p => {             /* 導親循環：A 引 B、B 又引 A */
+    const seen = new Set(); let cur = ix.mh.get(p.id);
+    while (cur && !seen.has(cur.id)) { if (cur.id === p.id) { out.push([p, '導親關係形成循環，請把其中一人的導親改掉']); break; } seen.add(cur.id); cur = ix.mh.get(cur.id); }
+  });
+  return out;
+}
+function issuesBox() {
+  const list = dataIssues(); if (!list.length) return '';
+  return `<div class="notice" style="margin:6px 0"><b>資料檢查：${list.length} 項需要你確認</b>（點名字修改）${list.map(([p, t]) => `<div style="margin-top:3px"><span class="nm2" onclick="editPerson('${p.id}')">${esc(p.name)}</span>：${esc(t)}</div>`).join('')}</div>`;
+}
+const RULES_HTML = `<details style="margin-top:6px"><summary class="muted">分類規則</summary><div class="muted" style="line-height:1.8">
+1. 未入信：只在未入信名單；不能是家族入信、戶長、導親；不算人數、關係圖、實績。<br>
+2. 家族入信：掛在入信戶長名下；不是獨立戶、不是關係圖節點、不算實績；苑費跟戶長繳。掛在家族成員名下的，自動改掛最上層戶長。<br>
+3. 獨立戶：入信、沒掛戶長。關係圖與實績都以獨立戶計。<br>
+4. 導親以戶計：導親是家族成員時，算在他的戶長名下；家族成員自己的導親不採用。<br>
+5. 戶長無效的人列「待確認」，不當獨立戶，等你指定。</div></details>`;
 function nonList() {
   const y = ui.year, rows = scopedPeople('non');
   if (!rows.length) return '<div class="muted" style="padding:20px;text-align:center">還沒有未入信名單。匯入星供名單時標示「(未入信)」的人會自動放在這裡。</div>';
-  const nb = P().filter(p => p.status === 'non' && p.famOf).length;
-  return `<div class="muted">共 ${rows.length} 人（只用於星供申請，不計入信徒人數、關係圖與實績）</div>${nb ? `<div class="notice" style="margin:6px 0">有 ${nb} 位未入信者被掛成家族入信成員。<button class="sm" onclick="fixNonFamily()">一鍵改回獨立名單</button></div>` : ''}` + rows.map(p => {
-    const h = headOf(p), pay = payerOf(y, p), r = yearRow(y, p.id);
+  return `<div class="muted">共 ${rows.length} 人（只用於星供申請，不計入信徒人數、關係圖與實績）</div>` + rows.map(p => {
+    const pay = payerOf(y, p), r = yearRow(y, p.id);
     return `<div class="card tap" onclick="editPerson('${p.id}')"><div class="t">${esc(p.name)} <span class="chip non">未入信</span>${r.star ? `<span class="chip good">${y} 星供</span>` : ''}${p.deceased ? '<span class="chip bad">歿</span>' : ''}</div>
-    <div class="s">${h.id !== p.id ? '隨 ' + esc(h.name) + ' 申請' : '獨立'}${pay.id !== p.id ? '｜代表繳費：' + esc(pay.name) : ''}${p.phone ? '｜' + esc(p.phone) : ''}</div></div>`;
+    <div class="s">${pay.id !== p.id ? '由 ' + esc(pay.name) + ' 代為申請／繳費' : '自行申請'}${p.phone ? '｜' + esc(p.phone) : ''}</div></div>`;
   }).join('');
 }
 
@@ -209,7 +286,7 @@ const PRAC = ['奉侍', '護摩', '超度', '布施', '接心', '法會', '家�
 const pracOf = p => (p.prac || []).concat(p.pracOther ? [p.pracOther] : []);
 /* 實績：只有「獨立戶」（不含家族入信成員）、入信、未歿，且當年度有申請苑費並已繳，才算實績 */
 function creditOf(p, y) {
-  if (p.famOf || p.status === 'non' || p.deceased) return '';
+  if (kindOf(p) !== 'house' || p.deceased) return '';     /* 只有獨立戶算實績 */
   if (!yearRow(y, p.id).yuan) return 'none';
   return yearRow(y, payerOf(y, p).id).yuanPaid ? 'ok' : 'unpaid';
 }
@@ -231,19 +308,24 @@ const byJoined = (a, b) => jkey(a).localeCompare(jkey(b)) || byNameZh(a.name, b.
 const infoLine = p => [p.code ? '編號 ' + esc(p.code) : '', p.joinedOn ? '入信 ' + esc(p.joinedOn) : '', p.birth ? '生日 ' + esc(p.birth) : '', p.phone ? esc(p.phone) : ''].filter(Boolean).join('｜');
 function peopleList() {
   const rows = scopedPeople('member').filter(pracMatch), y = ui.year;
-  if (!rows.length) return '<div class="muted" style="padding:20px;text-align:center">沒有資料。可到「匯入」讀取 Excel／PDF／Word／照片，或按「＋新增」。</div>';
-  const heads = new Map(); rows.forEach(p => { const h = headOf(p); if (!heads.has(h.id)) heads.set(h.id, h); });
-  const person = (p, hd) => `<span class="nm2" onclick="event.stopPropagation();editPerson('${p.id}')">${esc(p.name)}</span>${p.status === 'non' ? '<span class="chip non">非入信</span>' : ''}${p.deceased ? '<span class="chip bad">歿</span>' : ''}${p.idle && !hd.idle ? '<span class="chip bad">未精進</span>' : ''}${pracChips(p)}`;
+  const top = issuesBox() + RULES_HTML;
+  if (!rows.length) return top + '<div class="muted" style="padding:20px;text-align:center">沒有資料。可到「匯入」讀取 Excel／PDF／Word／照片，或按「＋新增」。</div>';
+  const heads = new Map(), orphans = [];
+  rows.forEach(p => { const k = kindOf(p); if (k === 'orphan') return orphans.push(p); const h = headOf(p); if (kindOf(h) === 'house' && !heads.has(h.id)) heads.set(h.id, h); });
+  const person = (p, hd) => `<span class="nm2" onclick="event.stopPropagation();editPerson('${p.id}')">${esc(p.name)}</span>${p.deceased ? '<span class="chip bad">歿</span>' : ''}${p.idle && !hd.idle ? '<span class="chip bad">未精進</span>' : ''}${pracChips(p)}`;
   const card = h => {
-    const m = byId(P(), h.mentorId), nc = children(h.id).length, role = roleOf(h);
-    const fam = P().filter(x => x.famOf === h.id && x.active !== false && x.status !== 'non').sort(byJoined);
-    return `<div class="card tap${notCounted(h, y) ? ' unpaid' : ''}" onclick="editPerson('${h.id}')"><div class="t"><span class="chip dark">獨立戶</span>${esc(h.name)} ${h.status === 'non' ? '<span class="chip non">非入信</span>' : ''}${role ? `<span class="chip good">${role}</span>` : ''}${h.deceased ? '<span class="chip bad">歿</span>' : ''}${h.seatRole ? `<span class="chip good">${esc(h.seatRole)}</span>` : ''}${creditChip(h, y)}${pracChips(h)}</div>
+    const mh = mentorHouse(h), mr = IX().m.get(h.mentorId), m = mr && { name: mr.name + (mh && mh.id !== mr.id ? '（' + mh.name + ' 戶）' : '') }, nc = children(h.id).length, role = roleOf(h);
+    const fam = famOfHead(h.id).filter(x => x.active !== false).sort(byJoined);
+    return `<div class="card tap${notCounted(h, y) ? ' unpaid' : ''}" onclick="editPerson('${h.id}')"><div class="t"><span class="chip dark">獨立戶</span>${esc(h.name)} ${role ? `<span class="chip good">${role}</span>` : ''}${h.deceased ? '<span class="chip bad">歿</span>' : ''}${h.seatRole ? `<span class="chip good">${esc(h.seatRole)}</span>` : ''}${creditChip(h, y)}${pracChips(h)}</div>
     <div class="s">${infoLine(h) || '（尚無編號／日期／電話）'}${m ? '｜導親：' + esc(m.name) : ''}${nc ? `｜導子 ${nc}` : ''}</div>
     ${fam.length ? `<div class="s" style="margin-top:5px"><b>家族入信成員：</b>${fam.map(f => `<div style="margin-top:3px">${person(f, h)}<span class="muted">${infoLine(f)}</span></div>`).join('')}</div>` : ''}</div>`;
   };
-  const hs = Array.from(heads.values()).sort(byJoined);
+  const ocard = p => `<div class="card tap" onclick="editPerson('${p.id}')"><div class="t">${esc(p.name)} <span class="chip bad">家族入信－戶長待確認</span>${p.deceased ? '<span class="chip bad">歿</span>' : ''}</div><div class="s">${infoLine(p) || '（尚無編號／日期／電話）'}｜不算獨立戶、不算實績，請點進去指定戶長</div></div>`;
+  const hs = Array.from(heads.values()).sort(byJoined), nFam = rows.filter(p => kindOf(p) === 'family').length;
   const sec = (t, list) => list.length ? `<h3 class="sec">${t}（${list.length} 戶）</h3>` + list.map(card).join('') : '';
-  return `<div class="muted">共 ${rows.length} 人／${hs.length} 戶（依入信日期排序；年度標示以 ${y} 年為準；淡色＝${y} 苑費未繳，不計實績）</div>` + sec('精進中', hs.filter(h => !h.idle)) + sec('未精進', hs.filter(h => h.idle));
+  return top + `<div class="muted">共 ${rows.length} 人：獨立戶 ${hs.length} 戶、家族入信 ${nFam} 人${orphans.length ? `、待確認 ${orphans.length} 人` : ''}（依入信日期排序；年度標示以 ${y} 年為準；淡色＝${y} 苑費未繳，不計實績）</div>`
+    + (orphans.length ? `<h3 class="sec">待確認（${orphans.length} 人）</h3>` + orphans.sort(byJoined).map(ocard).join('') : '')
+    + sec('精進中', hs.filter(h => !h.idle)) + sec('未精進', hs.filter(h => h.idle));
 }
 function vPeople() {
   const ex = `<select style="width:auto" onchange="ui.idle=this.value;renderAll()"><option value="">全部精進狀態</option><option value="active" ${ui.idle === 'active' ? 'selected' : ''}>精進中</option><option value="idle" ${ui.idle === 'idle' ? 'selected' : ''}>未精進</option></select>
@@ -258,7 +340,7 @@ function editPerson(id, st) {
   const p = id ? byId(P(), id) : { id: uid(), status: st || 'member', active: true };
   const isNew = !id;
   const mentor = byId(P(), p.mentorId), fam = byId(P(), p.famOf);
-  const kids = children(p.id), gk = belong(p.id), famMem = P().filter(x => x.famOf === p.id);
+  const kids = children(p.id), gk = belong(p.id), famMem = famOfHead(p.id), pk = isNew ? '' : kindOf(p), ph = pk === 'family' ? headOf(p) : null;
   const names = P().filter(x => x.id !== p.id).map(x => `<option value="${esc(x.name)}">`).join('');
   openModal(`<h2>${isNew ? '新增信徒' : esc(p.name)}</h2>
   <div class="grid2"><div><label>姓名</label><input id="f_name" value="${esc(p.name)}"></div>
@@ -281,9 +363,9 @@ function editPerson(id, st) {
   <label>精進狀態</label><div class="items"><label class="ck ${p.idle ? 'on' : ''}"><input type="checkbox" id="f_idle" ${p.idle ? 'checked' : ''}>未精進</label></div>
   <label>精進項目</label><div class="items">${PRAC.map(k => `<label class="ck"><input type="checkbox" class="f_prac" value="${k}" ${(p.prac || []).includes(k) ? 'checked' : ''}>${k}</label>`).join('')}</div>
   <label>其他精進（自行填寫）</label><input id="f_pracOther" value="${esc(p.pracOther)}">
-  ${isNew || p.famOf ? '' : paidBlock(p)}
+  ${isNew || kindOf(p) !== 'house' ? '' : paidBlock(p)}
   <label>備註</label><textarea id="f_note" rows="3">${esc(p.note)}</textarea>
-  ${isNew ? '' : `<h3>關係圖</h3><div class="muted">導子（${kids.length}）：${kids.map(k => esc(k.name)).join('、') || '—'}<br>所屬（${gk.length}）：${gk.map(k => esc(k.name)).join('、') || '—'}${famMem.length ? `<br>家族（${famMem.length}）：${famMem.map(k => esc(k.name)).join('、')}` : ''}</div>`}
+  ${isNew ? '' : `<h3>關係圖</h3>${ph ? `<div class="notice" style="margin-bottom:6px">家族入信成員（戶長：${esc(ph.name)}）：不是獨立戶、不算實績；導子／所屬算在戶長名下，自己填的導親不採用。</div>` : pk === 'orphan' ? '<div class="notice" style="margin-bottom:6px">戶長無效：請在上面「分類」重新輸入戶長姓名，或清空改為獨立戶。</div>' : ''}<div class="muted">導子（${kids.length}）：${kids.map(k => esc(k.name)).join('、') || '—'}<br>所屬（${gk.length}）：${gk.map(k => esc(k.name)).join('、') || '—'}${famMem.length ? `<br>家族（${famMem.length}）：${famMem.map(k => esc(k.name)).join('、')}` : ''}</div>`}
   <div class="row" style="margin-top:14px"><button class="grow" onclick="savePerson('${p.id}',${isNew})">儲存</button><button class="alt" onclick="closeModal()">取消</button>${isNew ? '' : `<button class="warn" onclick="removePerson('${p.id}')">刪除</button>`}</div>`);
 }
 /* 苑費勾選：勾了就即時寫入並重新分類（實績／未繳），不必按儲存 */
@@ -307,22 +389,30 @@ function savePerson(id, isNew) {
   const name = $('#f_name').value.trim(); if (!name) return toast('請輸入姓名', 'err');
   const old = isNew ? {} : byId(P(), id);
   let mentorId = '', famOf = '';
+  const st = $('#f_status').value, pick = n => { const c = P().filter(x => x.name === n && x.id !== id); return c.find(x => x.status !== 'non') || c[0]; };
+  if (st === 'non' && !isNew) {                    /* 規則 1：未入信者不能當戶長、導親 */
+    const myFam = P().filter(x => x.famOf === id), myKids = P().filter(x => x.mentorId === id && x.status !== 'non');
+    if (myFam.length) return toast('「' + name + '」名下有 ' + myFam.length + ' 位家族入信成員，未入信者不能當戶長。請先把他們改掛到別的戶長，再改身分。', 'err');
+    if (myKids.length) return toast('「' + name + '」是 ' + myKids.length + ' 位信徒的導親（' + myKids.map(x => x.name).join('、') + '），未入信者不能當導親。請先改掉他們的導親，再改身分。', 'err');
+  }
   const mn = $('#f_mentor').value.trim();
   if (mn) {
-    const m = P().find(x => x.name === mn && x.id !== id);
+    const m = pick(mn);
     if (!m) return toast('找不到導親「' + mn + '」，請先新增該人或改名', 'err');
-    if (wouldLoop(id, m.id)) return toast('關係圖會形成循環（對方是你的導子／所屬）', 'err');
+    if (m.status === 'non') return toast('「' + mn + '」是未入信者，不能當導親', 'err');
+    if (wouldLoop(id, m.id)) return toast('關係圖會形成循環（對方是你的導子／所屬，或在你這一戶裡）', 'err');
     mentorId = m.id;
   }
   const fn = $('#f_fam').value.trim(); let moveFam = [];
-  if (fn && $('#f_status').value === 'non') return toast('未入信者不能設為家族入信成員（要代為申請星供，請到「年度」頁用「代繳▾」指定）', 'err');
+  if (fn && st === 'non') return toast('未入信者不能設為家族入信成員（要代為申請星供，請到「年度」頁用「代繳▾」指定）', 'err');
   if (fn) {
-    let h = P().find(x => x.name === fn && x.id !== id);
+    let h = pick(fn);
     if (!h) return toast('找不到戶長「' + fn + '」，請先新增該人或改名', 'err');
-    h = headOf(h);                                   /* 輸入的人若本身是家族成員，就掛到他的戶長底下 */
+    if (h.status === 'non') return toast('「' + fn + '」是未入信者，不能當戶長', 'err');
+    h = headOf(h);                                   /* 輸入的人若本身是家族成員，就掛到他的最上層戶長 */
     if (h.id === id) return toast('不能掛在自己（或自己的家族成員）名下', 'err');
     const mine = P().filter(x => x.famOf === id);
-    if (mine.length) { if (!confirm('「' + name + '」目前有 ' + mine.length + ' 位家族入信成員，要一起改掛到「' + h.name + '」戶下嗎？')) return; moveFam = mine.map(k => Object.assign({}, k, { famOf: h.id })); }
+    if (mine.length) { if (!confirm('「' + name + '」目前有 ' + mine.length + ' 位家族入信成員。家族入信成員不能再有自己的家族，要把他們一起改掛到「' + h.name + '」戶下嗎？')) return; moveFam = mine.map(k => Object.assign({}, k, { famOf: h.id })); }
     famOf = h.id;
   }
   const v = k => $('#f_' + k).value.trim();
@@ -518,7 +608,7 @@ function statsBody() {
   const seatRows = Array.from(bySeat.entries()).sort((a, b) => a[0].localeCompare(b[0], 'zh-TW')).map(([k, o]) => `<tr><td>${esc(k)}</td><td>${o.n}</td><td>${money(o.d)}</td><td>${money(o.p)}</td><td>${money(o.d - o.p)}</td></tr>`).join('');
   /* 依個人 */
   const cellN = v => v ? money(v) : '';
-  const personRows = rows.map(s => `<tr><td style="cursor:pointer" onclick="editPerson('${s.p.id}')"><b>${esc(s.p.name)}</b>${s.p.famOf ? ' <span class="muted">家族</span>' : ''}</td><td>${cellN(s.it.yuan)}</td><td>${cellN(s.it.cert)}</td><td>${cellN(s.it.star)}</td><td>${num(s.r.set) ? num(s.r.set) + '×' + money(price(y, 'set')) : ''}</td><td><b>${money(s.total)}</b></td><td>${cellN(s.paid)}</td><td style="color:${s.total - s.paid > 0 ? 'var(--warn)' : 'var(--ok)'}">${money(s.total - s.paid)}</td></tr>`).join('');
+  const personRows = rows.map(s => `<tr><td style="cursor:pointer" onclick="editPerson('${s.p.id}')"><b>${esc(s.p.name)}</b>${kindOf(s.p) === 'family' ? ' <span class="muted">家族</span>' : ''}</td><td>${cellN(s.it.yuan)}</td><td>${cellN(s.it.cert)}</td><td>${cellN(s.it.star)}</td><td>${num(s.r.set) ? num(s.r.set) + '×' + money(price(y, 'set')) : ''}</td><td><b>${money(s.total)}</b></td><td>${cellN(s.paid)}</td><td style="color:${s.total - s.paid > 0 ? 'var(--warn)' : 'var(--ok)'}">${money(s.total - s.paid)}</td></tr>`).join('');
   return `<div class="row" style="gap:6px"><div class="card grow" style="margin:4px 0"><div class="s">申請人數</div><div class="t">${rows.length}</div></div><div class="card grow" style="margin:4px 0"><div class="s">應收</div><div class="t">${money(tot.d)}</div></div><div class="card grow" style="margin:4px 0"><div class="s">已收</div><div class="t">${money(tot.p)}</div></div><div class="card grow" style="margin:4px 0"><div class="s">未收</div><div class="t" style="color:var(--warn)">${money(tot.d - tot.p)}</div></div></div>
   <h3>依項目</h3><div class="wrap"><table class="t"><tr><th>項目</th><th>申請</th><th>單價</th><th>應收</th><th>已收</th><th>未收</th></tr>${itemRows}</table></div>
   <h3>依個人（${rows.length} 人）</h3><div class="wrap"><table class="t"><tr><th>姓名</th><th>苑費</th><th>祈年證</th><th>星供</th><th>套子</th><th>合計</th><th>已收</th><th>未收</th></tr>${personRows}</table></div>`;
@@ -532,32 +622,33 @@ function vStats() {
   <div id="list">${statsBody()}</div>`;
 }
 
-/* ═══════ 關係圖 ═══════ */
-/* 關係圖只看「戶」：家族入信成員不是節點；他們引的人算在戶長名下 */
-const hKids = id => { const ids = [id].concat(P().filter(x => x.famOf === id).map(x => x.id)); return P().filter(k => !k.famOf && k.id !== id && k.mentorId && ids.includes(k.mentorId)); };
-const hBelong = id => { const out = [], seen = new Set([id]); let cur = hKids(id); while (cur.length) { const nxt = []; for (const c of cur) if (!seen.has(c.id)) { seen.add(c.id); out.push(c); nxt.push(...hKids(c.id)); } cur = nxt; } return out; };
+/* ═══════ 關係圖（只畫獨立戶；家族入信成員列在戶長底下，見上方分類規則）═══════ */
 function vLineage() {
-  const y = ui.year, people = P().filter(p => p.active !== false && !p.famOf && p.status !== 'non');
-  const roots = people.filter(p => !p.mentorId || !byId(people, p.mentorId)).sort((a, b) => byNameZh(a.name, b.name));
+  const y = ui.year, act = p => p.active !== false, people = P().filter(p => act(p) && kindOf(p) === 'house');
+  const roots = people.filter(p => { const m = mentorHouse(p); return !m || !act(m); }).sort((a, b) => byNameZh(a.name, b.name));
   const rootSel = ui.lineRoot ? [byId(people, ui.lineRoot)].filter(Boolean) : roots;
-  const node = (p, depth) => { const kids = hKids(p.id).filter(k => k.active !== false && k.status !== 'non'), fam = P().filter(x => x.famOf === p.id && x.active !== false && x.status !== 'non');
+  const drawn = new Set();
+  const node = (p, depth) => { if (drawn.has(p.id)) return ''; drawn.add(p.id);
+    const kids = children(p.id).filter(act), fam = famOfHead(p.id).filter(act);
     const lab = depth === 0 ? '導親' : depth === 1 ? '導子' : '所屬';
-    return `<li class="${notCounted(p, y) ? 'unpaid' : ''}"><span class="nm" onclick="editPerson('${p.id}')">${esc(p.name)}</span> <span class="chip good">${lab}</span><span class="chip dark">獨立戶</span><span class="chip ${p.status === 'non' ? 'non' : ''}">${ST[p.status] || '入信'}</span>${p.deceased ? '<span class="chip bad">歿</span>' : ''}${p.idle ? '<span class="chip bad">未精進</span>' : ''}${depth ? creditChip(p, y) : ''}${fam.length ? `<div class="muted">家族入信成員：${fam.map(f => esc(f.name) + (f.status === 'non' ? '（未入信）' : '')).join('、')}</div>` : ''}${kids.length ? '<ul>' + kids.sort((a, b) => byNameZh(a.name, b.name)).map(k => node(k, depth + 1)).join('') + '</ul>' : ''}</li>`; };
+    return `<li class="${notCounted(p, y) ? 'unpaid' : ''}"><span class="nm" onclick="editPerson('${p.id}')">${esc(p.name)}</span> <span class="chip good">${lab}</span><span class="chip dark">獨立戶</span>${p.deceased ? '<span class="chip bad">歿</span>' : ''}${p.idle ? '<span class="chip bad">未精進</span>' : ''}${depth ? creditChip(p, y) : ''}${fam.length ? `<div class="muted">家族入信成員：${fam.map(f => esc(f.name)).join('、')}</div>` : ''}${kids.length ? '<ul>' + kids.sort((a, b) => byNameZh(a.name, b.name)).map(k => node(k, depth + 1)).join('') + '</ul>' : ''}</li>`; };
   const sel = ui.lineRoot && byId(people, ui.lineRoot);
   let sum = '';
   if (sel) {
-    const direct = hKids(sel.id).filter(k => k.active !== false && k.status !== 'non'), dids = new Set(direct.map(k => k.id)), all = direct.concat(hBelong(sel.id).filter(k => k.active !== false && k.status !== 'non' && !dids.has(k.id)));
+    const direct = children(sel.id).filter(act), all = direct.concat(belong(sel.id).filter(act));
     const cnt = l => ({ ok: l.filter(k => creditOf(k, y) === 'ok').length, bad: l.filter(k => notCounted(k, y)).length });
     const cm = l => l.filter(k => creditOf(k, y)), a = cnt(direct), b = cnt(all), nd = cm(direct).length, na = cm(all).length;
     sum = `<div style="margin-top:8px"><b>導子 ${direct.length} 戶　所屬（含導子再引的各代）${all.length - direct.length} 戶</b></div>
     <div class="s" style="margin-top:4px">${y} 實績（已繳苑費的獨立戶）：導子 ${a.ok}／${nd}，全部 ${b.ok}／${na}；<span style="color:var(--warn)">未繳／未申請 ${b.bad} 戶不計實績</span></div>`;
   }
+  const tree = rootSel.map(r => node(r, 0)).join('');
+  const lost = ui.lineRoot ? [] : people.filter(p => !drawn.has(p.id));      /* 理論上只有導親循環的人會在這裡 */
   $('#view').innerHTML = `<div class="row"><h2 class="grow" style="margin:0">關係圖</h2>
   <select style="width:auto" onchange="ui.year=+this.value;renderAll()">${[y - 1, y, y + 1].map(v => `<option ${v === y ? 'selected' : ''}>${v}</option>`).join('')}</select></div><div class="panel">
-  <label style="margin-top:0">從誰開始看</label><select onchange="ui.lineRoot=this.value;renderAll()"><option value="">所有最上層的人（${roots.length}）</option>${people.map(p => `<option value="${p.id}" ${ui.lineRoot === p.id ? 'selected' : ''}>${esc(p.name)}（導子 ${hKids(p.id).length}／所屬 ${Math.max(0, hBelong(p.id).length - hKids(p.id).length)}）</option>`).join('')}</select>
+  <label style="margin-top:0">從誰開始看</label><select onchange="ui.lineRoot=this.value;renderAll()"><option value="">所有最上層的人（${roots.length}）</option>${people.slice().sort((a, b) => byNameZh(a.name, b.name)).map(p => `<option value="${p.id}" ${ui.lineRoot === p.id ? 'selected' : ''}>${esc(p.name)}（導子 ${children(p.id).length}／所屬 ${belong(p.id).length}）</option>`).join('')}</select>
   ${sum}
-  <div class="muted" style="margin-top:6px">每個節點是一個獨立戶，家族入信成員列在該戶底下。導子／所屬的獨立戶要「當年度已繳苑費」才算實績，未繳或未申請的以淡色＋紅標呈現。在個人資料填「導親」就會長出這棵圖。點名字可編輯。</div></div>
-  <div class="panel tree">${rootSel.length ? '<ul>' + rootSel.map(r => node(r, 0)).join('') + '</ul>' : '<div class="muted">還沒有資料</div>'}</div>`;
+  <div class="muted" style="margin-top:6px">每個節點是一個獨立戶，家族入信成員列在該戶底下，不另成節點。導子／所屬的獨立戶要「當年度已繳苑費」才算實績，未繳或未申請的以淡色＋紅標呈現。在個人資料填「導親」就會長出這棵圖。點名字可編輯。</div>${RULES_HTML}${issuesBox()}</div>
+  <div class="panel tree">${tree ? '<ul>' + tree + '</ul>' : '<div class="muted">還沒有資料</div>'}${lost.length ? `<div class="notice" style="margin-top:8px">以下 ${lost.length} 戶因導親循環畫不進樹：${lost.map(p => `<span class="nm2" onclick="editPerson('${p.id}')">${esc(p.name)}</span>`).join('、')}</div>` : ''}</div>`;
 }
 
 /* ═══════ 會座 ═══════ */
@@ -811,7 +902,7 @@ function doImport() {
     if (isNew) { p = { id: uid(), name, status: 'member', active: true }; people.push(p); added++; } else if (!touched.has(p.id)) merged++;
     touched.set(p.id, p); return { p, isNew };
   };
-  const links = []; let root = null, lastZi = null, head = null, curRep = null; const hasGrp = col('grp') >= 0;
+  const links = [], kept = new Set(), link = (p, mn) => { if (p.famOf) kept.add(p.name); else links.push([p, mn]); }; let root = null, lastZi = null, head = null, curRep = null; const hasGrp = col('grp') >= 0;
   for (const r of data) {
     let role = '', famRow = false, nonMember = false, nmRaw = '', qinName = '';
     const nameCol = g(r, 'name');
@@ -843,13 +934,13 @@ function doImport() {
     const sn = g(r, 'seat');
     if (sn && !p.seatId) { let s = seatByName.get(sn); if (!s) { s = { id: uid(), name: sn }; seatByName.set(sn, s); newSeats.push(s); } p.seatId = s.id; }
     /* 關係圖／家族 */
-    if (famRow) { if (head && head.id !== p.id) { if (p.status === 'non') { if (!hasGrp) yr(p.id).rep = head.id; } else if (!p.famOf && !head.famOf) { p.famOf = head.id; fams++; } } }   /* 未入信者不算家族入信，只記「由誰代為申請」 */
+    if (famRow) { if (head && head.id !== p.id) { if (p.status === 'non') { if (!hasGrp) yr(p.id).rep = head.id; } else { const hh = byId(people, head.famOf) || head; if (hh.status === 'non') { if (!hasGrp) yr(p.id).rep = hh.id; } else if (!p.famOf && hh.id !== p.id) { p.famOf = hh.id; fams++; } } } }   /* 戶長若本身是家族成員，改掛他的戶長 */   /* 未入信者不算家族入信，只記「由誰代為申請」 */
     else if (block) {
       head = p;
       if (role === 'qin') { root = p; lastZi = null; }
-      else if (role === 'zi') { lastZi = p; const mn = qinName || (root && root.name); if (mn && mn !== p.name) links.push([p, mn]); }
-      else if (role === 'sun') { const mn = qinName || (lastZi && lastZi.name) || (root && root.name); if (mn && mn !== p.name) links.push([p, mn]); }
-    } else { head = p; const mn = g(r, 'mentor'); if (mn && mn !== p.name) links.push([p, mn]); }
+      else if (role === 'zi') { lastZi = p; const mn = qinName || (root && root.name); if (mn && mn !== p.name) link(p, mn); }
+      else if (role === 'sun') { const mn = qinName || (lastZi && lastZi.name) || (root && root.name); if (mn && mn !== p.name) link(p, mn); }
+    } else { head = p; const mn = g(r, 'mentor'); if (mn && mn !== p.name) link(p, mn); }
     /* 繳費代表：有「組內序」欄時，1＝新一組的代表，>1＝跟著上一位代表，空白＝自己 */
     let payer = head;
     if (hasGrp) { const n = num(g(r, 'grp')); if (n === 1) curRep = p; else if (!(n > 1 && curRep)) curRep = null; payer = curRep || p; if (payer.famOf) payer = byId(people, payer.famOf) || payer; if (payer.id !== p.id && !(p.famOf && p.famOf === payer.id)) yr(p.id).rep = payer.id; }
@@ -862,7 +953,7 @@ function doImport() {
   }
   for (const [p, mn] of links) {
     if (p.mentorId) continue;
-    let m = people.find(x => x.name === mn);
+    let m = people.find(x => x.name === mn && x.status !== 'non') || people.find(x => x.name === mn);
     if (!m) { m = { id: uid(), name: mn, status: 'member', active: true, note: '（由匯入的導親欄自動建立）' }; people.push(m); touched.set(m.id, m); stubs++; }
     p.mentorId = m.id;
   }
@@ -870,7 +961,7 @@ function doImport() {
   for (const p of people) { let cur = p, n = 0; while (cur && cur.mentorId && n < 60) { cur = byid.get(cur.mentorId); n++; } if (n >= 60) { p.mentorId = ''; touched.set(p.id, p); } }
   if (!SMStore.putMany('seats', newSeats) || !SMStore.putMany('people', Array.from(touched.values())) || !SMStore.putMany('yearly', Array.from(yearly.values()))) return toast('儲存失敗：瀏覽器空間不足', 'err');
   imp.rows = [];
-  $('#view').innerHTML = `<div class="panel"><h2>匯入完成</h2><div>新增 ${added} 人｜合併更新 ${merged} 人${fams ? `｜家族成員 ${fams} 人` : ''}${stubs ? `｜由導親欄補建 ${stubs} 人` : ''}${newSeats.length ? `｜新增 ${newSeats.length} 個會座` : ''}${yearly.size ? `｜${Y} 年度資料 ${yearly.size} 筆` : ''}${skipped ? `｜略過 ${skipped} 列` : ''}</div>
+  $('#view').innerHTML = `<div class="panel"><h2>匯入完成</h2><div>新增 ${added} 人｜合併更新 ${merged} 人${fams ? `｜家族成員 ${fams} 人` : ''}${stubs ? `｜由導親欄補建 ${stubs} 人` : ''}${newSeats.length ? `｜新增 ${newSeats.length} 個會座` : ''}${yearly.size ? `｜${Y} 年度資料 ${yearly.size} 筆` : ''}${skipped ? `｜略過 ${skipped} 列` : ''}</div>${kept.size ? `<div class="notice" style="margin-top:6px">以下 ${kept.size} 人在名冊中列為導親／導子／所屬，但已是家族入信成員，維持家族入信（家族入信不能是獨立戶）：${esc(Array.from(kept).join('、'))}。若其實該獨立成戶，請點進去清空戶長。</div>` : ''}
   <div class="muted" style="margin-top:6px">請到「關係圖」核對導親／導子／所屬有沒有排對，到「年度」${yearly.size ? `（選 ${Y}）` : ''}核對各戶。判斷錯的人，點進去修改導親或戶長即可。</div><div class="row" style="margin-top:10px"><button onclick="go('lineage')">看關係圖</button><button class="alt" onclick="ui.year=${Y};go('year')">看年度</button><button class="alt" onclick="go('people')">看名單</button></div></div>`;
   toast('匯入完成');
 }
