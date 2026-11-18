@@ -533,17 +533,20 @@ function vStats() {
 }
 
 /* ═══════ 關係圖 ═══════ */
+/* 關係圖只看「戶」：家族入信成員不是節點；他們引的人算在戶長名下 */
+const hKids = id => { const ids = [id].concat(P().filter(x => x.famOf === id).map(x => x.id)); return P().filter(k => !k.famOf && k.id !== id && k.mentorId && ids.includes(k.mentorId)); };
+const hBelong = id => { const out = [], seen = new Set([id]); let cur = hKids(id); while (cur.length) { const nxt = []; for (const c of cur) if (!seen.has(c.id)) { seen.add(c.id); out.push(c); nxt.push(...hKids(c.id)); } cur = nxt; } return out; };
 function vLineage() {
   const y = ui.year, people = P().filter(p => p.active !== false && !p.famOf && p.status !== 'non');
   const roots = people.filter(p => !p.mentorId || !byId(people, p.mentorId)).sort((a, b) => byNameZh(a.name, b.name));
   const rootSel = ui.lineRoot ? [byId(people, ui.lineRoot)].filter(Boolean) : roots;
-  const node = (p, depth) => { const kids = children(p.id).filter(k => k.active !== false && k.status !== 'non'), fam = P().filter(x => x.famOf === p.id && x.active !== false && x.status !== 'non');
+  const node = (p, depth) => { const kids = hKids(p.id).filter(k => k.active !== false && k.status !== 'non'), fam = P().filter(x => x.famOf === p.id && x.active !== false && x.status !== 'non');
     const lab = depth === 0 ? '導親' : depth === 1 ? '導子' : '所屬';
     return `<li class="${notCounted(p, y) ? 'unpaid' : ''}"><span class="nm" onclick="editPerson('${p.id}')">${esc(p.name)}</span> <span class="chip good">${lab}</span><span class="chip dark">獨立戶</span><span class="chip ${p.status === 'non' ? 'non' : ''}">${ST[p.status] || '入信'}</span>${p.deceased ? '<span class="chip bad">歿</span>' : ''}${p.idle ? '<span class="chip bad">未精進</span>' : ''}${depth ? creditChip(p, y) : ''}${fam.length ? `<div class="muted">家族入信成員：${fam.map(f => esc(f.name) + (f.status === 'non' ? '（未入信）' : '')).join('、')}</div>` : ''}${kids.length ? '<ul>' + kids.sort((a, b) => byNameZh(a.name, b.name)).map(k => node(k, depth + 1)).join('') + '</ul>' : ''}</li>`; };
   const sel = ui.lineRoot && byId(people, ui.lineRoot);
   let sum = '';
   if (sel) {
-    const direct = children(sel.id).filter(k => k.active !== false), all = direct.concat(belong(sel.id).filter(k => k.active !== false)).filter(k => !k.famOf);
+    const direct = hKids(sel.id).filter(k => k.active !== false && k.status !== 'non'), dids = new Set(direct.map(k => k.id)), all = direct.concat(hBelong(sel.id).filter(k => k.active !== false && k.status !== 'non' && !dids.has(k.id)));
     const cnt = l => ({ ok: l.filter(k => creditOf(k, y) === 'ok').length, bad: l.filter(k => notCounted(k, y)).length });
     const cm = l => l.filter(k => creditOf(k, y)), a = cnt(direct), b = cnt(all), nd = cm(direct).length, na = cm(all).length;
     sum = `<div style="margin-top:8px"><b>導子 ${direct.length} 戶　所屬（含導子再引的各代）${all.length - direct.length} 戶</b></div>
@@ -551,7 +554,7 @@ function vLineage() {
   }
   $('#view').innerHTML = `<div class="row"><h2 class="grow" style="margin:0">關係圖</h2>
   <select style="width:auto" onchange="ui.year=+this.value;renderAll()">${[y - 1, y, y + 1].map(v => `<option ${v === y ? 'selected' : ''}>${v}</option>`).join('')}</select></div><div class="panel">
-  <label style="margin-top:0">從誰開始看</label><select onchange="ui.lineRoot=this.value;renderAll()"><option value="">所有最上層的人（${roots.length}）</option>${people.map(p => `<option value="${p.id}" ${ui.lineRoot === p.id ? 'selected' : ''}>${esc(p.name)}（導子 ${children(p.id).length}／所屬 ${belong(p.id).length}）</option>`).join('')}</select>
+  <label style="margin-top:0">從誰開始看</label><select onchange="ui.lineRoot=this.value;renderAll()"><option value="">所有最上層的人（${roots.length}）</option>${people.map(p => `<option value="${p.id}" ${ui.lineRoot === p.id ? 'selected' : ''}>${esc(p.name)}（導子 ${hKids(p.id).length}／所屬 ${Math.max(0, hBelong(p.id).length - hKids(p.id).length)}）</option>`).join('')}</select>
   ${sum}
   <div class="muted" style="margin-top:6px">每個節點是一個獨立戶，家族入信成員列在該戶底下。導子／所屬的獨立戶要「當年度已繳苑費」才算實績，未繳或未申請的以淡色＋紅標呈現。在個人資料填「導親」就會長出這棵圖。點名字可編輯。</div></div>
   <div class="panel tree">${rootSel.length ? '<ul>' + rootSel.map(r => node(r, 0)).join('') + '</ul>' : '<div class="muted">還沒有資料</div>'}</div>`;
