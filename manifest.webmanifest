@@ -1,7 +1,7 @@
 {
   "name": "信徒管理",
   "short_name": "信徒管理",
-  "description": "信徒名冊（導親・導子・所屬・家族入信）與年度苑費管理（跨裝置加密同步）",
+  "description": "信徒名冊、苑費與祈念證、實踐、星供、費用總結、奠供帳（跨裝置加密同步）",
   "lang": "zh-Hant-TW",
   "start_url": "./index.html",
   "scope": "./",

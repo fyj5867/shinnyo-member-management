@@ -1,8 +1,8 @@
 /* 信徒管理 — 本機資料層（單一快照 sm.data.v1，由 sync.js 加密同步）
-   集合：people 人員｜seats 會座｜yearly 年度申請與收費（id=年度:人員id）｜config 設定 */
+   集合：people 人員｜seats 會座（舊）｜yearly 年度申請與收費（id=年度:人員id）｜config 設定｜ledger 奠供帳（一戶一本，每筆一個紀錄） */
 (function (g) {
   'use strict';
-  var KEY = 'sm.data.v1', COLS = ['people', 'seats', 'yearly', 'config'];
+  var KEY = 'sm.data.v1', COLS = ['people', 'seats', 'yearly', 'config', 'ledger'];
   var OK = (function () { try { localStorage.setItem('__p', '1'); localStorage.removeItem('__p'); return true; } catch (e) { return false; } })();
   var iso = function () { return new Date().toISOString(); };
   var mem = null;

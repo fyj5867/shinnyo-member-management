@@ -19,7 +19,7 @@ header b{font-size:17px}
 #syncBtn.ok::before{content:"● ";color:#7be0a3}#syncBtn.err::before{content:"● ";color:#ff9c7a}#syncBtn.busy::before{content:"● ";color:#ffd77a}#syncBtn.off::before{content:"○ "}
 main{max-width:1100px;margin:auto;padding:12px 12px 100px}
 nav.tabs{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;z-index:6;padding-bottom:env(safe-area-inset-bottom)}
-nav.tabs button{flex:1;background:none;color:var(--muted);border-radius:0;padding:10px 2px;font-size:12px;font-weight:600}
+nav.tabs button{flex:1;background:none;color:var(--muted);border-radius:0;padding:9px 1px;font-size:11.5px;font-weight:600;min-width:0}
 nav.tabs button.on{color:var(--g);box-shadow:inset 0 3px 0 var(--g)}
 nav.tabs button i{display:block;font-style:normal;font-size:18px}
 button{border:0;border-radius:10px;padding:10px 13px;background:var(--g);color:#fff;font-weight:650;font-size:14px;cursor:pointer}
@@ -48,7 +48,7 @@ label.ck input{width:auto;margin:0}
 .fchip{background:#fff;border:1px solid var(--line);color:#1b302b;border-radius:20px;padding:6px 12px;font-size:13px;font-weight:500}
 .fchip b{margin-left:2px}.fchip.on{background:var(--g);color:#fff;border-color:var(--g)}
 .tbl{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.tr{display:grid;grid-template-columns:40px 58px minmax(0,1fr) 46px 92px 116px 116px 34px;gap:6px;align-items:center;padding:5px 10px;border-top:1px solid var(--line);min-height:44px}
+.tr{display:grid;grid-template-columns:40px 40px 58px minmax(0,1fr) 46px 92px 116px 116px 34px;gap:6px;align-items:center;padding:5px 10px;border-top:1px solid var(--line);min-height:44px}
 .tr.th{font-size:12px;color:var(--muted);border-top:0;background:#f7faf8;min-height:0;padding:7px 10px}
 .tr.fam{background:#fafcfb;font-size:14px;min-height:36px}
 .tr.dead .nm a{color:#9aa7a1;text-decoration:line-through;font-weight:500}
@@ -69,7 +69,38 @@ label.ck input{width:auto;margin:0}
 .lv0{background:#173b35;color:#fff}.lv1{background:#dbe8f6;color:#1d4f86}.lv2{background:#f5ead2;color:#7a5a12}.lvf{background:#eef1ef;color:#6b7a73;font-weight:500}
 .add{width:30px;height:30px;padding:0;background:#e2eee8;color:var(--g);border-radius:8px;font-size:17px}
 .c-d,.c-c,.c-p{font-size:12px;color:#4b5f57;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-@media(max-width:760px){.tr{grid-template-columns:40px 56px minmax(0,1fr) 42px 32px;padding:5px 8px}.c-d,.c-c,.c-p{display:none}.lvc{display:block;margin:4px 0 0}}
+@media(max-width:760px){.tr{grid-template-columns:38px 38px 54px minmax(0,1fr) 42px 32px;gap:5px;padding:5px 8px}.c-d,.c-c,.c-p{display:none}.lvc{display:block;margin:4px 0 0}}
+.fee.c.v{background:#ece8f6;border-color:#6b5ca5;color:#4b3f7a}
+/* 名冊卡片 */
+.chip.dark{background:#2b4a3c;color:#fff}.chip.pc{background:#e8e4f3;color:#4b3f7a;margin:2px 3px 2px 0}.chip.idle{background:#f6e3d8;color:var(--warn);margin:2px 3px 2px 0}
+.fchip.sm{padding:5px 10px;font-size:12.5px}.fchip.v{background:#dcefe3;border-color:var(--ok);color:var(--ok);font-weight:700}.fchip.x{background:#f6e3d8;border-color:var(--warn);color:var(--warn);font-weight:700}
+.fchip.c{background:#ece8f6;border-color:#6b5ca5;color:#4b3f7a;font-weight:700}.fchip.pd{background:var(--ok);border-color:var(--ok);color:#fff;font-weight:700}
+.hc .nm1{font-size:17px;font-weight:800;color:#1b302b;cursor:pointer}
+.hc.dead .nm1,.fm.dead>a{color:#9aa7a1;text-decoration:line-through}
+.fams{margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}.fams>a{cursor:pointer}
+.fm{padding:6px 0 2px}.fm>a{font-weight:700;color:#1b302b;cursor:pointer;margin-right:4px}
+@media(max-width:760px){.hc{margin-left:0!important;border-left-width:4px}.hc.d1{border-left-color:#9fc0e6}.hc.d2{border-left-color:#e3c98f}.hc.d0{border-left-color:#2b4a3c}}
+.chip.non{background:#f1ebdd;color:#7a6330}
+/* 星供、費用、奠供帳 */
+.card{border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:8px 0;background:#fff}
+.card .hd{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.card .hd .grow{flex:1;min-width:0}
+.srow{display:grid;grid-template-columns:40px minmax(0,1fr) 100px 64px;gap:6px;align-items:center;padding:6px 0;border-top:1px dashed var(--line)}
+.nm1{font-size:17px;font-weight:800;color:#1b302b;cursor:pointer}
+.srow.th{border-top:0;font-size:11px;color:var(--muted);padding:2px 0}
+.qty{display:flex;align-items:center;gap:3px}.qty button{width:30px;height:30px;padding:0;background:#e2eee8;color:var(--g);border-radius:8px;font-size:16px}.qty span{min-width:20px;text-align:center;font-weight:700}
+.amt{text-align:right;font-weight:700;font-size:14px;white-space:nowrap}
+.gfoot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px;background:#f6faf8;border-radius:10px;padding:8px}
+.frow{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-top:1px dashed var(--line)}
+.frow input[type=checkbox],.card .hd input[type=checkbox]{width:20px;height:20px;margin:1px 0 0;flex:none}
+.frow .who{flex:1;min-width:0}.frow .it{font-size:12px;color:var(--muted);margin-top:2px}.frow .t{font-weight:700;white-space:nowrap}
+.feebar{position:fixed;left:0;right:0;bottom:calc(58px + env(safe-area-inset-bottom));z-index:6;background:#173b35;color:#fff;padding:10px 14px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.feebar b{font-size:19px;margin-left:4px}.feebar .grow{flex:1}
+.seg2{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;flex:none}.seg2 button{border-radius:0;background:#fff;color:var(--g);padding:7px 12px;font-size:13px}.seg2 button.on{background:var(--g);color:#fff}
+.bal{font-weight:800;color:var(--ok)}.bal.neg{color:var(--warn)}
+.ent .il{display:flex;justify-content:space-between;gap:8px;font-size:14px;padding:2px 0}.ent .il .m{font-size:12px;color:var(--muted)}
+.pre{white-space:pre-wrap;font-size:13px;line-height:1.6;background:#fafcfb;border:1px solid #eef2ef;border-radius:8px;padding:8px;margin-top:6px;word-break:break-word}
+.irow{display:grid;grid-template-columns:minmax(0,1.3fr) 92px minmax(0,1fr) 36px;gap:6px;margin-bottom:6px}.irow input{padding:8px}.irow button{padding:0}
+@media(max-width:560px){.irow{grid-template-columns:minmax(0,1fr) 84px 36px}.irow .i_memo{grid-column:1/3}.srow{grid-template-columns:36px minmax(0,1fr) 98px 56px;gap:5px}}
 /* 實踐表 */
 .mx{overflow-x:auto;background:#fff;border:1px solid var(--line);border-radius:14px}
 .mx table{border-collapse:separate;border-spacing:0;font-size:14px;min-width:100%}
@@ -122,21 +153,30 @@ function toast(msg, kind) {
 /* ═══════ 資料 ═══════
    people：{ id, name, roman, birth, joinedOn, code, rank(院生號碼), teacherNo(教師號碼), phone, note, famOf(戶長), mentorId(導親), deceased, deathOn, ref(我的導親，參考用), ord(排序),
              prac(實踐勾選項目), pracDu(度眾人數), pracOther(實踐其他), ext{ 自訂欄位id: 值 } }
-   yearly：{ id: 年度:人id, year, pid, fee: 'v'要繳｜'x'不繳｜''未定, paid: 收款日 }，只記在獨立戶（戶長）那筆
-   舊版的「未入信（星供名單）」人員一律不顯示；星供、祈年證、套子、代繳已拿掉。 */
+             未入信者（只申請星供）：status 'non'，grp＝跟著哪一組（某戶戶長或另一位未入信者）；不出現在名冊、實踐
+   yearly：{ id: 年度:人id, year, pid,
+             戶長那筆：fee 苑費 'v'要繳｜'x'不繳｜'', cert 祈念證 'v'｜'', paid 苑費／祈念證已收, rep 由哪一組代繳, starPaid 星供已收, starSent 星供已發送
+             每個人：star 星供, set 套子份數 }
+   ledger：奠供帳 { id, hid 戶長, date, kind 'out'申請｜'in'預存｜'adj'校正, items[{name, amt, memo}], text 內容, stated 你記的結餘, seq } */
 const P = () => SMStore.all('people').filter(p => p.status !== 'non' && p.active !== false);
-const YR = () => SMStore.all('yearly');
+const YR = () => SMStore.all('yearly'), LG = () => SMStore.all('ledger');
 const cfgGet = (name, dflt) => { const d = SMStore.get('config', name); return d && d.data != null ? d.data : dflt; };
 const cfgSet = (name, data) => SMStore.put('config', { id: name, data });
 const orgName = () => cfgGet('org', { name: '' }).name || '';
+/* 年度金額（在「設定」填，不寫在程式裡） */
+const FEES = [['yuan', '苑費'], ['cert', '祈念證'], ['star', '星供'], ['set', '套子（每份）']];
+function price(y, k) { const p = cfgGet('prices', { def: {}, byYear: {} }), yy = (p.byYear || {})[y] || {}; return +(yy[k] != null && yy[k] !== '' ? yy[k] : (p.def || {})[k]) || 0; }
+const money = n => (n < 0 ? '-$' : '$') + Math.abs(Math.round(+n || 0)).toLocaleString('en-US');
+const amtOf = v => { const n = parseInt(String(v == null ? '' : v).replace(/[$＄,\s元]/g, ''), 10); return isNaN(n) ? 0 : n; };
 /* 實踐（精進的細項努力）：每人目前的狀態，不分年度。有任何一項＝精進中，全空＝未精進 */
-const PRAC_A = ['奉侍', '布施', '接心', '集會', '法會'], KAIZA = ['大乘', '歡喜', '大歡喜', '靈發'], PRAC_B = ['智流學院'];
+const PRAC_A = ['奉侍', '護摩', '超度', '布施', '接心', '集會', '法會'], KAIZA = ['大乘', '歡喜', '大歡喜', '靈發'], PRAC_B = ['智流學院'];
 const PRAC_ALL = PRAC_A.concat(KAIZA.map(k => '會座-' + k), PRAC_B);
 const pracOn = (p, k) => (p.prac || []).includes(k);
 const hasKaiza = p => KAIZA.some(k => pracOn(p, '會座-' + k));
 const isActive = p => PRAC_ALL.some(k => pracOn(p, k)) || +p.pracDu > 0 || !!String(p.pracOther || '').trim();
 /* 自訂個人資料欄位：每人都有，值存在 p.ext[欄位 id] */
 const fields = () => cfgGet('fields', [{ id: 'lingwei', name: '靈位' }]);
+const LINGWEI = ['小乘', '大乘', '歡喜', '大歡喜', '靈發', '靈能者'];                 /* 靈位欄的輸入提示（使用者先前列過的選項） */
 /* Excel 的「院生號碼／教師號碼」：「90078 / 43493」→ 院生 90078、教師 43493；只有一個號碼時當院生號碼 */
 const splitRank = s => { const t = String(s || '').replace(/\s*\n\s*/g, ' ').trim(); if (!t.includes('/')) return [t, '']; const [a, b] = t.split(/\s*\/\s*/); return [a || '', b || '']; };
 
@@ -149,7 +189,8 @@ const splitRank = s => { const t = String(s || '').replace(/\s*\n\s*/g, ' ').tri
 let _ix = null;
 function IX() {
   if (_ix) return _ix;
-  const all = P(), m = new Map(all.map(p => [p.id, p])), yr = new Map(YR().map(r => [r.id, r]));
+  const raw = SMStore.all('people').filter(p => p.active !== false), all = raw.filter(p => p.status !== 'non'), m = new Map(all.map(p => [p.id, p])), yr = new Map(YR().map(r => [r.id, r]));
+  const nm = new Map(raw.filter(p => p.status === 'non').map(p => [p.id, p]));
   const push = (mp, k, v) => { if (!mp.has(k)) mp.set(k, []); mp.get(k).push(v); };
   const topHead = p => { const seen = new Set([p.id]); let cur = m.get(p.famOf); while (cur) { if (seen.has(cur.id) || cur.ref) return null; if (!cur.famOf) return cur; seen.add(cur.id); cur = m.get(cur.famOf); } return null; };
   const kind = new Map(), head = new Map(), fam = new Map(), mh = new Map(), kids = new Map();
@@ -171,7 +212,7 @@ function IX() {
   const walk = (p, d) => { if (seen.has(p.id)) return; seen.add(p.id); depth.set(p.id, d); rows.push(p); (kids.get(p.id) || []).forEach(k => walk(k, d + 1)); };
   all.filter(p => kind.get(p.id) === 'house' && !mh.has(p.id)).sort(ord).forEach(p => walk(p, 0));
   const loops = all.filter(p => kind.get(p.id) === 'house' && !seen.has(p.id));
-  _ix = { m, yr, kind, head, fam, mh, kids, rows, depth, loops, refs: all.filter(p => p.ref).sort(ord) };
+  _ix = { m, nm, yr, kind, head, fam, mh, kids, rows, depth, loops, refs: all.filter(p => p.ref).sort(ord) };
   queueMicrotask(() => { _ix = null; });
   return _ix;
 }
@@ -179,10 +220,29 @@ function IX() {
 const LV = ['導親', '導子', '所屬'];
 const lvIdx = p => Math.min(IX().depth.get(p.id) || 0, 2);
 const lvOf = p => IX().depth.has(p.id) ? LV[lvIdx(p)] : '';
-function feeOf(y, pid) {
-  const r = IX().yr.get(y + ':' + pid);
-  return { id: y + ':' + pid, year: y, pid, fee: r ? (r.fee != null ? r.fee : r.yuan ? 'v' : '') : '', paid: r ? (r.paid != null ? r.paid : r.yuanPaid || '') : '' };
+const anyP = id => IX().m.get(id) || IX().nm.get(id) || null;
+function yrOf(y, pid) {
+  const r = IX().yr.get(y + ':' + pid) || {};
+  return Object.assign({}, r, { id: y + ':' + pid, year: y, pid,
+    fee: r.fee != null ? r.fee : r.yuan ? 'v' : '', paid: r.paid != null ? r.paid : (r.yuanPaid || ''), cert: r.cert === true || r.cert === 'v' ? 'v' : '',
+    star: !!r.star, set: Math.max(0, parseInt(r.set, 10) || 0), rep: r.rep || '', starPaid: r.starPaid || '', starSent: !!r.starSent });
 }
+const feeOf = yrOf;
+function saveYr(r) { const o = Object.assign({}, r); delete o.updatedAt; delete o.yuan; delete o.yuanPaid; SMStore.put('yearly', o); }
+/* 每個人在某年度申請的費用：苑費、祈念證記在戶長（整戶一份）；星供、套子每人各自 */
+function feeItems(y, p) {
+  const r = yrOf(y, p.id), out = [];
+  if (IX().kind.get(p.id) === 'house') { if (r.fee === 'v') out.push(['苑費', price(y, 'yuan'), 'a']); if (r.cert === 'v') out.push(['祈念證', price(y, 'cert'), 'a']); }
+  if (r.star) out.push(['星供', price(y, 'star'), 'b']);
+  if (r.set) out.push([`套子 ${r.set} 份`, r.set * price(y, 'set'), 'b']);
+  return out;
+}
+const sumItems = it => it.reduce((a, x) => a + x[1], 0);
+function yearSel(label) {
+  const y = ui.year, ys = new Set([y - 1, y, y + 1]); YR().forEach(r => { if (+r.year) ys.add(+r.year); });
+  return `<select style="width:auto" onchange="ui.year=+this.value;renderAll()">${[...ys].sort().map(v => `<option value="${v}" ${v === y ? 'selected' : ''}>${v} ${label}</option>`).join('')}</select>`;
+}
+function priceNote(keys) { const miss = FEES.filter(([k]) => keys.includes(k) && !price(ui.year, k)).map(([, n]) => n); return miss.length ? `<div class="notice" style="margin-top:8px">${esc(miss.join('、'))} 還沒設定 ${ui.year} 年金額，會算成 0。到「設定」→「年度金額」填寫。</div>` : ''; }
 function wouldLoop(pid, mentorId) {
   const ix = IX(); let cur = ix.m.get(mentorId); if (cur && ix.kind.get(cur.id) === 'family') cur = ix.head.get(cur.id);
   const seen = new Set();
@@ -213,28 +273,33 @@ function dataIssues() {
   return out;
 }
 function stats(y) {
-  const ix = IX(), s = { lv: [0, 0, 0], v: 0, paid: 0, x: 0, none: 0, houses: 0, fam: 0, dead: 0 };
+  const ix = IX(), s = { lv: [0, 0, 0], v: 0, cert: 0, due: 0, paid: 0, x: 0, none: 0, houses: 0, fam: 0, dead: 0 };
   ix.rows.forEach(p => {
     (ix.fam.get(p.id) || []).forEach(f => { if (f.deceased) s.dead++; else s.fam++; });
     if (p.deceased) { s.dead++; return; }
-    s.houses++; const f = feeOf(y, p.id);
-    if (f.fee === 'v') { s.v++; s.lv[lvIdx(p)]++; if (f.paid) s.paid++; } else if (f.fee === 'x') s.x++; else s.none++;
+    s.houses++; const f = yrOf(y, p.id);
+    if (f.fee === 'v') { s.v++; s.lv[lvIdx(p)]++; } else if (f.fee === 'x') s.x++; else s.none++;
+    if (f.cert === 'v') s.cert++;
+    if (f.fee === 'v' || f.cert === 'v') { s.due++; if (f.paid) s.paid++; }
   });
   s.people = s.houses + s.fam; return s;
 }
 
 /* ═══════ 導覽 ═══════ */
-const TABS = [['roster', '👥', '名冊'], ['prac', '🙏', '實踐'], ['settings', '⚙️', '設定']];
-const ui = { tab: 'roster', year: new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear(), q: '', f: '', pf: '', fold: false, flip: new Set() };
-let imp = null;
-function go(t) { ui.tab = t; renderAll(); scrollTo(0, 0); }
+const TABS = [['roster', '👥', '名冊'], ['prac', '🙏', '實踐'], ['star', '⭐', '星供'], ['fees', '🧮', '費用'], ['ledger', '📒', '奠供帳'], ['settings', '⚙️', '設定']];
+const LSget = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
+const LSset = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
+const ui = { tab: 'roster', year: new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear(), q: '', f: '', pf: '', fold: false, flip: new Set(),
+  view: LSget('sm.view') || 'card', sAll: false, sel: new Set(), fAll: false, fUnpaid: false, lg: '', lgView: 'book', lgMonth: '' };
+let imp = null, simp = null;
+function go(t) { ui.tab = t; ui.q = ''; if (t !== 'ledger') ui.lg = ''; renderAll(); scrollTo(0, 0); }
 function renderAll() {
   _ix = null; try { fixData(); } catch (e) { console.error(e); }
   renderSyncBtn();
   if (!$('#modal').classList.contains('hidden')) return;           /* 編輯中不重畫，避免吃掉輸入 */
   const o = orgName(); $('#appTitle').textContent = o ? o + '　信徒管理' : '信徒管理';
   $('#tabs').innerHTML = TABS.map(([k, ic, n]) => `<button class="${k === ui.tab ? 'on' : ''}" onclick="go('${k}')"><i>${ic}</i>${n}</button>`).join('');
-  ({ roster: vRoster, prac: vPrac, settings: vSettings }[ui.tab] || vRoster)();
+  ({ roster: vRoster, prac: vPrac, star: vStar, fees: vFees, ledger: vLedger, settings: vSettings }[ui.tab] || vRoster)();
 }
 function renderSyncBtn() { const s = SMSync.status(), b = $('#syncBtn'); b.className = s.cls; b.textContent = s.txt; }
 function openModal(html) { $('#modalBody').innerHTML = html; $('#modal').classList.remove('hidden'); }
@@ -242,22 +307,22 @@ function closeModal() { $('#modal').classList.add('hidden'); renderAll(); }
 
 /* ═══════ 名冊（主畫面）═══════ */
 function vRoster() {
-  const y = ui.year, ys = new Set([y - 1, y, y + 1]); YR().forEach(r => { if (+r.year) ys.add(+r.year); });
-  $('#view').innerHTML = `<div class="bar">
-  <select style="width:auto" onchange="ui.year=+this.value;renderAll()">${[...ys].sort().map(v => `<option value="${v}" ${v === y ? 'selected' : ''}>${v} 苑費</option>`).join('')}</select>
+  $('#view').innerHTML = `<div class="bar">${yearSel('苑費')}
   <input class="grow" placeholder="搜尋姓名、編號、手機、備註" value="${esc(ui.q)}" oninput="ui.q=this.value;renderList()">
+  <span class="seg2"><button class="${ui.view === 'card' ? 'on' : ''}" onclick="setView('card')">卡片</button><button class="${ui.view === 'table' ? 'on' : ''}" onclick="setView('table')">表格</button></span>
   <button class="sm" onclick="editPerson('')">＋新增</button><button class="alt sm" onclick="doXlsx()">匯出 Excel</button><button class="alt sm" onclick="doPrint()">列印</button></div>
-  <div id="sum"></div><div id="list" class="tbl"></div>`;
+  <div id="sum"></div><div id="list"></div>`;
   renderList();
 }
-function renderList() { const s = $('#sum'), l = $('#list'); if (!s || !l) return; s.innerHTML = sumHtml(); l.innerHTML = listHtml(); }
+function setView(v) { ui.view = v; LSset('sm.view', v); renderAll(); }
+function renderList() { const s = $('#sum'), l = $('#list'); if (!s || !l) return; s.innerHTML = sumHtml(); l.className = ui.view === 'table' ? 'tbl' : ''; l.innerHTML = listHtml(); }
 function sumHtml() {
   const y = ui.year, ix = IX(), st = stats(y), py = stats(y - 1), iss = dataIssues();
   const chip = (k, n, c) => `<button class="fchip ${ui.f === k ? 'on' : ''}" onclick="ui.f=ui.f==='${k}'?'':'${k}';renderList()">${n}<b>${c}</b></button>`;
-  return `<div class="panel sum"><div class="big">${y} 苑費要繳<b>${st.v}</b>戶<span class="lvc">導親 <b>${st.lv[0]}</b>｜導子 <b>${st.lv[1]}</b>｜所屬 <b>${st.lv[2]}</b></span></div>
-  <div class="row" style="margin-top:8px">${chip('v', '要繳 v ', st.v)}${chip('unpaid', '未收 ', st.v - st.paid)}${chip('paid', '已收 ', st.paid)}${chip('x', '不繳 x ', st.x)}${chip('none', '未定 ', st.none)}
+  return `<div class="panel sum"><div class="big">${y} 苑費要繳<b>${st.v}</b>戶<span class="lvc">導親 <b>${st.lv[0]}</b>｜導子 <b>${st.lv[1]}</b>｜所屬 <b>${st.lv[2]}</b>｜祈念證 <b>${st.cert}</b> 戶</span></div>
+  <div class="chips">${chip('v', '要繳 v ', st.v)}${chip('cert', '祈念證 ', st.cert)}${chip('unpaid', '未收 ', st.due - st.paid)}${chip('paid', '已收 ', st.paid)}${chip('x', '不繳 x ', st.x)}${chip('none', '未定 ', st.none)}
   <button class="fchip" onclick="ui.fold=!ui.fold;ui.flip.clear();renderList()">${ui.fold ? '展開家族' : '收合家族'}</button></div>
-  <div class="muted" style="margin-top:6px">信徒 ${st.people} 人＝獨立戶 ${st.houses}＋家族入信 ${st.fam}${st.dead ? `（已歿 ${st.dead} 人不計）` : ''}。苑費格只在戶長那列，點一下切換 空白→v→x；家族跟著戶長，不算實績。</div>
+  <div class="muted" style="margin-top:6px">信徒 ${st.people} 人＝獨立戶 ${st.houses}＋家族入信 ${st.fam}${st.dead ? `（已歿 ${st.dead} 人不計）` : ''}。祈念證、苑費以戶為單位，點一下切換；「已收」含苑費和祈念證。家族跟著戶長，不算實績。</div>
   ${ix.refs.length ? `<div class="muted ref">我的導親（參考，不列入苑費與統計）：${ix.refs.map(r => `<a onclick="editPerson('${r.id}')">${esc(r.name)}</a>`).join('、')}</div>` : ''}
   ${!st.v && !st.x && (py.v || py.x) ? `<div class="notice" style="margin-top:8px">${y} 年還沒有點苑費。<button class="sm" onclick="carryOver()">帶入 ${y - 1} 年的 v／x</button></div>` : ''}
   ${iss.length ? `<div class="notice" style="margin-top:8px"><b>資料檢查：${iss.length} 項要你確認</b>（點名字修改）${iss.map(([p, t]) => `<div><a onclick="editPerson('${p.id}')">${esc(p.name)}</a>：${esc(t)}</div>`).join('')}</div>` : ''}</div>`;
@@ -268,50 +333,75 @@ function listHtml() {
   const y = ui.year, ix = IX(), q = ui.q.trim().toLowerCase();
   if (!ix.rows.length) return '<div class="muted" style="padding:24px;text-align:center">還沒有資料。到「設定」匯入你的 Excel 名冊，或按「＋新增」。</div>';
   const hit = p => [p.name, p.roman, p.code, p.phone, p.rank, p.teacherNo, p.note].concat(Object.values(p.ext || {})).some(x => String(x || '').toLowerCase().includes(q));
-  const fOk = p => { if (!ui.f) return true; if (p.deceased) return false; const f = feeOf(y, p.id);
-    return ui.f === 'v' ? f.fee === 'v' : ui.f === 'unpaid' ? f.fee === 'v' && !f.paid : ui.f === 'paid' ? f.fee === 'v' && !!f.paid : ui.f === 'x' ? f.fee === 'x' : f.fee === ''; };
-  const flat = !!(q || ui.f); let body = '', n = 0;
+  const fOk = p => { if (!ui.f) return true; if (p.deceased) return false; const f = yrOf(y, p.id), due = f.fee === 'v' || f.cert === 'v';
+    return ui.f === 'v' ? f.fee === 'v' : ui.f === 'cert' ? f.cert === 'v' : ui.f === 'unpaid' ? due && !f.paid : ui.f === 'paid' ? due && !!f.paid : ui.f === 'x' ? f.fee === 'x' : f.fee === ''; };
+  const flat = !!(q || ui.f), card = ui.view !== 'table'; let body = '', n = 0;
   ix.rows.forEach(p => {
-    if (!flat) { body += houseRow(p, false, false); return; }
+    if (!flat) { body += card ? houseCard(p, false, false) : houseRow(p, false, false); return; }
     const famHit = !!q && (ix.fam.get(p.id) || []).some(hit);
     if ((q && !hit(p) && !famHit) || !fOk(p)) return;
-    n++; body += houseRow(p, true, famHit);
+    n++; body += card ? houseCard(p, true, famHit) : houseRow(p, true, famHit);
   });
-  const th = '<div class="tr th"><span>苑費</span><span>已收</span><span>姓名</span><span>層級</span><span class="c-d">入信時間</span><span class="c-c">信徒編號</span><span class="c-p">手機</span><span></span></div>';
-  return th + (flat ? `<div class="tr th" style="grid-template-columns:1fr">符合 ${n} 戶${ui.f ? '　<a onclick="ui.f=\'\';renderList()" style="color:var(--g);cursor:pointer">清除篩選</a>' : ''}</div>` : '') + (body || '<div class="muted" style="padding:20px;text-align:center">沒有符合的人</div>');
+  const cnt = flat ? `<div class="muted" style="padding:6px 4px">符合 ${n} 戶${ui.f ? '　<a onclick="ui.f=\'\';renderList()">清除篩選</a>' : ''}</div>` : '';
+  const none = '<div class="muted" style="padding:20px;text-align:center">沒有符合的人</div>';
+  if (card) return cnt + (body || none);
+  const th = '<div class="tr th"><span>祈念證</span><span>苑費</span><span>已收</span><span>姓名</span><span>層級</span><span class="c-d">入信時間</span><span class="c-c">信徒編號</span><span class="c-p">手機</span><span></span></div>';
+  return th + cnt + (body || none);
+}
+/* 卡片：一戶一張，寫出導親、導子幾戶、精進狀態，家族入信成員接在下面 */
+const pracChips = x => { const a = (x.prac || []).filter(k => PRAC_ALL.includes(k)).map(k => k.replace(/^會座-/, '會座・')).concat(+x.pracDu > 0 ? ['度眾 ' + x.pracDu] : [], x.pracOther ? [x.pracOther] : []);
+  return a.length ? a.map(k => `<span class="chip pc">${esc(k)}</span>`).join('') : '<span class="chip idle">未精進</span>'; };
+const infoLine = x => [x.code && '編號 ' + x.code, x.joinedOn && '入信 ' + x.joinedOn, x.birth && '生日 ' + x.birth, x.phone].concat(fields().map(f => (x.ext || {})[f.id] ? f.name + ' ' + x.ext[f.id] : '')).filter(Boolean).map(esc).join('｜');
+function houseCard(p, flat, forceOpen) {
+  const ix = IX(), y = ui.year, f = yrOf(y, p.id), fam = ix.fam.get(p.id) || [], d = ix.depth.get(p.id) || 0, li = Math.min(d, 2), mh = ix.mh.get(p.id), kids = ix.kids.get(p.id) || [];
+  const open = fam.length && (forceOpen || isOpen(p.id)), due = f.fee === 'v' || f.cert === 'v';
+  const fees = p.deceased ? '' : `<button class="fchip sm ${f.fee}" onclick="cycleFee('${p.id}')">${y} 苑費 ${f.fee === 'v' ? '要繳' : f.fee === 'x' ? '不繳' : '未定'}</button><button class="fchip sm ${f.cert ? 'c' : ''}" onclick="toggleCert('${p.id}')">祈念證${f.cert ? ' 申請' : ''}</button>${due ? `<button class="fchip sm ${f.paid ? 'pd' : ''}" onclick="editPaid('${p.id}')">${f.paid ? '已收 ' + esc(md(f.paid)) : '收款'}</button>` : ''}`;
+  return `<div class="card hc d${li}${p.deceased ? ' dead' : ''}" style="margin-left:${flat ? 0 : Math.min(d, 3) * 12}px">
+  <div class="hd"><span class="chip dark">獨立戶</span><a class="nm1" onclick="editPerson('${p.id}')">${esc(p.name)}</a><span class="lv lv${li}">${LV[li]}</span>${p.deceased ? '<span class="chip">歿</span>' : ''}<span class="grow"></span><button class="add" title="新增導子或家族" onclick="addMenu('${p.id}')">＋</button></div>
+  ${fees ? `<div class="row" style="margin-top:6px;gap:6px">${fees}</div>` : ''}
+  <div style="margin-top:6px">${pracChips(p)}</div>
+  <div class="muted" style="margin-top:4px">${infoLine(p)}${mh ? `｜導親：<a onclick="editPerson('${mh.id}')">${esc(mh.name)}</a>` : ''}${kids.length ? `｜導子 ${kids.length} 戶` : ''}</div>
+  ${fam.length ? `<div class="fams"><a class="muted" onclick="flip('${p.id}')"><b>家族入信成員 ${fam.length} 人 ${open ? '▾' : '▸'}</b></a>${open ? fam.map(m => `<div class="fm${m.deceased ? ' dead' : ''}"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''} ${m.deceased ? '' : pracChips(m)}<div class="muted">${infoLine(m)}</div></div>`).join('') : ''}</div>` : ''}</div>`;
 }
 function houseRow(p, flat, forceOpen) {
-  const ix = IX(), y = ui.year, f = feeOf(y, p.id), fam = ix.fam.get(p.id) || [], d = ix.depth.get(p.id) || 0, li = Math.min(d, 2);
+  const ix = IX(), y = ui.year, f = yrOf(y, p.id), fam = ix.fam.get(p.id) || [], d = ix.depth.get(p.id) || 0, li = Math.min(d, 2);
   const open = fam.length && (forceOpen || isOpen(p.id)), ind = flat ? 0 : Math.min(d, 4) * 16;
+  const cert = p.deceased ? '<span></span>' : `<button class="fee c ${f.cert}" title="祈念證：點一下切換 申請／不申請" onclick="toggleCert('${p.id}')">${f.cert || ''}</button>`;
   const fee = p.deceased ? '<span></span>' : `<button class="fee ${f.fee}" title="點一下切換：空白→v（要繳）→x（不繳）" onclick="cycleFee('${p.id}')">${f.fee || ''}</button>`;
-  const paid = p.deceased || f.fee !== 'v' ? '<span class="paid off">—</span>' : `<button class="paid ${f.paid ? 'on' : ''}" onclick="editPaid('${p.id}')">${f.paid ? esc(md(f.paid)) : '收款'}</button>`;
+  const paid = p.deceased || (f.fee !== 'v' && f.cert !== 'v') ? '<span class="paid off">—</span>' : `<button class="paid ${f.paid ? 'on' : ''}" onclick="editPaid('${p.id}')">${f.paid ? esc(md(f.paid)) : '收款'}</button>`;
   const mh = flat ? ix.mh.get(p.id) : null;
-  return `<div class="tr${p.deceased ? ' dead' : ''}">${fee}${paid}
+  return `<div class="tr${p.deceased ? ' dead' : ''}">${cert}${fee}${paid}
   <div class="nm" style="padding-left:${ind}px">${fam.length ? `<button class="tg" onclick="flip('${p.id}')">${open ? '▾' : '▸'}</button>` : '<span class="tg"></span>'}<a onclick="editPerson('${p.id}')">${esc(p.name)}</a>${fam.length ? `<span class="cnt">${fam.length + 1} 人</span>` : ''}${p.deceased ? '<span class="chip">歿</span>' : ''}${mh ? `<span class="sub">導親 ${esc(mh.name)}</span>` : ''}</div>
   <span class="lv lv${li}">${LV[li]}</span><span class="c-d">${esc(p.joinedOn || '')}</span><span class="c-c">${esc(p.code || '')}</span><span class="c-p">${esc(p.phone || '')}</span>
   <button class="add" title="新增導子或家族" onclick="addMenu('${p.id}')">＋</button></div>` + (open ? fam.map(m => famRow(m, ind)).join('') : '');
 }
 function famRow(m, ind) {
-  return `<div class="tr fam${m.deceased ? ' dead' : ''}"><span></span><span></span><div class="nm" style="padding-left:${ind + 28}px"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''}</div>
+  return `<div class="tr fam${m.deceased ? ' dead' : ''}"><span></span><span></span><span></span><div class="nm" style="padding-left:${ind + 28}px"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''}</div>
   <span class="lv lvf">家族</span><span class="c-d">${esc(m.joinedOn || '')}</span><span class="c-c">${esc(m.code || '')}</span><span class="c-p">${esc(m.phone || '')}</span><span></span></div>`;
 }
-function saveFee(r) { SMStore.put('yearly', { id: r.id, year: r.year, pid: r.pid, fee: r.fee, paid: r.paid }); renderList(); }
+function rerender() { ({ roster: renderList, star: renderStar, fees: renderFees }[ui.tab] || renderAll)(); }
+function saveFee(r) { saveYr(r); rerender(); }
 function cycleFee(pid) {
-  const f = feeOf(ui.year, pid), p = IX().m.get(pid), nx = f.fee === '' ? 'v' : f.fee === 'v' ? 'x' : '';
-  if (f.fee === 'v' && f.paid && !confirm(`${p.name} 已記收款 ${md(f.paid)}。改掉 v 會一起清掉收款紀錄，確定？`)) return;
-  f.fee = nx; if (nx !== 'v') f.paid = ''; saveFee(f);
+  const f = yrOf(ui.year, pid), p = anyP(pid), nx = f.fee === '' ? 'v' : f.fee === 'v' ? 'x' : '';
+  if (f.fee === 'v' && f.cert !== 'v' && f.paid && !confirm(`${p.name} 已記收款 ${md(f.paid)}。改掉 v 會一起清掉收款紀錄，確定？`)) return;
+  f.fee = nx; if (nx !== 'v' && f.cert !== 'v') f.paid = ''; saveFee(f);
+}
+function toggleCert(pid) {
+  const f = yrOf(ui.year, pid), p = anyP(pid);
+  if (f.cert && f.fee !== 'v' && f.paid && !confirm(`${p.name} 已記收款 ${md(f.paid)}。取消祈念證會一起清掉收款紀錄，確定？`)) return;
+  f.cert = f.cert ? '' : 'v'; if (!f.cert && f.fee !== 'v') f.paid = ''; saveFee(f);
 }
 function editPaid(pid) {
-  const f = feeOf(ui.year, pid), p = IX().m.get(pid);
-  if (!f.paid) { f.paid = todayStr(); saveFee(f); toast(`${p.name} ${ui.year} 苑費已收（${md(f.paid)}）`); return; }
-  const v = prompt(`${p.name} ${ui.year} 苑費收款日\n清空＝改回未收`, f.paid); if (v == null) return;
+  const f = yrOf(ui.year, pid), p = anyP(pid);
+  if (!f.paid) { f.paid = todayStr(); saveFee(f); toast(`${p.name} ${ui.year} 苑費／祈念證已收（${md(f.paid)}）`); return; }
+  const v = prompt(`${p.name} ${ui.year} 苑費／祈念證收款日\n清空＝改回未收`, f.paid); if (v == null) return;
   f.paid = v.trim(); saveFee(f);
 }
 function carryOver() {
-  const y = ui.year, ix = IX(), list = ix.rows.map(p => [p, feeOf(y - 1, p.id)]).filter(([p, f]) => f.fee && !p.deceased && !feeOf(y, p.id).fee);
+  const y = ui.year, ix = IX(), list = ix.rows.map(p => [p, yrOf(y - 1, p.id)]).filter(([p, f]) => (f.fee || f.cert) && !p.deceased && !yrOf(y, p.id).fee);
   if (!list.length) return toast(`${y - 1} 年沒有可帶入的 v／x`, 'err');
-  if (!confirm(`把 ${y - 1} 年的 v／x 帶入 ${y} 年（${list.length} 戶）？\n收款紀錄不帶入。`)) return;
-  SMStore.putMany('yearly', list.map(([p, f]) => ({ id: y + ':' + p.id, year: y, pid: p.id, fee: f.fee, paid: '' }))); renderAll(); toast('已帶入 ' + list.length + ' 戶');
+  if (!confirm(`把 ${y - 1} 年的苑費 v／x 和祈念證帶入 ${y} 年（${list.length} 戶）？\n收款紀錄不帶入。`)) return;
+  SMStore.putMany('yearly', list.map(([p, f]) => Object.assign(yrOf(y, p.id), { fee: f.fee, cert: f.cert, paid: '' }))); renderAll(); toast('已帶入 ' + list.length + ' 戶');
 }
 
 /* ═══════ 實踐（精進的細項努力）═══════
@@ -356,7 +446,7 @@ function pracTable() {
   <td class="c"><button class="${+p.pracDu > 0 ? 'on' : ''}" onclick="setDu('${p.id}')">${+p.pracDu > 0 ? +p.pracDu : ''}</button></td>${PRAC_A.map(k => cell(p, k)).join('')}${KAIZA.map(k => cell(p, '會座-' + k)).join('')}${PRAC_B.map(k => cell(p, k)).join('')}
   <td class="c o"><button class="${p.pracOther ? 'on' : ''}" onclick="setOther('${p.id}')">${esc(p.pracOther || '')}</button></td></tr>`).join('');
   if (!IX().rows.length) return '<div class="muted" style="padding:24px;text-align:center">還沒有資料。到「設定」匯入你的 Excel 名冊。</div>';
-  return `<table>${th}<tbody>${body || '<tr><td colspan="13" style="padding:20px" class="muted">沒有符合的人</td></tr>'}</tbody></table>`;
+  return `<table>${th}<tbody>${body || `<tr><td colspan="${PRAC_ALL.length + 3}" style="padding:20px" class="muted">沒有符合的人</td></tr>`}</tbody></table>`;
 }
 function savePrac(p) { SMStore.put('people', p); renderPrac(); }
 function togglePrac(pid, k) {
@@ -381,6 +471,433 @@ function printPrac() {
   ${rows.map(({ p, fam }) => `<tr><td>${fam ? '　' : ''}${esc(p.name)}</td><td style="text-align:center">${+p.pracDu > 0 ? +p.pracDu : ''}</td>${PRAC_A.map(k => mk(p, k)).join('')}${KAIZA.map(k => mk(p, '會座-' + k)).join('')}${PRAC_B.map(k => mk(p, k)).join('')}<td>${esc(p.pracOther || '')}</td></tr>`).join('')}</table>`;
   print();
 }
+
+/* ═══════ 星供：照星供表的排法 ═══════
+   一戶一組：戶長、家族入信、跟這戶一起申請的未入信者；未入信者也可以自成一組（後面接其他未入信者）。
+   每人：星供（一人一份）、套子（份數）；戶長另有祈念證、苑費（和名冊同一份資料）。
+   代繳：某組由別組付時，費用算進付錢那組的合計，苑費已收、星供已收、發送也一起記。 */
+function nonHead(n) {
+  const ix = IX(), g = n.grp && (ix.m.get(n.grp) || ix.nm.get(n.grp));
+  if (!g || g.id === n.id || g.deceased) return n;
+  if (g.status === 'non') return g.grp ? n : g;                       /* 只接受「自成一組」的未入信者當組長，不做連鎖 */
+  const k = ix.kind.get(g.id); return k === 'family' ? ix.head.get(g.id) : k === 'house' ? g : n;
+}
+function starGroups(y) {
+  const ix = IX(), gs = [], by = new Map(), mk = (head, ms, non) => { const g = { head, ms, non }; gs.push(g); by.set(head.id, g); return g; };
+  ix.rows.forEach(h => { const ms = [h].concat(ix.fam.get(h.id) || []).filter(p => !p.deceased); if (ms.length) mk(h, ms, false); });
+  const nons = [...ix.nm.values()].filter(p => !p.deceased).sort((a, b) => (a.ord || 0) - (b.ord || 0) || byNameZh(a.name, b.name));
+  nons.forEach(n => { if (nonHead(n).id === n.id) mk(n, [n], true); });
+  nons.forEach(n => { const h = nonHead(n); if (h.id === n.id) return; (by.get(h.id) || mk(n, [], true)).ms.push(n); });
+  gs.forEach(g => { g.hr = yrOf(y, g.head.id); g.own = 0; g.star = 0;
+    g.ms.forEach(p => { const it = feeItems(y, p); g.own += sumItems(it); g.star += sumItems(it.filter(x => x[2] === 'b')); });
+    g.any = g.hr.fee === 'v' || g.hr.cert === 'v' || g.ms.some(p => { const r = yrOf(y, p.id); return r.star || r.set; }); });
+  gs.forEach(g => { let p = g.hr.rep && by.get(g.hr.rep), n = 0; while (p && p.hr.rep && by.get(p.hr.rep) && by.get(p.hr.rep) !== g && n++ < 20) p = by.get(p.hr.rep); g.payer = p && p !== g ? p : null; });
+  gs.forEach(g => { g.covers = gs.filter(x => x.payer === g); g.total = g.own + g.covers.reduce((a, x) => a + x.own, 0); });
+  return { gs, by };
+}
+function vStar() {
+  $('#view').innerHTML = `<div class="bar">${yearSel('星供')}<input class="grow" placeholder="搜尋姓名" value="${esc(ui.q)}" oninput="ui.q=this.value;renderStar()"></div>
+  <div class="row" style="margin-top:8px"><button class="sm" onclick="editNon('')">＋未入信申請者</button><button class="alt sm" onclick="exportStar()">匯出星供表</button><button class="alt sm" onclick="printStar()">列印</button>
+  <label class="ck" style="cursor:pointer">匯入星供表<input type="file" accept=".xlsx,.xls" class="hidden" onchange="pickStarXlsx(this.files[0]);this.value=''"></label></div>
+  <div id="ssum"></div><div id="slist"></div>`;
+  renderStar();
+}
+function renderStar() { const s = $('#ssum'), l = $('#slist'); if (!s || !l) return; const d = starGroups(ui.year); s.innerHTML = starSumHtml(d); l.innerHTML = starListHtml(d); }
+function starSumHtml({ gs }) {
+  const y = ui.year; let n = 0, nn = 0, sets = 0, st = 0, tot = 0, grp = 0, sp = 0, sent = 0;
+  gs.forEach(g => { g.ms.forEach(p => { const r = yrOf(y, p.id); if (r.star) { n++; if (p.status === 'non') nn++; } sets += r.set; }); st += g.star; tot += g.own; if (g.any && !g.payer) { grp++; if (g.hr.starPaid) sp++; if (g.hr.starSent) sent++; } });
+  return `<div class="panel sum"><div class="big">${y} 星供<b>${n}</b>人<span class="lvc">入信 <b>${n - nn}</b>｜未入信 <b>${nn}</b>｜套子 <b>${sets}</b> 份</span></div>
+  <div class="muted" style="margin-top:4px">星供＋套子 ${money(st)}｜連苑費、祈念證共 ${money(tot)}｜${grp} 組付款：星供已收 ${sp}、已發送 ${sent}</div>
+  <div class="chips"><button class="fchip ${ui.sAll ? '' : 'on'}" onclick="ui.sAll=false;renderStar()">只看有申請</button><button class="fchip ${ui.sAll ? 'on' : ''}" onclick="ui.sAll=true;renderStar()">全部（勾新的申請）</button></div>
+  ${priceNote(['yuan', 'cert', 'star', 'set'])}
+  <div class="muted" style="margin-top:6px">點「星」切換申請，套子按 − ＋。苑費、祈念證和名冊是同一份資料。某組由別人付，按「代繳」選付錢的那組。</div></div>`;
+}
+function starListHtml({ gs }) {
+  const y = ui.year, q = ui.q.trim().toLowerCase();
+  const show = gs.filter(g => (ui.sAll || g.any || g.covers.some(c => c.any)) && (!q || g.ms.some(p => [p.name, p.roman].some(x => String(x || '').toLowerCase().includes(q)))));
+  return show.map(g => starCard(g, y)).join('') || `<div class="muted" style="padding:20px;text-align:center">${gs.length ? '這年還沒有人申請。按「全部」可以勾新的申請，或匯入星供表。' : '還沒有資料。'}</div>`;
+}
+function starCard(g, y) {
+  const ix = IX(), h = g.head, hr = g.hr;
+  const tag = p => p.status === 'non' ? '<span class="chip non">未入信</span>' : ix.kind.get(p.id) === 'family' ? '<span class="lv lvf">家族</span>' : `<span class="lv lv${lvIdx(p)}">${lvOf(p)}</span>`;
+  const row = p => { const r = yrOf(y, p.id), amt = (r.star ? price(y, 'star') : 0) + r.set * price(y, 'set');
+    return `<div class="srow"><button class="fee ${r.star ? 'v' : ''}" title="星供：點一下切換" onclick="toggleStar('${p.id}')">${r.star ? '星' : ''}</button>
+    <div class="nm"><a onclick="${p.status === 'non' ? `editNon('${p.id}')` : `editPerson('${p.id}')`}">${esc(p.name)}</a>${tag(p)}</div>
+    <div class="qty"><button onclick="setSet('${p.id}',-1)">−</button><span>${r.set || ''}</span><button onclick="setSet('${p.id}',1)">＋</button></div><span class="amt">${amt ? money(amt) : ''}</span></div>`; };
+  const yuan = !g.non && !h.deceased ? `<button class="fchip sm ${hr.fee}" onclick="cycleFee('${h.id}')">苑費 ${hr.fee === 'v' ? money(price(y, 'yuan')) : hr.fee === 'x' ? '不繳' : '未定'}</button><button class="fchip sm ${hr.cert ? 'c' : ''}" onclick="toggleCert('${h.id}')">祈念證 ${hr.cert ? money(price(y, 'cert')) : '—'}</button>` : '';
+  const due = [g].concat(g.covers).some(x => x.hr.fee === 'v' || x.hr.cert === 'v');
+  const flags = g.payer ? `<span class="muted">由「${esc(g.payer.head.name)}」代繳，收款、發送跟著那組</span>`
+    : `${due ? `<button class="fchip sm ${hr.paid ? 'pd' : ''}" onclick="grpFlag('${h.id}','paid')">苑費${hr.paid ? '已收 ' + esc(md(hr.paid)) : '收款'}</button>` : ''}<button class="fchip sm ${hr.starPaid ? 'pd' : ''}" onclick="grpFlag('${h.id}','starPaid')">星供${hr.starPaid ? '已收 ' + esc(md(hr.starPaid)) : '收款'}</button><button class="fchip sm ${hr.starSent ? 'pd' : ''}" onclick="grpFlag('${h.id}','starSent')">${hr.starSent ? '已發送' : '發送'}</button>`;
+  return `<div class="card"><div class="hd"><a class="nm1" onclick="${g.non ? `editNon('${h.id}')` : `editPerson('${h.id}')`}">${esc(h.name)}</a>${g.non ? '<span class="chip non">未入信</span>' : '<span class="muted">這戶</span>'}<span class="grow"></span><span class="amt" style="font-size:16px">${g.payer ? '' : '合計 ' + money(g.total)}</span></div>
+  ${yuan ? `<div class="row" style="margin-top:6px;gap:6px">${yuan}</div>` : ''}
+  <div class="srow th"><span>星供</span><span>姓名</span><span>套子</span><span style="text-align:right">金額</span></div>${g.ms.map(row).join('')}
+  <div class="gfoot"><span class="muted">本組 ${money(g.own)}${g.covers.length ? `＋代繳 ${g.covers.map(c => esc(c.head.name) + ' ' + money(c.own)).join('、')}` : ''}</span><span class="grow"></span>
+  <button class="alt sm" onclick="pickPayer('${h.id}')">${g.payer ? '代繳：' + esc(g.payer.head.name) : '代繳▾'}</button><button class="alt sm" onclick="editNon('',{grp:'${h.id}'})">＋未入信</button></div>
+  <div class="row" style="margin-top:6px;gap:6px">${flags}</div></div>`;
+}
+function toggleStar(pid) { const r = yrOf(ui.year, pid); r.star = !r.star; saveYr(r); rerender(); }
+function setSet(pid, d) { const r = yrOf(ui.year, pid); r.set = Math.max(0, r.set + d); saveYr(r); rerender(); }
+function grpFlag(hid, key) {
+  const y = ui.year, g = starGroups(y).by.get(hid); if (!g) return;
+  const cur = g.hr[key]; let val;
+  if (key === 'starSent') val = !cur;
+  else if (!cur) val = todayStr();
+  else { const v = prompt(`${g.head.name} 這組${key === 'paid' ? '苑費／祈念證' : '星供'}收款日\n清空＝改回未收`, cur); if (v == null) return; val = v.trim(); }
+  SMStore.putMany('yearly', [g].concat(g.covers).map(x => { const o = Object.assign(yrOf(y, x.head.id), { [key]: val }); delete o.updatedAt; return o; }));
+  rerender();
+}
+function pickPayer(hid) {
+  const { gs, by } = starGroups(ui.year), g = by.get(hid); if (!g) return;
+  const opts = gs.filter(x => x !== g && !x.payer).map(x => `<option value="${x.head.id}" ${g.hr.rep === x.head.id ? 'selected' : ''}>${esc(x.head.name)}${x.non ? '（未入信）' : ' 這戶'}</option>`).join('');
+  openModal(`<h2>「${esc(g.head.name)}」這組由誰付？</h2><div class="muted">選了以後，這組的費用算進付錢那組的合計，收款和發送也跟著那組。</div>
+  <select id="py" style="margin-top:10px"><option value="">自己付</option>${opts}</select>
+  <div class="row" style="margin-top:12px"><button class="grow" onclick="savePayer('${hid}')">儲存</button><button class="alt" onclick="closeModal()">取消</button></div>`);
+}
+function savePayer(hid) { const r = yrOf(ui.year, hid); r.rep = $('#py').value === hid ? '' : $('#py').value; saveYr(r); closeModal(); }
+/* 未入信者（只申請星供） */
+function editNon(id, preset) {
+  const ix = IX(), old = id ? ix.nm.get(id) : null; if (id && !old) return;
+  const p = old || Object.assign({ name: '', grp: '' }, preset || {}), y = ui.year, fol = old ? [...ix.nm.values()].filter(x => x.grp === old.id) : [];
+  const gopts = starGroups(y).gs.filter(g => !old || g.head.id !== old.id).map(g => `<option value="${g.head.id}" ${g.head.id === p.grp ? 'selected' : ''}>${esc(g.head.name)}${g.non ? '（未入信）' : ' 這戶'}</option>`).join('');
+  const f = (k, l, ph) => `<div><label>${l}</label><input id="n_${k}" value="${esc(p[k] || '')}" placeholder="${ph || ''}"></div>`;
+  openModal(`<h2>${old ? esc(old.name) + ' <span class="chip non">未入信</span>' : '新增未入信申請者'}</h2>
+  <div class="muted">未入信者只用在星供申請與計費，不算信徒，不出現在名冊和實踐。</div>
+  <div class="grid2">${f('name', '姓名')}${f('roman', '羅馬拼音')}${f('birth', '出生年月日', '1980.01.01')}${f('phone', '電話')}</div>
+  <label>地址</label><input id="n_addr" value="${esc(p.addr || '')}">
+  <label>跟哪一組一起申請</label><select id="n_grp"><option value="">自成一組</option>${gopts}</select>
+  ${fol.length ? `<div class="muted">跟著這組的還有 ${fol.length} 人：${fol.map(x => esc(x.name)).join('、')}（改組時一起移過去）</div>` : ''}
+  ${old ? '' : `<div style="margin-top:10px"><label class="ck"><input type="checkbox" id="n_star" checked>申請 ${y} 星供</label></div>`}
+  <label>備註</label><textarea id="n_note" rows="3">${esc(p.note || '')}</textarea>
+  <div class="row" style="margin-top:12px"><button class="grow" onclick="saveNon('${old ? old.id : ''}')">儲存</button>${old ? `<button class="alt" onclick="toMember('${old.id}')">改成入信</button><button class="warn" onclick="removeNon('${old.id}')">刪除</button>` : ''}<button class="alt" onclick="closeModal()">取消</button></div>`);
+}
+function saveNon(id) {
+  const ix = IX(), old = id ? ix.nm.get(id) : null, v = k => { const e = $('#n_' + k); return e ? e.value.trim() : ''; };
+  const name = v('name'); if (!name) return toast('請填姓名', 'err');
+  let grp = v('grp'); const t = grp && anyP(grp); if (t && t.status === 'non' && t.grp) grp = t.grp;
+  const p = Object.assign({}, old || { id: uid(), status: 'non', ord: Date.now() }, { name, roman: v('roman'), birth: v('birth'), phone: v('phone'), addr: v('addr'), note: $('#n_note').value.trim(), grp });
+  const out = [p]; if (old && grp) [...ix.nm.values()].filter(x => x.grp === old.id).forEach(x => out.push(Object.assign({}, x, { grp })));
+  SMStore.putMany('people', out);
+  if (!old && $('#n_star') && $('#n_star').checked) { const r = yrOf(ui.year, p.id); r.star = true; saveYr(r); }
+  closeModal(); toast('已儲存');
+}
+function removeNon(id) {
+  const p = IX().nm.get(id); if (!p || !confirm(`刪除未入信者「${p.name}」？這個人的星供申請紀錄也會一起刪除，無法復原。`)) return;
+  const fol = [...IX().nm.values()].filter(x => x.grp === id).map(x => Object.assign({}, x, { grp: '' })); if (fol.length) SMStore.putMany('people', fol);
+  SMStore.del('people', id); const yids = YR().filter(r => r.pid === id).map(r => r.id); if (yids.length) SMStore.putMany('yearly', [], yids);
+  closeModal(); toast('已刪除');
+}
+function toMember(id) {
+  const p = IX().nm.get(id); if (!p || !confirm(`把「${p.name}」改成入信、加進名冊？接著請選身分（獨立戶或家族入信）。`)) return;
+  SMStore.put('people', Object.assign({}, p, { status: 'member', grp: '', famOf: '', mentorId: '', ord: P().reduce((a, x) => Math.max(a, x.ord || 0), 0) + 1 }));
+  $('#modal').classList.add('hidden'); editPerson(id);
+}
+/* 匯出／列印：欄位同你的星供表 */
+function starAoa() {
+  const y = ui.year, { gs } = starGroups(y), st = stats(y), use = gs.filter(g => g.any || g.covers.some(c => c.any));
+  const head = ['', '', '導親', '導子', '導孫', '祈念証', '星供\n申請者', `${y}\n苑費`, '星供\n套子', '星供', '星供\n費用', '合計', '苑費\n已收', '星供\n已收', '星供\n發送', '備註'];
+  const aoa = [['', '', '', st.lv[1], st.lv[2], '', '', '', 0, price(y, 'star')], head], sum = { 5: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0 };
+  let seq = 0;
+  use.forEach(g => g.ms.forEach((p, i) => {
+    const r = yrOf(y, p.id), hr = g.hr, row = Array(16).fill('');
+    row[0] = ++seq; row[1] = i + 1;
+    if (p.status === 'non') row[3] = '(未入信)'; else if (i) row[3] = '家族入信'; else row[2 + lvIdx(p)] = p.name;
+    row[6] = p.name;
+    if (!i && !g.non) { if (hr.cert) row[5] = price(y, 'cert'); if (hr.fee === 'v') row[7] = price(y, 'yuan'); }
+    if (r.set) row[8] = r.set * price(y, 'set'); row[9] = r.star ? price(y, 'star') : 0;
+    if (!i) { row[10] = g.star || ''; row[11] = g.payer ? '' : g.total; row[12] = hr.paid ? 'V' : hr.fee === 'v' || hr.cert ? '未收' : ''; row[13] = hr.starPaid ? 'V' : ''; row[14] = hr.starSent ? 'V' : '';
+      row[15] = g.payer ? '由 ' + g.payer.head.name + ' 代繳' : g.covers.length ? '含代繳：' + g.covers.map(c => c.head.name).join('、') : ''; }
+    Object.keys(sum).forEach(k => { sum[k] += +row[k] || 0; });
+    aoa.push(row);
+  }));
+  const tr = Array(16).fill(''); tr[6] = '合計'; Object.keys(sum).forEach(k => { tr[k] = sum[k]; }); aoa.push(tr); aoa[0][8] = sum[8];
+  return { aoa, n: seq };
+}
+async function exportStar() {
+  const { aoa, n } = starAoa(); if (!n) return toast(ui.year + ' 年還沒有人申請', 'err');
+  try { await loadXlsx(); } catch (e) { return toast('Excel 元件載入失敗（需要網路）', 'err'); }
+  const ws = XLSX.utils.aoa_to_sheet(aoa); ws['!cols'] = [4, 4, 9, 9, 9, 6, 10, 6, 6, 6, 7, 7, 6, 6, 6, 24].map(w => ({ wch: w }));
+  const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '星供'); XLSX.writeFile(wb, `${ui.year}星供申請_${todayStr()}.xlsx`);
+}
+function printStar() {
+  const { aoa, n } = starAoa(); if (!n) return toast(ui.year + ' 年還沒有人申請', 'err');
+  const [, head, ...body] = aoa;
+  $('#printArea').innerHTML = `<h1>${esc(orgName())} ${ui.year} 星供申請</h1><div class="pm">列印日期 ${dotDate()}</div><table><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${body.map(r => `<tr>${r.map(c => `<td>${esc(c)}</td>`).join('')}</tr>`).join('')}</table>`;
+  print();
+}
+/* 匯入星供表：以「組內序」1 開新的一組；「家族入信」「(未入信)」跟著上面那組；合計空白的組＝由上面最近一個有寫合計的組代繳 */
+async function pickStarXlsx(f) {
+  if (!f) return;
+  try { await loadXlsx(); } catch (e) { return toast('Excel 元件載入失敗（需要網路）', 'err'); }
+  try {
+    const wb = XLSX.read(await f.arrayBuffer(), { type: 'array' });
+    for (const sn of wb.SheetNames) {
+      const ws = wb.Sheets[sn]; if (!ws['!ref']) continue;
+      const res = parseStarSheet(XLSX.utils.sheet_to_json(ws, { header: 1, raw: true, defval: '', blankrows: true }), XLSX.utils.decode_range(ws['!ref']).s.r, f.name);
+      if (res) { simp = res; showStarImp(); return; }
+    }
+    toast('找不到「星供申請者」「苑費」標題列，請確認是星供表', 'err');
+  } catch (e) { console.error(e); toast('讀不了這個檔案：' + e.message, 'err'); }
+}
+function parseStarSheet(rows, base, fname) {
+  const H = s => String(s == null ? '' : s).replace(/\s+/g, ''), S = v => String(v == null ? '' : v).replace(/\r/g, '').trim();
+  const hi = rows.findIndex(r => r.some(c => /申請者/.test(H(c))) && r.some(c => /苑費/.test(H(c)))); if (hi < 0) return null;
+  const hdr = rows[hi].map(H), used = new Set(), find = re => { const i = hdr.findIndex((h, k) => h && !used.has(k) && re.test(h)); if (i >= 0) used.add(i); return i; };
+  const C = { app: find(/申請者/), paid: find(/苑費已收/), sp: find(/星供已收/), sent: find(/發送/), sf: find(/星供費用/), set: find(/套子/), tot: find(/^合計/), fee: find(/苑費/), cert: find(/^祈[念年]/), star: find(/^星供$/), l0: find(/^導親/), l1: find(/^導子/), l2: find(/^(導孫|所屬)/) };
+  const lvC = [C.l0, C.l1, C.l2].filter(c => c >= 0), first = Math.min(...lvC), grpC = first > 0 && !hdr[first - 1] ? first - 1 : -1;
+  const noteC = hdr.map((h, k) => k).filter(k => !hdr[k] && k > C.app);
+  const fy = String(fname || '').match(/(20\d\d)/), hy = (hdr[C.fee] || '').match(/(20\d\d)/), year = fy ? +fy[1] : hy ? +hy[1] : ui.year;
+  const ix = IX(), out = { year, fixes: [], groups: [], newNon: 0, notFound: [] }, recs = [];
+  for (let i = hi + 1; i < rows.length; i++) {
+    const r = rows[i], g = c => c >= 0 ? S(r[c]) : '', rn = i + 1 + base, lv = lvC.map(g);
+    const mark = lv.find(v => /家族入信|未入信/.test(v)) || '', isNon = /未入信/.test(mark), isFam = /家族入信/.test(mark);
+    let name = (g(C.app) || lv.find(v => v && !/家族入信|未入信/.test(v)) || '').replace(/\s+/g, '').replace(/[（(]\s*未入信\s*[)）]/, '');
+    if (!name) continue;
+    if (/御守|動物/.test(name)) { out.fixes.push(`第 ${rn} 列「${name}」不是人名，略過`); continue; }
+    const gi = parseInt(g(grpC), 10);
+    recs.push({ rn, name, isNon, isFam, head: !recs.length || gi === 1 || (!isNon && !isFam), star: amtOf(g(C.star)) > 0, setAmt: amtOf(g(C.set)), cert: amtOf(g(C.cert)) > 0, certAmt: amtOf(g(C.cert)),
+      fee: amtOf(g(C.fee)) > 0, feeAmt: amtOf(g(C.fee)), starAmt: amtOf(g(C.star)), tot: g(C.tot), totN: amtOf(g(C.tot)), paid: g(C.paid), sp: g(C.sp), sent: g(C.sent), note: noteC.map(g).filter(Boolean).join(' ') });
+  }
+  const mode = a => { const m = {}; a.filter(n => n > 0).forEach(n => { m[n] = (m[n] || 0) + 1; }); const k = Object.keys(m).sort((x, z) => m[z] - m[x])[0]; return k ? +k : 0; };
+  const sets = recs.map(x => x.setAmt).filter(n => n > 0);
+  out.pr = { yuan: mode(recs.map(x => x.feeAmt)), cert: mode(recs.map(x => x.certAmt)), star: mode(recs.map(x => x.starAmt)), set: sets.length ? Math.min(...sets) : 0 };
+  const byName = new Map(); ix.m.forEach(p => byName.set(p.name, (byName.get(p.name) || []).concat([p])));
+  const nonBy = new Map([...ix.nm.values()].map(p => [p.name, p]));
+  let cur = null;
+  recs.forEach(x => {
+    if (x.head) { cur = { head: x, ms: [] }; out.groups.push(cur); }
+    cur.ms.push(x);
+    if (x.isNon) { x.non = nonBy.get(x.name) || null; if (!x.non) out.newNon++; return; }
+    const c = byName.get(x.name) || [];
+    if (c.length === 1) x.p = c[0]; else out.notFound.push(`第 ${x.rn} 列 ${x.name}${c.length > 1 ? `（名冊有 ${c.length} 位同名）` : ''}`);
+  });
+  const own = gr => gr.ms.reduce((a, x) => a + (x.star ? x.starAmt : 0) + x.setAmt + (x.cert ? x.certAmt : 0) + (x.fee ? x.feeAmt : 0), 0);
+  let lastPayer = null;
+  out.groups.forEach(gr => {
+    gr.own = own(gr);
+    if (gr.head.tot) { lastPayer = gr; gr.covers = []; }
+    else if (gr.own && lastPayer) { gr.payer = lastPayer; lastPayer.covers.push(gr); }
+  });
+  out.groups.forEach(gr => { if (gr.head.tot && gr.head.totN) { const calc = gr.own + gr.covers.reduce((a, c) => a + c.own, 0); if (calc !== gr.head.totN) out.fixes.push(`第 ${gr.head.rn} 列 ${gr.head.name} 合計寫 ${gr.head.totN}，照表上金額算是 ${calc}，請核對`); } });
+  out.nStar = recs.filter(x => x.star).length; out.nNon = recs.filter(x => x.isNon && x.star).length; out.nSet = recs.reduce((a, x) => a + x.setAmt, 0);
+  return out;
+}
+function showStarImp() {
+  const s = simp, y = s.year, cur = FEES.map(([k, n]) => [k, n, price(y, k)]), diff = cur.filter(([k, , v]) => s.pr[k] && v && v !== s.pr[k]), empty = cur.filter(([k, , v]) => s.pr[k] && !v);
+  const pays = s.groups.filter(g => g.payer).map(g => `${esc(g.head.name)} → ${esc(g.payer.head.name)}`);
+  openModal(`<h2>匯入 ${y} 星供表</h2><div class="notice">${s.groups.length} 組、星供 ${s.nStar} 人（未入信 ${s.nNon}）、套子金額 ${money(s.nSet)}<br>
+  表上金額：苑費 ${money(s.pr.yuan)}、祈念證 ${money(s.pr.cert)}、星供 ${money(s.pr.star)}、套子每份 ${money(s.pr.set)}${diff.length ? `<br><b>和設定不同：</b>${diff.map(([, n, v]) => `${n}（設定 ${money(v)}）`).join('、')}` : ''}
+  ${s.newNon ? `<br>新增未入信者 ${s.newNon} 人` : ''}${pays.length ? `<br>代繳：${pays.join('、')}` : ''}</div>
+  ${empty.length ? `<label class="ck" style="margin-top:8px"><input type="checkbox" id="si_pr" checked>把表上金額存成 ${y} 年金額（${empty.map(([, n]) => n).join('、')}）</label>` : ''}
+  ${s.notFound.length ? `<div class="muted" style="margin-top:8px"><b>名冊裡找不到（略過，請先加進名冊再匯入）：</b>${s.notFound.map(t => `<div>・${esc(t)}</div>`).join('')}</div>` : ''}
+  ${s.fixes.length ? `<div class="muted" style="margin-top:8px"><b>請核對：</b>${s.fixes.map(t => `<div>・${esc(t)}</div>`).join('')}</div>` : ''}
+  <div class="muted" style="margin-top:8px">會寫入 ${y} 年：每人的星供、套子；戶長的祈念證、苑費（表上有金額的設成要繳）、收款與發送；未入信者和代繳。表上沒有的人不動。</div>
+  <div class="row" style="margin-top:12px"><button class="grow" onclick="doStarImport()">匯入</button><button class="alt" onclick="simp=null;closeModal()">取消</button></div>`);
+}
+function doStarImport() {
+  const s = simp; if (!s) return; const y = s.year, ix = IX();
+  if ($('#si_pr') && $('#si_pr').checked) { const pr = cfgGet('prices', { def: {}, byYear: {} }); pr.byYear = pr.byYear || {}; pr.byYear[y] = Object.assign({}, pr.byYear[y] || {}); FEES.forEach(([k]) => { if (s.pr[k] && !price(y, k)) pr.byYear[y][k] = s.pr[k]; }); cfgSet('prices', pr); }
+  const setP = price(y, 'set') || s.pr.set, ppl = [], yr = new Map(), Y = id => yr.get(id) || (yr.set(id, yrOf(y, id)), yr.get(id));
+  const truthy = v => !!v && !/^(未收|x|否|no|-|－)$/i.test(v);
+  s.groups.forEach(gr => {
+    const hx = gr.head, hp = hx.isNon ? null : hx.p && (ix.head.get(hx.p.id) || hx.p);
+    let headId = hp ? hp.id : null;
+    gr.ms.forEach(x => {
+      if (x.isNon) {
+        let n = x.non;
+        if (!n) { n = { id: uid(), status: 'non', name: x.name, note: x.note, ord: Date.now() + ppl.length, grp: '' }; x.non = n; }
+        const grp = x === hx ? '' : (headId || '');
+        n = Object.assign({}, n, { grp }); ppl.push(n); x.non = n;
+        if (x === hx) headId = n.id;
+      }
+      const id = x.isNon ? x.non.id : x.p && x.p.id; if (!id) return;
+      const r = Y(id); r.star = x.star; r.set = x.setAmt ? (setP ? Math.max(1, Math.round(x.setAmt / setP)) : 1) : 0;
+    });
+    gr.headId = headId;
+    if (!headId) return;
+    const r = Y(headId);
+    if (!hx.isNon) { if (gr.ms.some(x => x.cert)) r.cert = 'v'; if (hx.fee) r.fee = 'v'; }
+    if (truthy(hx.paid)) r.paid = /^v$/i.test(hx.paid) ? 'V' : hx.paid; if (truthy(hx.sp)) r.starPaid = /^v$/i.test(hx.sp) ? 'V' : hx.sp; if (truthy(hx.sent)) r.starSent = true;
+  });
+  s.groups.forEach(gr => { if (!gr.payer || !gr.headId || !gr.payer.headId) return;               /* 代繳：收款、發送跟著付錢那組 */
+    const r = Y(gr.headId), pr = Y(gr.payer.headId); r.rep = gr.payer.headId; ['paid', 'starPaid', 'starSent'].forEach(k => { if (pr[k]) r[k] = pr[k]; }); });
+  if (ppl.length) SMStore.putMany('people', ppl);
+  SMStore.putMany('yearly', [...yr.values()].map(o => { o = Object.assign({}, o); delete o.updatedAt; delete o.yuan; delete o.yuanPaid; return o; }));
+  ui.year = y; simp = null; closeModal(); go('star'); toast(`已匯入 ${y} 星供表`);
+}
+
+/* ═══════ 費用總結：勾選要算的人，下方即時合計（可複製明細貼到 LINE）═══════ */
+function feeData(y) {
+  const ix = IX(), { by } = starGroups(y), grpOf = p => p.status === 'non' ? by.get(nonHead(p).id) : by.get((ix.head.get(p.id) || p).id);
+  const paidA = p => !!yrOf(y, (ix.head.get(p.id) || p).id).paid, paidB = p => { const g = grpOf(p), pg = g && (g.payer || g); return !!(pg && pg.hr.starPaid); };
+  const line = p => { let it = feeItems(y, p); if (ui.fUnpaid) it = it.filter(x => x[2] === 'a' ? !paidA(p) : !paidB(p)); return { p, it, t: sumItems(it) }; };
+  const groups = []; ix.rows.forEach(h => { const ms = [h].concat(ix.fam.get(h.id) || []).filter(p => !p.deceased); if (ms.length) groups.push({ h, lines: ms.map(line) }); });
+  return { groups, non: [...ix.nm.values()].filter(p => !p.deceased).sort((a, b) => byNameZh(a.name, b.name)).map(line) };
+}
+function vFees() {
+  $('#view').innerHTML = `<div class="bar">${yearSel('費用')}<input class="grow" placeholder="搜尋姓名" value="${esc(ui.q)}" oninput="ui.q=this.value;renderFees()"></div>
+  <div id="fsum"></div><div id="flist" style="padding-bottom:64px"></div><div class="feebar" id="fbar"></div>`;
+  renderFees();
+}
+function renderFees() {
+  const l = $('#flist'); if (!l) return;
+  const y = ui.year, d = feeData(y), q = ui.q.trim().toLowerCase(), sel = ui.sel, ix = IX();
+  const vis = x => (ui.fAll || x.t > 0) && (!q || [x.p.name, x.p.roman].some(v => String(v || '').toLowerCase().includes(q)));
+  const tag = p => p.status === 'non' ? '<span class="chip non">未入信</span>' : ix.kind.get(p.id) === 'family' ? '<span class="lv lvf">家族</span>' : '';
+  const ln = x => `<label class="frow"><input type="checkbox" ${sel.has(x.p.id) ? 'checked' : ''} onchange="selLine('${x.p.id}',this.checked)"><div class="who"><b>${esc(x.p.name)}</b> ${tag(x.p)}<div class="it">${x.it.map(([n, v]) => `${esc(n)} ${money(v)}`).join('・') || (ui.fUnpaid ? '都收了' : '沒有費用')}</div></div><span class="t">${money(x.t)}</span></label>`;
+  const card = (title, ls) => { const sub = ls.reduce((a, x) => a + x.t, 0), all = ls.every(x => sel.has(x.p.id));
+    return `<div class="card"><div class="hd"><input type="checkbox" ${all ? 'checked' : ''} onchange="selMany('${ls.map(x => x.p.id).join(',')}',this.checked)"><b class="grow">${title}</b><span class="amt">${money(sub)}</span></div>${ls.map(ln).join('')}</div>`; };
+  const cards = d.groups.map(g => { const ls = g.lines.filter(vis); return ls.length ? card(esc(g.h.name) + ' 這戶', ls) : ''; }).join('') + (() => { const ls = d.non.filter(vis); return ls.length ? card('未入信（只申請星供）', ls) : ''; })();
+  const lines = d.groups.flatMap(g => g.lines).concat(d.non), picked = lines.filter(x => sel.has(x.p.id)), tot = picked.reduce((a, x) => a + x.t, 0), all = lines.reduce((a, x) => a + x.t, 0);
+  $('#fsum').innerHTML = `<div class="panel sum"><div class="big">${y} 應收<b>${money(all)}</b><span class="lvc">${ui.fUnpaid ? '只算還沒收的' : '苑費、祈念證、星供、套子'}</span></div>
+  <div class="chips"><button class="fchip ${ui.fUnpaid ? 'on' : ''}" onclick="ui.fUnpaid=!ui.fUnpaid;renderFees()">只算未收</button><button class="fchip ${ui.fAll ? 'on' : ''}" onclick="ui.fAll=!ui.fAll;renderFees()">顯示沒有費用的人</button>
+  <button class="fchip" onclick="selAllFees()">全選有費用的</button><button class="fchip" onclick="ui.sel.clear();renderFees()">清除勾選</button></div>${priceNote(['yuan', 'cert', 'star', 'set'])}
+  <div class="muted" style="margin-top:6px">勾要一起算的人（勾戶名＝整戶），下面即時合計。苑費、祈念證算在戶長；星供、套子每人各自。</div></div>`;
+  l.innerHTML = cards || '<div class="muted" style="padding:20px;text-align:center">沒有符合的人</div>';
+  $('#fbar').innerHTML = `<span class="grow">已勾 ${picked.length} 人<b>${money(tot)}</b></span><button class="alt sm" onclick="copyFees()">複製明細</button><button class="alt sm" onclick="ui.sel.clear();renderFees()">清除</button>`;
+}
+function selLine(id, on) { on ? ui.sel.add(id) : ui.sel.delete(id); renderFees(); }
+function selMany(ids, on) { ids.split(',').filter(Boolean).forEach(id => on ? ui.sel.add(id) : ui.sel.delete(id)); renderFees(); }
+function selAllFees() { const d = feeData(ui.year); d.groups.flatMap(g => g.lines).concat(d.non).forEach(x => { if (x.t > 0) ui.sel.add(x.p.id); }); renderFees(); }
+function copyFees() {
+  const y = ui.year, d = feeData(y), ls = d.groups.flatMap(g => g.lines).concat(d.non).filter(x => ui.sel.has(x.p.id) && x.t > 0);
+  if (!ls.length) return toast('還沒有勾選有費用的人', 'err');
+  const t = [`${y} 費用明細${ui.fUnpaid ? '（未收）' : ''}`].concat(ls.map(x => `${x.p.name}：${x.it.map(([n, v]) => `${n} ${money(v)}`).join('、')}（${money(x.t)}）`), [`合計：${money(ls.reduce((a, x) => a + x.t, 0))}`]).join('\n');
+  const show = () => openModal(`<h2>費用明細</h2><textarea id="cpv" rows="10" readonly>${esc(t)}</textarea><div class="row" style="margin-top:10px"><button class="alt" onclick="closeModal()">關閉</button></div>`);
+  if (navigator.clipboard) navigator.clipboard.writeText(t).then(() => toast('已複製，可以貼到 LINE'), show); else show();
+}
+
+/* ═══════ 奠供帳：一戶一本，家人共用。預存（收款）加、申請（布施、超度、護摩…）扣；結餘是負的＝代支 ═══════ */
+const isoDate = v => { const m = String(v || '').match(/(\d{4})\D+(\d{1,2})\D+(\d{1,2})/); return m ? `${m[1]}-${pad(m[2])}-${pad(m[3])}` : ''; };
+const dDot = v => String(v || '').replace(/-/g, '.');
+const entAmt = e => (e.items || []).reduce((a, it) => a + (+it.amt || 0), 0);
+const entDelta = e => e.kind === 'out' ? -entAmt(e) : entAmt(e);
+const bookName = hid => { const p = anyP(hid); return p ? p.name : '（已不在名冊）'; };
+const balHtml = b => b < 0 ? `<span class="bal neg">代支 ${money(-b)}</span>` : `<span class="bal">結餘 ${money(b)}</span>`;
+function bookOf(hid) {
+  const es = LG().filter(e => e.hid === hid).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.seq || 0) - (b.seq || 0));
+  let bal = 0; es.forEach(e => { bal += entDelta(e); e._bal = bal; }); return { es, bal };
+}
+function openBook(pid) { const ix = IX(), hid = ix.kind.get(pid) === 'family' ? ix.head.get(pid).id : pid; $('#modal').classList.add('hidden'); ui.tab = 'ledger'; ui.lg = hid; ui.q = ''; renderAll(); scrollTo(0, 0); }
+function vLedger() {
+  if (ui.lg) return vBook(ui.lg);
+  $('#view').innerHTML = `<div class="bar"><span class="seg2"><button class="${ui.lgView === 'book' ? 'on' : ''}" onclick="ui.lgView='book';renderAll()">帳本</button><button class="${ui.lgView === 'month' ? 'on' : ''}" onclick="ui.lgView='month';renderAll()">依月份</button></span>
+  ${ui.lgView === 'book' ? `<input class="grow" placeholder="搜尋姓名" value="${esc(ui.q)}" oninput="ui.q=this.value;renderBooks()">` : '<span class="grow"></span>'}<button class="sm" onclick="newBook()">＋開帳本</button></div><div id="lglist"></div>`;
+  ui.lgView === 'month' ? ($('#lglist').innerHTML = monthHtml()) : renderBooks();
+}
+function renderBooks() {
+  const l = $('#lglist'); if (!l) return; const q = ui.q.trim().toLowerCase();
+  const books = [...new Set(LG().map(e => e.hid))].map(h => { const b = bookOf(h); return { hid: h, name: bookName(h), bal: b.bal, last: b.es.length ? b.es[b.es.length - 1].date : '', n: b.es.length }; }).sort((a, b) => (b.last || '').localeCompare(a.last || ''));
+  const pos = books.reduce((a, b) => a + Math.max(0, b.bal), 0), neg = books.reduce((a, b) => a + Math.min(0, b.bal), 0);
+  l.innerHTML = `<div class="panel sum"><div class="big">預存結餘<b>${money(pos)}</b><span class="lvc">代支 <b>${money(-neg)}</b>｜${books.length} 本帳</span></div>
+  <div class="muted" style="margin-top:4px">一戶一本，家人共用。預存（收款）加、申請（布施、超度、護摩…）扣；結餘變負的就是你代支的金額。</div></div>
+  ${books.filter(b => !q || b.name.toLowerCase().includes(q)).map(b => `<div class="card" style="cursor:pointer" onclick="openBook('${b.hid}')"><div class="hd"><b class="grow">${esc(b.name)}</b>${balHtml(b.bal)}</div><div class="muted">${b.n} 筆｜最近 ${esc(dDot(b.last))}</div></div>`).join('')
+    || '<div class="muted" style="padding:20px;text-align:center">還沒有帳本。按「＋開帳本」選一戶開始記，或在個人資料裡按「奠供帳」。</div>'}`;
+}
+function newBook() {
+  const ix = IX(); if (!ix.rows.length) return toast('名冊還沒有資料', 'err');
+  openModal(`<h2>開帳本</h2><div class="muted">一戶一本，家人共用預存金。</div><select id="nb" style="margin-top:10px">${ix.rows.map(h => `<option value="${h.id}">${'　'.repeat(Math.min(ix.depth.get(h.id), 3))}${esc(h.name)}（${lvOf(h)}）</option>`).join('')}</select>
+  <div class="row" style="margin-top:12px"><button class="grow" onclick="openBook($('#nb').value)">開啟</button><button class="alt" onclick="closeModal()">取消</button></div>`);
+}
+function vBook(hid) {
+  const { es, bal } = bookOf(hid), fam = IX().fam.get(hid) || [];
+  $('#view').innerHTML = `<div class="bar"><button class="alt sm" onclick="ui.lg='';renderAll()">← 帳本列表</button></div>
+  <div class="panel sum"><div class="big">${esc(bookName(hid))}</div>${fam.length ? `<div class="muted">家人：${fam.map(x => esc(x.name)).join('、')}</div>` : ''}<div style="margin-top:6px;font-size:20px">${balHtml(bal)}</div>
+  <div class="row" style="margin-top:8px"><button class="sm" onclick="editEntry('',{hid:'${hid}',kind:'out'})">＋申請（支出）</button><button class="alt sm" onclick="editEntry('',{hid:'${hid}',kind:'in'})">＋預存（收款）</button><button class="alt sm" onclick="pasteLine('${hid}')">貼上 LINE 記事</button><button class="alt sm" onclick="printBook('${hid}')">列印</button></div></div>
+  ${es.slice().reverse().map(entCard).join('') || '<div class="muted" style="padding:20px;text-align:center">還沒有紀錄。可以一筆一筆加，或把 LINE 記事本的內容整段貼上。</div>'}`;
+}
+const itemHtml = it => `<div class="il"><span>${esc(it.name)}${it.memo ? `<div class="m">${esc(it.memo)}</div>` : ''}</span><span>${money(+it.amt || 0)}</span></div>`;
+function entCard(e) {
+  const k = { out: '申請', in: '預存', adj: '校正' }[e.kind] || '申請', d = entDelta(e), bad = e.stated != null && e.stated !== '' && +e.stated !== e._bal;
+  return `<div class="card ent" style="cursor:pointer" onclick="editEntry('${e.id}')"><div class="hd"><b>${esc(dDot(e.date))}</b><span class="chip ${e.kind === 'out' ? '' : 'pc'}">${k}</span><span class="grow"></span><span class="amt">${d < 0 ? '−' : '＋'}${money(Math.abs(d))}</span></div>
+  ${(e.items || []).map(itemHtml).join('')}${e.text ? `<div class="pre">${esc(e.text)}</div>` : ''}
+  <div class="muted" style="margin-top:6px;text-align:right">這筆之後 ${balHtml(e._bal)}${bad ? `<br><span style="color:var(--warn)">你記的結餘 ${money(+e.stated)}，差 ${money(+e.stated - e._bal)}</span> <button class="alt sm" onclick="event.stopPropagation();fixBal('${e.id}')">校正</button>` : ''}</div></div>`;
+}
+function fixBal(eid) {
+  const e = LG().find(x => x.id === eid); if (!e) return; const b = bookOf(e.hid).es.find(x => x.id === eid), diff = +e.stated - b._bal;
+  if (!confirm(`在 ${dDot(e.date)} 加一筆「結餘校正」${money(diff)}，讓結餘等於你記的 ${money(+e.stated)}？`)) return;
+  SMStore.put('ledger', { id: uid(), hid: e.hid, date: e.date, kind: 'adj', items: [{ name: '結餘校正', amt: diff, memo: '' }], text: '', stated: null, seq: (e.seq || 0) + 0.5 }); renderAll();
+}
+const ITEM_BASE = ['布施', '初迴向', '護摩', '超度', '元旦會護摩', '一如慶典護摩', '一如慶典超度', '預存'];
+const itemRow = it => `<div class="irow"><input class="i_name" list="dl_items" placeholder="項目（例：11月布施）" value="${esc(it.name || '')}"><input class="i_amt" inputmode="numeric" placeholder="金額" value="${it.amt != null && it.amt !== '' ? esc(it.amt) : ''}"><input class="i_memo" placeholder="內容（選填）" value="${esc(it.memo || '')}"><button class="alt sm" onclick="this.parentNode.remove()">✕</button></div>`;
+function editEntry(id, preset) {
+  const e = id ? LG().find(x => x.id === id) : Object.assign({ kind: 'out', date: todayStr(), items: [], text: '' }, preset || {}); if (!e) return;
+  const items = e.items && e.items.length ? e.items : [{ name: e.kind === 'in' ? '預存' : '', amt: '', memo: '' }];
+  const sugg = [...new Set(ITEM_BASE.concat(LG().flatMap(x => (x.items || []).map(i => i.name))).filter(Boolean))];
+  openModal(`<h2>${id ? '修改紀錄' : e.kind === 'in' ? '預存（收款）' : '申請（支出）'}｜${esc(bookName(e.hid))}</h2>
+  <div class="grid2"><div><label>日期</label><input type="date" id="e_date" value="${isoDate(e.date)}"></div><div><label>類型</label><select id="e_kind">${[['out', '申請（支出）'], ['in', '預存（收款）'], ['adj', '結餘校正']].map(([k, n]) => `<option value="${k}" ${e.kind === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>
+  <label>項目、金額、內容</label><div id="e_items">${items.map(itemRow).join('')}</div><button class="alt sm" onclick="$('#e_items').insertAdjacentHTML('beforeend',itemRow({}))">＋項目</button>
+  <datalist id="dl_items">${sugg.map(s => `<option value="${esc(s)}">`).join('')}</datalist>
+  <label>內容（超度名單、地址、祈願內容等，可從 LINE 記事本直接貼上）</label><textarea id="e_text" rows="6">${esc(e.text || '')}</textarea>
+  <label>你記的結餘（選填，用來核對）</label><input id="e_stated" inputmode="numeric" value="${e.stated != null ? esc(e.stated) : ''}">
+  <div class="row" style="margin-top:12px"><button class="grow" onclick="saveEntry('${id || ''}','${e.hid}')">儲存</button>${id ? `<button class="warn" onclick="delEntry('${id}')">刪除</button>` : ''}<button class="alt" onclick="closeModal()">取消</button></div>`);
+}
+function saveEntry(id, hid) {
+  const date = $('#e_date').value; if (!date) return toast('請填日期', 'err');
+  const kind = $('#e_kind').value, items = [...document.querySelectorAll('#e_items .irow')].map(r => { const a = amtOf(r.querySelector('.i_amt').value);
+    return { name: r.querySelector('.i_name').value.trim(), amt: kind === 'adj' ? a : Math.abs(a), memo: r.querySelector('.i_memo').value.trim() }; }).filter(it => it.name || it.amt);
+  const text = $('#e_text').value.replace(/\s+$/, ''); if (!items.length && !text) return toast('至少填一個項目或內容', 'err');
+  const st = $('#e_stated').value.trim(), old = id ? LG().find(x => x.id === id) : null;
+  SMStore.put('ledger', Object.assign({}, old || { id: uid(), seq: Date.now() }, { hid, date, kind, items, text, stated: st === '' ? null : amtOf(st) })); closeModal(); toast('已儲存');
+}
+function delEntry(id) { if (!confirm('刪除這筆紀錄？刪除後無法復原。')) return; SMStore.del('ledger', id); closeModal(); toast('已刪除'); }
+/* 貼上 LINE 記事：日期一行（2026.11.13）、「-項目：$金額（說明）」、「結餘：$金額」，其他文字當內容 */
+function parseLineNote(t) {
+  const out = []; let cur = null;
+  const dateRe = /^\s*(\d{4})[./-](\d{1,2})[./-](\d{1,2})\s*$/, itemRe = /^\s*[-－•・*]?\s*([^:：$＄]+?)\s*[:：]\s*(?:[$＄]\s*(-?[\d,]+)|(-?[\d,]+)\s*元)\s*(.*)$/;
+  const strip = s => s.trim().replace(/^[（(]\s*/, '').replace(/\s*[）)]$/, '');
+  String(t || '').replace(/\r/g, '').split('\n').forEach(ln => {
+    const dm = ln.match(dateRe);
+    if (dm) { cur = { date: `${dm[1]}-${pad(dm[2])}-${pad(dm[3])}`, items: [], dep: [], text: [], stated: null }; out.push(cur); return; }
+    if (!cur) { if (!ln.trim()) return; cur = { date: todayStr(), items: [], dep: [], text: [], stated: null }; out.push(cur); }
+    const im = ln.match(itemRe);
+    if (im) { const name = im[1].trim(), amt = amtOf(im[2] || im[3]), memo = strip(im[4] || '');
+      if (/結餘|餘額/.test(name)) cur.stated = amt; else if (/預存|存入|儲值|收款|匯款|入帳/.test(name)) cur.dep.push({ name, amt, memo }); else cur.items.push({ name, amt, memo }); return; }
+    if (/^\s*[（(].*[）)]\s*$/.test(ln) && cur.items.length && !cur.text.length) { const it = cur.items[cur.items.length - 1]; it.memo = [it.memo, strip(ln)].filter(Boolean).join('；'); return; }
+    cur.text.push(ln);
+  });
+  return out.map(b => Object.assign(b, { text: b.text.join('\n').replace(/^\s+|\s+$/g, '') })).filter(b => b.items.length || b.dep.length || b.text || b.stated != null);
+}
+let lnParsed = null;
+function pasteLine(hid) {
+  openModal(`<h2>貼上 LINE 記事｜${esc(bookName(hid))}</h2><div class="muted">把 LINE 記事本的內容整段貼上，可以一次貼好幾個日期。會自動抓日期、「項目：$金額」、括號裡的說明、「結餘：$金額」；其他文字（例如超度名單）放進內容。存之前會先給你看。</div>
+  <textarea id="lnTxt" rows="10" style="margin-top:8px" placeholder="2026.11.13&#10;-11月布施：$600&#10;-初迴向：$210&#10;結餘：$10000"></textarea>
+  <div class="row" style="margin-top:8px"><button class="grow" onclick="previewLine('${hid}')">解析</button><button class="alt" onclick="closeModal()">取消</button></div><div id="lnPrev"></div>`);
+}
+function previewLine(hid) {
+  const bl = parseLineNote($('#lnTxt').value).sort((a, b) => a.date.localeCompare(b.date)); if (!bl.length) return toast('沒有讀到內容', 'err');
+  const { es } = bookOf(hid), tot = a => a.reduce((s, i) => s + (+i.amt || 0), 0), dup = b => es.some(e => e.date === b.date && e.kind === 'out' && entAmt(e) === tot(b.items));
+  const open = !es.length && bl[0].stated != null ? bl[0].stated + tot(bl[0].items) - tot(bl[0].dep) : null;
+  lnParsed = { hid, bl, open, dup };
+  $('#lnPrev').innerHTML = `<div class="notice" style="margin-top:10px">讀到 ${bl.length} 個日期：${bl.map(b => `<div style="margin-top:8px"><b>${dDot(b.date)}</b>${dup(b) ? '（帳本已有同日同金額，會略過）' : ''}
+  ${b.items.map(i => `<div>・${esc(i.name)} ${money(i.amt)}${i.memo ? '（' + esc(i.memo) + '）' : ''}</div>`).join('')}${b.dep.map(i => `<div>・${esc(i.name)} ＋${money(i.amt)}</div>`).join('')}
+  ${b.text ? `<div class="pre">${esc(b.text)}</div>` : ''}${b.stated != null ? `<div>你記的結餘 ${money(b.stated)}</div>` : ''}</div>`).join('')}
+  ${open != null ? `<label class="ck" style="margin-top:8px"><input type="checkbox" id="lnOpen" checked>用最早那筆的結餘，推算期初結餘 ${money(open)}</label>` : ''}</div>
+  <button style="margin-top:8px;width:100%" onclick="saveLine()">存入帳本</button>`;
+}
+function saveLine() {
+  const L = lnParsed; if (!L) return; const out = []; let seq = Date.now();
+  const mk = (b, kind, items, extra) => out.push(Object.assign({ id: uid(), hid: L.hid, date: b.date, kind, items, text: '', stated: null, seq: seq++ }, extra || {}));
+  if (L.open != null && $('#lnOpen') && $('#lnOpen').checked) mk(L.bl[0], 'in', [{ name: '期初結餘', amt: L.open, memo: '' }]);
+  L.bl.forEach(b => { if (L.dup(b)) return; if (b.dep.length) mk(b, 'in', b.dep); if (b.items.length || b.text || b.stated != null) mk(b, 'out', b.items, { text: b.text, stated: b.stated }); });
+  if (out.length) SMStore.putMany('ledger', out); lnParsed = null; closeModal(); toast('已存入 ' + out.length + ' 筆');
+}
+function monthHtml() {
+  const all = LG(), months = [...new Set(all.map(e => (e.date || '').slice(0, 7)).filter(Boolean))].sort().reverse();
+  const m = ui.lgMonth && months.includes(ui.lgMonth) ? ui.lgMonth : (months[0] || todayStr().slice(0, 7));
+  const es = all.filter(e => (e.date || '').startsWith(m) && e.kind === 'out').sort((a, b) => (a.date || '').localeCompare(b.date || '') || byNameZh(bookName(a.hid), bookName(b.hid)));
+  const tot = new Map(); es.forEach(e => (e.items || []).forEach(it => { const k = it.name || '（未命名）', o = tot.get(k) || { n: 0, amt: 0 }; o.n++; o.amt += +it.amt || 0; tot.set(k, o); }));
+  return `<div class="panel sum"><div class="row"><select style="width:auto" onchange="ui.lgMonth=this.value;renderAll()">${(months.length ? months : [m]).map(x => `<option ${x === m ? 'selected' : ''}>${x}</option>`).join('')}</select><span class="grow"></span><button class="alt sm" onclick="printMonth('${m}')">列印</button></div>
+  <div class="big" style="margin-top:6px">${m.slice(0, 4)} 年 ${+m.slice(5)} 月申請<b>${es.length}</b>筆<span class="lvc">共 <b>${money(es.reduce((a, e) => a + entAmt(e), 0))}</b></span></div>
+  <div class="muted" style="margin-top:4px">${[...tot.entries()].map(([k, o]) => `${esc(k)} ${o.n} 筆 ${money(o.amt)}`).join('｜') || '這個月沒有申請'}</div></div>
+  ${es.map(e => `<div class="card ent" style="cursor:pointer" onclick="openBook('${e.hid}')"><div class="hd"><b>${esc(bookName(e.hid))}</b><span class="muted">${esc(dDot(e.date))}</span><span class="grow"></span><span class="amt">${money(entAmt(e))}</span></div>${(e.items || []).map(itemHtml).join('')}${e.text ? `<div class="pre">${esc(e.text)}</div>` : ''}</div>`).join('')}`;
+}
+function printLedger(title, es, withName) {
+  $('#printArea').innerHTML = `<h1>${esc(orgName())} ${esc(title)}</h1><div class="pm">列印日期 ${dotDate()}</div><table><tr><th>日期</th>${withName ? '<th>戶</th>' : ''}<th>類型</th><th>項目</th><th>金額</th><th>內容</th>${withName ? '' : '<th>結餘</th>'}</tr>
+  ${es.map(e => `<tr><td>${esc(dDot(e.date))}</td>${withName ? `<td>${esc(bookName(e.hid))}</td>` : ''}<td>${{ out: '申請', in: '預存', adj: '校正' }[e.kind]}</td><td>${(e.items || []).map(i => esc(i.name) + (i.memo ? '（' + esc(i.memo) + '）' : '')).join('\n')}</td><td>${(e.items || []).map(i => money(+i.amt || 0)).join('\n')}</td><td>${esc(e.text || '')}</td>${withName ? '' : `<td>${money(e._bal)}</td>`}</tr>`).join('')}</table>`;
+  print();
+}
+function printBook(hid) { printLedger(bookName(hid) + ' 奠供帳', bookOf(hid).es, false); }
+function printMonth(m) { printLedger(`${m.slice(0, 4)} 年 ${+m.slice(5)} 月 奠供申請`, LG().filter(e => (e.date || '').startsWith(m) && e.kind === 'out').sort((a, b) => (a.date || '').localeCompare(b.date || '')), true); }
 
 /* ═══════ 自訂個人資料欄位 ═══════ */
 function addField(name) {
@@ -433,7 +950,7 @@ function editPerson(id, preset) {
   const fam = old ? ix.fam.get(old.id) || [] : [], kids = old ? ix.kids.get(old.id) || [] : [];
   const canRef = !!old && (isRef || (k === 'house' && !ix.mh.has(old.id) && !fam.length && !kids.length));
   const fld = (key, label, ph) => `<div><label>${label}</label><input id="f_${key}" value="${esc(p[key] || '')}" placeholder="${ph || ''}"></div>`;
-  const allP = [...ix.m.values()], extIn = f => { const vals = [...new Set(allP.map(x => (x.ext || {})[f.id]).filter(Boolean))].sort(byNameZh);
+  const allP = [...ix.m.values()], extIn = f => { const vals = [...new Set((/靈位/.test(f.name) ? LINGWEI : []).concat(allP.map(x => (x.ext || {})[f.id]).filter(Boolean)))];
     return `<div><label>${esc(f.name)}</label><input data-fid="${f.id}" list="dl_${f.id}" value="${esc((p.ext || {})[f.id] || '')}"><datalist id="dl_${f.id}">${vals.map(v => `<option value="${esc(v)}">`).join('')}</datalist></div>`; };
   const ck = (key, lab) => `<label class="ck"><input type="checkbox" class="f_prac" value="${key}" ${pracOn(p, key) ? 'checked' : ''}>${lab || key}</label>`;
   openModal(`<h2>${old ? esc(old.name) : '新增'}${old && !isRef ? ` <span class="lv ${isFam ? 'lvf' : 'lv' + lvIdx(old)}">${isFam ? '家族' : lvOf(old) || '待確認'}</span>` : ''}</h2>
@@ -458,7 +975,7 @@ function editPerson(id, preset) {
   ${fam.length || kids.length ? `<div class="muted" style="margin-top:8px">${fam.length ? '家族：' + fam.map(x => esc(x.name)).join('、') : ''}${fam.length && kids.length ? '<br>' : ''}${kids.length ? '導子：' + kids.map(x => esc(x.name)).join('、') : ''}</div>` : ''}
   ${canRef ? `<label class="ck" style="margin-top:10px"><input type="checkbox" id="f_ref" ${isRef ? 'checked' : ''}>這位是我的導親（參考用，不列入苑費和統計）</label>` : ''}
   <div class="row" style="margin-top:14px"><button class="grow" onclick="savePerson('${old ? old.id : ''}')">儲存</button>
-  ${old && k === 'house' ? `<button class="alt" onclick="addMenu('${old.id}')">＋導子／家族</button>` : ''}${old ? `<button class="warn" onclick="removePerson('${old.id}')">刪除</button>` : ''}<button class="alt" onclick="closeModal()">取消</button></div>`);
+  ${old && k === 'house' ? `<button class="alt" onclick="addMenu('${old.id}')">＋導子／家族</button>` : ''}${old && (k === 'house' || k === 'family') ? `<button class="alt" onclick="openBook('${old.id}')">奠供帳</button>` : ''}${old ? `<button class="warn" onclick="removePerson('${old.id}')">刪除</button>` : ''}<button class="alt" onclick="closeModal()">取消</button></div>`);
 }
 function savePerson(id) {
   const ix = IX(), old = id ? ix.m.get(id) : null, v = k => { const e = $('#f_' + k); return e ? e.value.trim() : ''; };
@@ -488,7 +1005,8 @@ function removePerson(id) {
   if (fam.length || kids.length) return toast(`${p.name} 名下還有${fam.length ? ` ${fam.length} 位家族` : ''}${kids.length ? ` ${kids.length} 位導子` : ''}，請先改掛到別人名下`, 'err');
   if (!confirm(`刪除「${p.name}」？刪除後無法復原，同步的其他裝置也會一起刪除。`)) return;
   const to = ix.kind.get(id) === 'family' ? ix.head.get(id).id : '';
-  const fix = P().filter(x => x.mentorId === id).map(x => Object.assign({}, x, { mentorId: to }));
+  const fix = P().filter(x => x.mentorId === id).map(x => Object.assign({}, x, { mentorId: to }))
+    .concat([...ix.nm.values()].filter(x => x.grp === id).map(x => Object.assign({}, x, { grp: to })));    /* 跟著這人申請星供的未入信者改跟戶長（或自成一組） */
   if (fix.length) SMStore.putMany('people', fix);
   SMStore.del('people', id);
   const yids = YR().filter(r => r.pid === id).map(r => r.id); if (yids.length) SMStore.putMany('yearly', [], yids);
@@ -503,35 +1021,34 @@ function loadXlsx() {
   return xlsxP || (xlsxP = new Promise((ok, no) => { const s = document.createElement('script'); s.src = XLSX_URL; s.onload = ok; s.onerror = () => { xlsxP = null; no(new Error('load xlsx')); }; document.head.appendChild(s); }));
 }
 const noteOut = p => p.deceased && !/歿/.test(p.note || '') ? ['歿' + (p.deathOn ? ' ' + p.deathOn : ''), p.note].filter(Boolean).join('\n') : (p.note || '');
-/* 前 13 欄＝原 Excel 名冊（多一欄已收）；右邊接著實踐與自訂欄位，匯回來時一起還原 */
-const BASE_COLS = 13;
+/* 前 14 欄＝原 Excel 名冊（前面多祈念證、苑費後面多已收）；右邊接著實踐與自訂欄位，匯回來時一起還原 */
+const BASE_COLS = 14;
 function sheetAoa() {
   const y = ui.year, ix = IX(), st = stats(y), fs = fields();
-  const head = [`${y}\n苑費`, '已收', '導親', '導子', '所屬', '家族入信', '羅馬拼音', '出生年月日', '入信時間', '信徒編號', '院生號碼\n/\n教師號碼', '手機', '備註', '度眾', ...PRAC_ALL, '實踐其他', ...fs.map(f => f.name)];
-  const aoa = [['', '', st.lv[0], st.lv[1], st.lv[2], dotDate()], head];
+  const head = ['祈念證', `${y}\n苑費`, '已收', '導親', '導子', '所屬', '家族入信', '羅馬拼音', '出生年月日', '入信時間', '信徒編號', '院生號碼\n/\n教師號碼', '手機', '備註', '度眾', ...PRAC_ALL, '實踐其他', ...fs.map(f => f.name)];
+  const aoa = [['', '', '', st.lv[0], st.lv[1], st.lv[2], dotDate()], head];
   const rk = p => p.teacherNo ? `${p.rank || ''}\n/\n${p.teacherNo}` : (p.rank || '');
-  const line = (p, col, fee, paid) => { const r = [fee || '', paid || '', '', '', '', '']; r[col] = p.name;
+  const line = (p, col, f) => { f = f || {}; const r = [f.cert || '', f.fee || '', f.fee === 'v' || f.cert === 'v' ? f.paid || '' : '', '', '', '', '']; r[col] = p.name;
     return r.concat([p.roman, p.birth, p.joinedOn, p.code, rk(p), p.phone, noteOut(p), +p.pracDu > 0 ? +p.pracDu : '', ...PRAC_ALL.map(k => pracOn(p, k) ? 'v' : ''), p.pracOther, ...fs.map(f => (p.ext || {})[f.id])].map(x => x == null ? '' : x)); };
-  ix.refs.forEach(p => aoa.push(line(p, 2)));
-  const house = p => { const f = feeOf(y, p.id); aoa.push(line(p, 2 + lvIdx(p), f.fee, f.fee === 'v' ? f.paid : '')); (ix.fam.get(p.id) || []).forEach(m => aoa.push(line(m, 5))); };
-  ix.rows.forEach(house);
-  ix.loops.forEach(p => aoa.push(line(p, 2, feeOf(y, p.id).fee)));                     /* 資料有問題的也匯出，不讓資料消失 */
-  ix.m.forEach(p => { if (ix.kind.get(p.id) === 'orphan') aoa.push(line(p, 2)); });
+  ix.refs.forEach(p => aoa.push(line(p, 3)));
+  ix.rows.forEach(p => { aoa.push(line(p, 3 + lvIdx(p), yrOf(y, p.id))); (ix.fam.get(p.id) || []).forEach(m => aoa.push(line(m, 6))); });
+  ix.loops.forEach(p => aoa.push(line(p, 3, yrOf(y, p.id))));                          /* 資料有問題的也匯出，不讓資料消失 */
+  ix.m.forEach(p => { if (ix.kind.get(p.id) === 'orphan') aoa.push(line(p, 3)); });
   return aoa;
 }
 async function doXlsx() {
   if (!IX().m.size) return toast('還沒有資料', 'err');
   try { await loadXlsx(); } catch (e) { return toast('Excel 元件載入失敗（需要網路）', 'err'); }
   const ws = XLSX.utils.aoa_to_sheet(sheetAoa());
-  ws['!cols'] = [6, 8, 10, 10, 10, 10, 18, 11, 11, 14, 12, 14, 48].map(w => ({ wch: w })).concat(Array(PRAC_ALL.length + 2 + fields().length).fill({ wch: 8 }));
+  ws['!cols'] = [6, 6, 8, 10, 10, 10, 10, 18, 11, 11, 14, 12, 14, 48].map(w => ({ wch: w })).concat(Array(PRAC_ALL.length + 2 + fields().length).fill({ wch: 8 }));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '信徒資訊');
   XLSX.writeFile(wb, `信徒名冊_${ui.year}苑費_${todayStr()}.xlsx`);
 }
 function doPrint() {
   if (!IX().m.size) return toast('還沒有資料', 'err');
   const [top, h0, ...b0] = sheetAoa(), head = h0.slice(0, BASE_COLS), body = b0.map(r => r.slice(0, BASE_COLS));
-  $('#printArea').innerHTML = `<h1>${esc(orgName())} 信徒名冊（${ui.year} 苑費）</h1><div class="pm">苑費要繳：導親 ${top[2]}／導子 ${top[3]}／所屬 ${top[4]}　列印日期 ${top[5]}</div>
-  <table><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${body.map(r => `<tr>${r.map((c, i) => `<td>${esc(i === 1 ? md(c) : c)}</td>`).join('')}</tr>`).join('')}</table>`;
+  $('#printArea').innerHTML = `<h1>${esc(orgName())} 信徒名冊（${ui.year} 苑費）</h1><div class="pm">苑費要繳：導親 ${top[3]}／導子 ${top[4]}／所屬 ${top[5]}　列印日期 ${top[6]}</div>
+  <table><tr>${head.map(h => `<th>${esc(h)}</th>`).join('')}</tr>${body.map(r => `<tr>${r.map((c, i) => `<td>${esc(i === 2 ? md(c) : c)}</td>`).join('')}</tr>`).join('')}</table>`;
   print();
 }
 
@@ -550,7 +1067,7 @@ function parseRoster(rows, base) {
   const hi = rows.findIndex(r => r.some(c => /^導親/.test(H(c))) && r.some(c => /家族/.test(H(c))));
   if (hi < 0) return null;
   const hdr = rows[hi].map(H), used = new Set(), find = re => { const i = hdr.findIndex((h, k) => h && !used.has(k) && re.test(h)); if (i >= 0) used.add(i); return i; };
-  const C = { fee: find(/^(?!.*已收).*苑費/), paid: find(/已收/), l0: find(/^導親/), l1: find(/^導子/), l2: find(/^(導孫|所屬)/), fam: find(/家族/),
+  const C = { fee: find(/^(?!.*已收).*苑費/), cert: find(/^祈[念年]/), paid: find(/已收/), l0: find(/^導親/), l1: find(/^導子/), l2: find(/^(導孫|所屬)/), fam: find(/家族/),
     roman: find(/羅馬|拼音/), birth: find(/出生|生日/), joined: find(/入信(時間|日)/), code: find(/信徒編號|^編號/), rank: find(/院生/), teacher: find(/^教師/), phone: find(/手機|電話/), note: find(/備註/),
     du: find(/^度眾/), other: find(/^(實踐)?其他/) };
   const PC = PRAC_ALL.map(k => [k, find(new RegExp('^(會座[-－・:：]?)?' + k.replace(/^會座-/, '') + '$'))]);
@@ -594,14 +1111,14 @@ function parseRoster(rows, base) {
       last = p;
       const fv = g(C.fee).toLowerCase(), fee = /^[v✓ˇ√]$/.test(fv) ? 'v' : fv === 'x' ? 'x' : '';
       if (fv && !fee) fixes.push(`第 ${rn} 列 ${name} 苑費「${g(C.fee)}」看不懂，當成空白`);
-      const pv = C.paid >= 0 ? (typeof r[C.paid] === 'number' ? normDate(r[C.paid]).v : g(C.paid)) : '';
-      if (fee || pv) fees.set(p.id, { id: year + ':' + p.id, year, pid: p.id, fee, paid: fee === 'v' ? pv : '' });
+      const pv = C.paid >= 0 ? (typeof r[C.paid] === 'number' ? normDate(r[C.paid]).v : g(C.paid)) : '', cert = C.cert >= 0 && truthy(g(C.cert)) ? 'v' : '';
+      fees.set(p.id, { id: year + ':' + p.id, year, pid: p.id, fee, cert, paid: fee === 'v' || cert ? pv : '' });
     }
     if (lv > 0 && q0.length) q0[q0.length - 1].n++;
     people.push(p);
   }
   q0.forEach((o, k) => {                                                  /* 導親欄、下面沒人、緊接著又是導親 → 我的導親（參考） */
-    const nx = q0[k + 1]; if (o.n || !nx || fees.has(o.p.id)) return;
+    const nx = q0[k + 1], f = fees.get(o.p.id); if (o.n || !nx || (f && (f.fee || f.cert || f.paid))) return;
     o.p.ref = true; if (!nx.p.mentorId) nx.p.mentorId = o.p.id;
   });
   const byJ = new Map();                                                  /* 同一天入信、編號前 4 碼和多數人不同 → 可能打錯 */
@@ -617,9 +1134,11 @@ function parseRoster(rows, base) {
     if (p.deceased) s.dead++;
     const lv = lvOfP.get(p.id); if (lv === 3) { s.fam++; return; }
     s.l[lv]++; if (p.deceased) return; const f = fees.get(p.id) || { fee: '' };
-    if (f.fee === 'v') { s.v[lv]++; if (f.paid) s.paid++; } else if (f.fee === 'x') s.x++; else s.none++;
+    if (f.fee === 'v') s.v[lv]++; else if (f.fee === 'x') s.x++; else s.none++;
+    if (f.cert) s.cert = (s.cert || 0) + 1; if (f.paid) s.paid++;
   });
-  return { year, people, yr: Array.from(fees.values()).filter(f => !(people.find(p => p.id === f.pid) || {}).ref), fixes, sum: s, expect, newFields };
+  const has = { fee: C.fee >= 0, cert: C.cert >= 0, paid: C.paid >= 0, prac: PC.some(([, c]) => c >= 0) || C.du >= 0 || C.other >= 0 };
+  return { year, people, yr: Array.from(fees.values()).filter(f => !(people.find(p => p.id === f.pid) || {}).ref), fixes, sum: s, expect, newFields, has };
 }
 async function pickXlsx(f) {
   if (!f) return;
@@ -638,19 +1157,41 @@ function impHtml() {
   const s = imp.sum, ex = imp.expect, chk = k => ex[k] == null ? '' : ex[k] === s.v[k] ? '（和 Excel 上方相符）' : `（Excel 上方寫 ${ex[k]}，請核對）`;
   return `<div class="notice" style="margin-top:10px"><b>${esc(imp.file)}</b>（${esc(imp.sheet)}）：${imp.year} 苑費<br>
   導親 ${s.l[0]} 戶、導子 ${s.l[1]} 戶、所屬 ${s.l[2]} 戶、家族入信 ${s.fam} 人${s.ref ? `、我的導親（參考）${s.ref} 人` : ''}${s.dead ? `；其中已歿 ${s.dead} 人` : ''}<br>
-  苑費 v：導親 ${s.v[0]}${chk(0)}／導子 ${s.v[1]}${chk(1)}／所屬 ${s.v[2]}${chk(2)}<br>x ${s.x} 戶、空白 ${s.none} 戶${s.paid ? `、已收 ${s.paid} 戶` : ''}
+  苑費 v：導親 ${s.v[0]}${chk(0)}／導子 ${s.v[1]}${chk(1)}／所屬 ${s.v[2]}${chk(2)}<br>x ${s.x} 戶、空白 ${s.none} 戶${s.cert ? `、祈念證 ${s.cert} 戶` : ''}${s.paid ? `、已收 ${s.paid} 戶` : ''}
   ${s.prac ? `<br>實踐有填 ${s.prac} 人` : ''}${s.ext ? `<br>自訂欄位有填 ${s.ext} 人` : ''}${imp.newFields.length ? `<br>會新增自訂欄位：${imp.newFields.map(f => esc(f.name)).join('、')}` : ''}</div>
   ${imp.fixes.length ? `<div class="muted" style="margin-top:8px"><b>請核對（${imp.fixes.length} 項）</b>${imp.fixes.map(t => `<div>・${esc(t)}</div>`).join('')}</div>` : ''}
-  <div class="row" style="margin-top:10px"><button class="grow" onclick="doImport()">全部取代並匯入</button><button class="alt" onclick="imp=null;$('#impBox').innerHTML=''">取消</button></div>
-  <div class="muted" style="margin-top:6px">會清掉目前 ${SMStore.all('people').length} 人與所有年度資料（含同步的雲端），換成這份 Excel。要留舊資料，請先在下面「備份」下載一份。</div>`;
+  <div class="row" style="margin-top:10px"><button class="grow" onclick="doImport()">用這份 Excel 更新名冊</button><button class="alt" onclick="imp=null;$('#impBox').innerHTML=''">取消</button></div>
+  <div class="muted" style="margin-top:6px">信徒編號或姓名對得到的人只更新資料，星供、實踐、奠供帳都保留；Excel 裡沒有的人會刪除（未入信者不受影響）。按下去之前會再列給你看。</div>`;
 }
+/* 對人更新：先用信徒編號、再用姓名（唯一）對到原本的人，沿用原本的 id，星供／實踐／奠供帳就不會斷掉 */
 function doImport() {
   if (!imp) return;
-  const d = SMStore.read(), oldP = d.people.map(p => p.id), oldY = d.yearly.map(r => r.id);
-  if (oldP.length && !confirm(`清掉目前 ${oldP.length} 人、${oldY.length} 筆年度資料，換成這份 Excel 的 ${imp.people.length} 人？\n清掉後無法復原。`)) return;
+  const olds = SMStore.all('people').filter(p => p.status !== 'non'), used = new Set(), idMap = new Map(), byCode = new Map(), byName = new Map();
+  olds.forEach(o => { if (o.code) byCode.set(o.code, o); byName.set(o.name, (byName.get(o.name) || []).concat([o])); });
+  imp.people.forEach(p => {
+    let o = p.code && byCode.get(p.code); if (o && used.has(o.id)) o = null;
+    if (!o) { const c = (byName.get(p.name) || []).filter(x => !used.has(x.id)); if (c.length === 1) o = c[0]; }
+    if (o) { used.add(o.id); idMap.set(p.id, o); }
+  });
+  const gone = olds.filter(o => !used.has(o.id)), added = imp.people.length - idMap.size;
+  if (olds.length && !confirm(`用這份 Excel 更新名冊：\n・對到 ${idMap.size} 人（更新資料，保留星供、實踐、奠供帳）\n・新增 ${added} 人${gone.length ? `\n・刪除 ${gone.length} 人（不在這份 Excel 裡）：${gone.slice(0, 8).map(o => o.name).join('、')}${gone.length > 8 ? '…' : ''}` : ''}\n確定？`)) return;
+  const nid = id => idMap.has(id) ? idMap.get(id).id : id, STRUCT = ['famOf', 'mentorId', 'ref', 'ord', 'id'];
+  const people = imp.people.map(p => {
+    const o = idMap.get(p.id), q = Object.assign({}, p, { id: nid(p.id), famOf: p.famOf ? nid(p.famOf) : '', mentorId: p.mentorId ? nid(p.mentorId) : '' });
+    if (!o) return q;
+    const out = Object.assign({}, o);
+    Object.keys(q).forEach(k => { const v = q[k]; if (STRUCT.includes(k) || (v !== '' && v != null && !(Array.isArray(v) && !v.length && !imp.has.prac))) out[k] = v; });
+    if (!imp.has.prac) Object.assign(out, { prac: o.prac, pracDu: o.pracDu, pracOther: o.pracOther });
+    out.ext = Object.assign({}, o.ext || {}, q.ext || {}); out.deceased = !!(o.deceased || q.deceased); out.status = 'member';
+    return out;
+  });
+  const yMap = new Map(YR().map(r => [r.id, r]));
+  const yr = imp.yr.map(f => { const pid = nid(f.pid), id = f.year + ':' + pid, o = yMap.get(id) || {};
+    return Object.assign({}, o, { id, year: f.year, pid, fee: imp.has.fee ? f.fee : (o.fee || ''), cert: imp.has.cert ? f.cert : (o.cert === 'v' || o.cert === true ? 'v' : ''), paid: imp.has.paid ? f.paid : (o.paid || '') }); });
+  const goneIds = new Set(gone.map(o => o.id)), delY = YR().filter(r => goneIds.has(r.pid)).map(r => r.id);
   if (imp.newFields.length) cfgSet('fields', fields().concat(imp.newFields.filter(f => !fields().some(x => x.name === f.name))));
-  SMStore.putMany('people', imp.people, oldP); SMStore.putMany('yearly', imp.yr, oldY);
-  const n = imp.people.length; ui.year = imp.year; imp = null; ui.q = ''; ui.f = ''; ui.flip.clear(); go('roster'); toast('已匯入 ' + n + ' 人');
+  SMStore.putMany('people', people, [...goneIds]); SMStore.putMany('yearly', yr, delY);
+  const n = imp.people.length; ui.year = imp.year; imp = null; ui.q = ''; ui.f = ''; ui.flip.clear(); go('roster'); toast('已更新名冊：' + n + ' 人');
 }
 
 /* ═══════ 設定、同步、備份 ═══════ */
@@ -663,6 +1204,10 @@ function vSettings() {
   <div id="impBox">${imp ? impHtml() : ''}</div></div>
   <div class="panel"><h3>匯出</h3><div class="row"><button class="sm" onclick="doXlsx()">下載 Excel（${ui.year} 苑費）</button><button class="alt sm" onclick="doPrint()">列印／存 PDF</button></div>
   <div class="muted" style="margin-top:6px">前面跟你的 Excel 一樣（多一欄「已收」），右邊接著實踐和自訂欄位；匯回來時會一起還原。年度在「名冊」上方切換。</div></div>
+  <div class="panel"><h3>${ui.year} 年度金額</h3><div class="grid2">${(() => { const pr = cfgGet('prices', { def: {}, byYear: {} }), py = (pr.byYear || {})[ui.year] || {}, df = pr.def || {};
+    return FEES.map(([k, n]) => `<div><label>${n}</label><input type="number" min="0" inputmode="numeric" id="pr_${k}" value="${py[k] != null ? py[k] : ''}" placeholder="${df[k] != null && df[k] !== '' ? '預設 ' + df[k] : '0'}"></div>`).join(''); })()}</div>
+  <div class="row" style="margin-top:8px"><button class="sm" onclick="savePrices(false)">只存 ${ui.year} 年</button><button class="alt sm" onclick="savePrices(true)">存成各年預設</button></div>
+  <div class="muted" style="margin-top:6px">星供、費用頁用這裡的金額計算。金額只存在你的加密資料裡，不在網站程式碼中。匯入星供表時也可以直接帶入表上的金額。年度在各頁上方切換。</div></div>
   <div class="panel"><h3>個人資料的自訂欄位</h3>
   <div class="muted">每個人的資料裡都會多出這些欄位。內建欄位：姓名、羅馬拼音、出生年月日、入信時間、信徒編號、手機、院生號碼、教師號碼、備註。</div>
   ${fields().length ? fields().map(f => `<div class="row" style="margin-top:6px"><span class="grow">${esc(f.name)}　<span class="muted">${P().filter(p => p.ext && p.ext[f.id]).length} 人有填</span></span><button class="alt sm" onclick="renameField('${f.id}')">改名</button><button class="warn sm" onclick="delField('${f.id}')">刪除</button></div>`).join('') : '<div class="muted">（還沒有）</div>'}
@@ -679,6 +1224,11 @@ function vSettings() {
   <div class="panel"><h3>備份</h3><div class="row"><button class="alt sm" onclick="backup()">下載備份 JSON</button><button class="alt sm" onclick="$('#rf').click()">從備份還原</button><input id="rf" type="file" accept=".json" class="hidden" onchange="restore(this.files[0])"></div>
   <div class="muted" style="margin-top:6px">備份檔含完整個資，請存在私人位置，不要放進 GitHub。</div></div>
   <div class="muted" style="text-align:center">目前 ${IX().m.size} 人｜${YR().length} 筆年度資料</div>`;
+}
+function savePrices(asDef) {
+  const y = ui.year, pr = cfgGet('prices', { def: {}, byYear: {} }); pr.def = Object.assign({}, pr.def || {}); pr.byYear = Object.assign({}, pr.byYear || {}); pr.byYear[y] = Object.assign({}, pr.byYear[y] || {});
+  FEES.forEach(([k]) => { const v = $('#pr_' + k).value.trim(); pr.byYear[y][k] = v === '' ? null : +v; if (asDef && v !== '') pr.def[k] = +v; });
+  cfgSet('prices', pr); toast('已儲存'); renderAll();
 }
 async function doConnect() {
   const pass = $('#pp').value; if (pass.length < 8) return toast('同步密語至少 8 個字', 'err');
