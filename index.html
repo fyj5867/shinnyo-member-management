@@ -110,16 +110,16 @@ const belong = id => { const out = [], seen = new Set([id]); let cur = children(
 function wouldLoop(pid, mentorId) { let cur = mentorId, n = 0; while (cur && n++ < 50) { if (cur === pid) return true; const m = byId(P(), cur); cur = m && m.mentorId; } return false; }
 
 /* ═══════ 導覽 ═══════ */
-const TABS = [['people', '👥', '信徒'], ['year', '📋', '年度'], ['stats', '📊', '統計'], ['lineage', '🌳', '關係圖'], ['seats', '🏛', '會座'], ['import', '📥', '匯入'], ['settings', '⚙️', '設定']];
+const TABS = [['people', '👥', '信徒'], ['year', '📋', '年度'], ['stats', '📊', '統計'], ['lineage', '🌳', '關係圖'], ['apply', '📝', '申請'], ['import', '📥', '匯入'], ['settings', '⚙️', '設定']];
 let tab = 'people';
-const ui = { q: '', seat: '', status: '', year: (new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear()), onlyTicked: false, lineRoot: '', idle: '', prac: '' };
+const ui = { q: '', seat: '', status: '', year: (new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear()), onlyTicked: false, lineRoot: '', scope: 'member', onlyApply: false, idle: '', prac: '' };
 function go(t) { tab = t; renderAll(); scrollTo(0, 0); }
 function renderTabs() { $('#tabs').innerHTML = TABS.map(([k, ic, n]) => `<button class="${k === tab ? 'on' : ''}" onclick="go('${k}')"><i>${ic}</i>${n}</button>`).join(''); }
 function renderAll() {
   if (!$('#modal').classList.contains('hidden')) { renderSyncBtn(); return; }   /* 編輯中不重畫，避免吃掉輸入 */
   const o = orgName(); $('#appTitle').textContent = o ? o + '　信徒管理' : '信徒管理';
   renderTabs(); renderSyncBtn();
-  ({ people: vPeople, year: vYear, stats: vStats, lineage: vLineage, seats: vSeats, import: vImport, settings: vSettings })[tab]();
+  ({ people: vPeople, year: vYear, stats: vStats, lineage: vLineage, apply: vApply, seats: vSeats, import: vImport, settings: vSettings })[tab]();
 }
 function renderSyncBtn() { const s = SMSync.status(); const b = $('#syncBtn'); b.className = s.cls; b.textContent = s.txt; }
 
@@ -138,7 +138,7 @@ function filterBar(extra) {
   <select style="width:auto" onchange="ui.seat=this.value;renderAll()"><option value="">全部會座</option>${SEATS().map(s => `<option value="${s.id}" ${ui.seat === s.id ? 'selected' : ''}>${esc(s.name)}</option>`).join('')}<option value="_none" ${ui.seat === '_none' ? 'selected' : ''}>未分會座</option></select>
   <select style="width:auto" onchange="ui.status=this.value;renderAll()"><option value="">入信＋非入信</option><option value="member" ${ui.status === 'member' ? 'selected' : ''}>入信</option><option value="non" ${ui.status === 'non' ? 'selected' : ''}>非入信</option></select>${extra || ''}</div>`;
 }
-function renderListOnly() { const l = $('#list'); if (l) l.innerHTML = (tab === 'year' ? yearList() : tab === 'stats' ? statsBody() : peopleList()); }
+function renderListOnly() { const l = $('#list'); if (l) l.innerHTML = (tab === 'year' ? yearList() : tab === 'stats' ? statsBody() : tab === 'apply' ? applyList() : ui.scope === 'non' ? nonList() : peopleList()); }
 
 /* ═══════ 信徒 ═══════ */
 const headOf = p => (p.famOf && byId(P(), p.famOf)) || p;          /* 戶長：家族成員掛在戶長名下，沒掛的人自己就是戶長 */
@@ -147,6 +147,54 @@ function roleOf(p) {                                               /* 導親／�
   let d = 0, cur = p, n = 0; while (cur && cur.mentorId && n++ < 60) { cur = byId(P(), cur.mentorId); d++; }
   return d === 0 ? (children(p.id).length ? '導親' : '') : d === 1 ? '導子' : '所屬';
 }
+/* ═══════ 星供未入信名單（單獨管理，不計入信徒人數／關係圖／實績）═══════ */
+function scopedPeople(st) {
+  const keep = ui.status; ui.status = ''; const rows = filterPeople().filter(p => st === 'non' ? p.status === 'non' : p.status !== 'non'); ui.status = keep; return rows;
+}
+function nonList() {
+  const y = ui.year, rows = scopedPeople('non');
+  if (!rows.length) return '<div class="muted" style="padding:20px;text-align:center">還沒有未入信名單。匯入星供名單時標示「(未入信)」的人會自動放在這裡。</div>';
+  return `<div class="muted">共 ${rows.length} 人（只用於星供申請，不計入信徒人數、關係圖與實績）</div>` + rows.map(p => {
+    const h = headOf(p), pay = payerOf(y, p), r = yearRow(y, p.id);
+    return `<div class="card tap" onclick="editPerson('${p.id}')"><div class="t">${esc(p.name)} <span class="chip non">未入信</span>${r.star ? `<span class="chip good">${y} 星供</span>` : ''}${p.deceased ? '<span class="chip bad">歿</span>' : ''}</div>
+    <div class="s">${h.id !== p.id ? '隨 ' + esc(h.name) + ' 申請' : '獨立'}${pay.id !== p.id ? '｜代表繳費：' + esc(pay.name) : ''}${p.phone ? '｜' + esc(p.phone) : ''}</div></div>`;
+  }).join('');
+}
+
+/* ═══════ 申請（護摩／超度／布施／接心／會座／星供，依年度）═══════ */
+const APPLY = [['homa', '護摩', '填寫內容'], ['chodo', '超度', '填寫內容'], ['sesshin', '接心', '填寫類別'], ['kaiza', '會座', '填寫內容']];
+const applyOf = r => !!(r.homa || r.chodo || r.bushi || r.sesshin || r.kaiza || r.star);
+function setApply(pid, k, v) { const r = yearRow(ui.year, pid); r[k] = v; saveYear(r); }
+function applyPeople() { const y = ui.year; return filterPeople().filter(alive).filter(p => !ui.onlyApply || applyOf(yearRow(y, p.id))); }
+function applyList() {
+  const y = ui.year, rows = applyPeople();
+  const all = filterPeople().filter(alive).map(p => yearRow(y, p.id));
+  const cnt = [...APPLY.map(([k, n]) => [n, all.filter(r => r[k]).length]), ['布施', all.filter(r => r.bushi).length], ['星供', all.filter(r => r.star).length]];
+  const sum = `<div class="muted">${y} 年申請：${cnt.map(([n, c]) => `${n} ${c}`).join('｜')}（共 ${rows.length} 人顯示）</div>`;
+  return sum + (rows.map(p => {
+    const r = yearRow(y, p.id);
+    const tx = APPLY.map(([k, n, ph]) => `<div><label>${n}</label><input value="${esc(r[k] || '')}" placeholder="${ph}" onchange="setApply('${p.id}','${k}',this.value.trim())"></div>`).join('');
+    return `<div class="card"><div class="t" style="cursor:pointer" onclick="editPerson('${p.id}')">${esc(p.name)} ${p.status === 'non' ? '<span class="chip non">未入信</span>' : ''}${applyOf(r) ? '<span class="chip good">有申請</span>' : ''}</div>
+    <div class="grid2">${tx}</div>
+    <div class="items"><label class="ck ${r.bushi ? 'on' : ''}"><input type="checkbox" ${r.bushi ? 'checked' : ''} onchange="tick('${p.id}','bushi',this.checked)">布施</label>
+    <label class="ck ${r.star ? 'on' : ''}"><input type="checkbox" ${r.star ? 'checked' : ''} onchange="tick('${p.id}','star',this.checked)">星供</label></div></div>`;
+  }).join('') || '<div class="muted" style="padding:20px;text-align:center">沒有符合的人</div>');
+}
+function applySheet() {
+  const y = ui.year, list = filterPeople().filter(alive).filter(p => applyOf(yearRow(y, p.id)));
+  const rows = list.map((p, i) => { const r = yearRow(y, p.id); return [i + 1, p.name, ST[p.status] || '入信', r.homa || '', r.chodo || '', r.bushi ? '✓' : '', r.sesshin || '', r.kaiza || '', r.star ? '✓' : '']; });
+  return { title: `${y} 年度 申請總表`, head: ['序', '姓名', '身分', '護摩', '超度', '布施', '接心', '會座', '星供'], rows, n: rows.length };
+}
+function vApply() {
+  const y = ui.year;
+  $('#view').innerHTML = `<div class="row"><h2 class="grow" style="margin:0">申請</h2>
+  <select style="width:auto" onchange="ui.year=+this.value;renderAll()">${[y - 1, y, y + 1].map(v => `<option ${v === y ? 'selected' : ''}>${v}</option>`).join('')}</select></div>
+  <div class="panel">${filterBar(`<label class="ck"><input type="checkbox" ${ui.onlyApply ? 'checked' : ''} onchange="ui.onlyApply=this.checked;renderAll()">只看有申請</label>`)}
+  <div class="row" style="margin-top:10px"><button class="sm" onclick="outputSheet(applySheet())">匯出／列印 申請總表</button></div>
+  <div class="muted" style="margin-top:6px">護摩、超度、接心、會座：有填內容＝有申請；布施、星供：勾選＝申請。星供的費用在「年度」頁收。入信與未入信的人都在這裡。</div></div>
+  <div id="list">${applyList()}</div>`;
+}
+
 const PRAC = ['奉侍', '護摩', '超度', '布施', '接心', '法會', '家集', '會座', '智流學院'];
 const pracOf = p => (p.prac || []).concat(p.pracOther ? [p.pracOther] : []);
 /* 實績：只有「獨立戶」（不含家族入信成員）、入信、未歿，且當年度有申請苑費並已繳，才算實績 */
@@ -157,7 +205,7 @@ function creditOf(p, y) {
 }
 function creditChip(p, y) {
   const c = creditOf(p, y);
-  return c === 'ok' ? `<span class="chip good">${y} 實績✓</span>` : c === 'unpaid' ? `<span class="chip bad">${y} 苑費未繳</span>` : c === 'none' ? `<span class="chip bad">${y} 未申請苑費</span>` : '';
+  return c === 'ok' ? `<span class="chip good">${y} 苑費繳交</span>` : c === 'unpaid' ? `<span class="chip bad">${y} 苑費未繳</span>` : c === 'none' ? `<span class="chip bad">${y} 未申請苑費</span>` : '';
 }
 const notCounted = (p, y) => { const c = creditOf(p, y); return c === 'unpaid' || c === 'none'; };
 function pracMatch(p) {
@@ -169,13 +217,13 @@ function pracMatch(p) {
 }
 const pracChips = p => pracOf(p).map(k => `<span class="chip prac">${esc(k)}</span>`).join('');
 function peopleList() {
-  const rows = filterPeople().filter(pracMatch), y = ui.year;
+  const rows = scopedPeople('member').filter(pracMatch), y = ui.year;
   if (!rows.length) return '<div class="muted" style="padding:20px;text-align:center">沒有資料。可到「匯入」讀取 Excel／PDF／Word／照片，或按「＋新增」。</div>';
   const heads = new Map(); rows.forEach(p => { const h = headOf(p); if (!heads.has(h.id)) heads.set(h.id, h); });
   const person = (p, hd) => `<span class="nm2" onclick="event.stopPropagation();editPerson('${p.id}')">${esc(p.name)}</span>${p.status === 'non' ? '<span class="chip non">非入信</span>' : ''}${p.deceased ? '<span class="chip bad">歿</span>' : ''}${p.idle && !hd.idle ? '<span class="chip bad">未精進</span>' : ''}${pracChips(p)}`;
   const card = h => {
     const m = byId(P(), h.mentorId), nc = children(h.id).length, role = roleOf(h);
-    const fam = P().filter(x => x.famOf === h.id && x.active !== false).sort((a, b) => byNameZh(a.name, b.name));
+    const fam = P().filter(x => x.famOf === h.id && x.active !== false && x.status !== 'non').sort((a, b) => byNameZh(a.name, b.name));
     return `<div class="card tap${notCounted(h, y) ? ' unpaid' : ''}" onclick="editPerson('${h.id}')"><div class="t"><span class="chip dark">獨立戶</span>${esc(h.name)} ${h.status === 'non' ? '<span class="chip non">非入信</span>' : ''}${role ? `<span class="chip good">${role}</span>` : ''}${h.deceased ? '<span class="chip bad">歿</span>' : ''}${h.seatRole ? `<span class="chip good">${esc(h.seatRole)}</span>` : ''}${creditChip(h, y)}${pracChips(h)}</div>
     <div class="s">${esc(seatName(h.seatId) || '未分會座')}${h.phone ? '｜' + esc(h.phone) : ''}${m ? '｜導親：' + esc(m.name) : ''}${nc ? `｜導子 ${nc}` : ''}</div>
     ${fam.length ? `<div class="s" style="margin-top:5px"><b>家族入信成員：</b>${fam.map(f => person(f, h)).join('　')}</div>` : ''}</div>`;
@@ -188,11 +236,13 @@ function vPeople() {
   const ex = `<select style="width:auto" onchange="ui.idle=this.value;renderAll()"><option value="">全部精進狀態</option><option value="active" ${ui.idle === 'active' ? 'selected' : ''}>精進中</option><option value="idle" ${ui.idle === 'idle' ? 'selected' : ''}>未精進</option></select>
   <select style="width:auto" onchange="ui.prac=this.value;renderAll()"><option value="">全部精進項目</option>${PRAC.map(k => `<option ${ui.prac === k ? 'selected' : ''}>${k}</option>`).join('')}<option value="_other" ${ui.prac === '_other' ? 'selected' : ''}>其他</option><option value="_none" ${ui.prac === '_none' ? 'selected' : ''}>尚未填精進項目</option></select>
   <select style="width:auto" onchange="ui.year=+this.value;renderAll()">${[ui.year - 1, ui.year, ui.year + 1].map(v => `<option ${v === ui.year ? 'selected' : ''}>${v}</option>`).join('')}</select>`;
-  $('#view').innerHTML = `<div class="row"><h2 class="grow" style="margin:0">信徒</h2><button onclick="editPerson()">＋新增</button></div>
-  <div class="panel">${filterBar(ex)}</div><div id="list">${peopleList()}</div>`;
+  const nM = P().filter(p => p.active !== false && p.status !== 'non').length, nN = P().filter(p => p.active !== false && p.status === 'non').length, non = ui.scope === 'non';
+  $('#view').innerHTML = `<div class="row"><h2 class="grow" style="margin:0">${non ? '星供未入信名單' : '信徒'}</h2><button onclick="editPerson(null,'${non ? 'non' : 'member'}')">＋新增</button></div>
+  <div class="row" style="margin:8px 0"><button class="sm ${non ? 'alt' : ''}" onclick="ui.scope='member';renderAll()">入信信徒（${nM}）</button><button class="sm ${non ? '' : 'alt'}" onclick="ui.scope='non';renderAll()">星供未入信名單（${nN}）</button></div>
+  <div class="panel">${filterBar(non ? '' : ex)}</div><div id="list">${non ? nonList() : peopleList()}</div>`;
 }
-function editPerson(id) {
-  const p = id ? byId(P(), id) : { id: uid(), status: 'member', active: true };
+function editPerson(id, st) {
+  const p = id ? byId(P(), id) : { id: uid(), status: st || 'member', active: true };
   const isNew = !id;
   const mentor = byId(P(), p.mentorId), fam = byId(P(), p.famOf);
   const kids = children(p.id), gk = belong(p.id), famMem = P().filter(x => x.famOf === p.id);
@@ -449,10 +499,10 @@ function vStats() {
 
 /* ═══════ 關係圖 ═══════ */
 function vLineage() {
-  const y = ui.year, people = P().filter(p => p.active !== false && !p.famOf);
+  const y = ui.year, people = P().filter(p => p.active !== false && !p.famOf && p.status !== 'non');
   const roots = people.filter(p => !p.mentorId || !byId(people, p.mentorId)).sort((a, b) => byNameZh(a.name, b.name));
   const rootSel = ui.lineRoot ? [byId(people, ui.lineRoot)].filter(Boolean) : roots;
-  const node = (p, depth) => { const kids = children(p.id).filter(k => k.active !== false), fam = P().filter(x => x.famOf === p.id && x.active !== false);
+  const node = (p, depth) => { const kids = children(p.id).filter(k => k.active !== false && k.status !== 'non'), fam = P().filter(x => x.famOf === p.id && x.active !== false && x.status !== 'non');
     const lab = depth === 0 ? '導親' : depth === 1 ? '導子' : '所屬';
     return `<li class="${notCounted(p, y) ? 'unpaid' : ''}"><span class="nm" onclick="editPerson('${p.id}')">${esc(p.name)}</span> <span class="chip good">${lab}</span><span class="chip dark">獨立戶</span><span class="chip ${p.status === 'non' ? 'non' : ''}">${ST[p.status] || '入信'}</span>${p.deceased ? '<span class="chip bad">歿</span>' : ''}${p.idle ? '<span class="chip bad">未精進</span>' : ''}${depth ? creditChip(p, y) : ''}${fam.length ? `<div class="muted">家族入信成員：${fam.map(f => esc(f.name) + (f.status === 'non' ? '（未入信）' : '')).join('、')}</div>` : ''}${kids.length ? '<ul>' + kids.sort((a, b) => byNameZh(a.name, b.name)).map(k => node(k, depth + 1)).join('') + '</ul>' : ''}</li>`; };
   const sel = ui.lineRoot && byId(people, ui.lineRoot);
@@ -475,8 +525,8 @@ function vLineage() {
 /* ═══════ 會座 ═══════ */
 function vSeats() {
   const y = ui.year, seats = SEATS().slice().sort((a, b) => a.name.localeCompare(b.name, 'zh-TW'));
-  const none = P().filter(p => p.active !== false && !p.seatId);
-  const card = s => { const ms = P().filter(p => p.active !== false && p.seatId === s.id); const ld = byId(P(), s.leaderId) || ms.find(m => /座長/.test(m.seatRole || '') && !/副/.test(m.seatRole));
+  const none = P().filter(p => p.active !== false && p.status !== 'non' && !p.seatId);
+  const card = s => { const ms = P().filter(p => p.active !== false && p.status !== 'non' && p.seatId === s.id); const ld = byId(P(), s.leaderId) || ms.find(m => /座長/.test(m.seatRole || '') && !/副/.test(m.seatRole));
     let d = 0, pd = 0; ms.forEach(m => { const r = yearRow(y, m.id); d += due(r); pd += paidOf(m, y); });
     return `<div class="card"><div class="row"><div class="grow"><div class="t">${esc(s.name)}</div><div class="s">座長：${esc(ld ? ld.name : '—')}｜${ms.length} 人（入信 ${ms.filter(m => m.status !== 'non').length}／非入信 ${ms.filter(m => m.status === 'non').length}）${d ? `｜${y} 應收 ${money(d)} 未收 ${money(d - pd)}` : ''}</div>${s.note ? `<div class="s">${esc(s.note)}</div>` : ''}</div>
     <button class="alt sm" onclick="ui.seat='${s.id}';go('people')">看名單</button><button class="alt sm" onclick="editSeat('${s.id}')">編輯</button></div></div>`; };
@@ -824,6 +874,7 @@ function vSettings() {
   <input id="tk" placeholder="貼上金鑰 ghp_…" autocomplete="off"><input id="pp" type="password" placeholder="自訂同步密語（至少 8 字，要記住）" style="margin-top:6px" autocomplete="new-password">
   <button style="margin-top:8px" onclick="doConnect()">連線並開始同步</button>
   <label>方法二：第二台以後（手機）</label><input id="pc" placeholder="貼上第一台產生的配對碼 SM1.…"><input id="pp2" type="password" placeholder="同步密語（配對碼已含金鑰時可留空）" style="margin-top:6px"><button class="alt" style="margin-top:8px" onclick="doPair()">用配對碼連線</button>`}</div>
+  <div class="panel"><h3 style="margin-top:0">會座</h3><div class="muted">會座名單與座長仍可在這裡管理（個人資料的「會座」欄位保留）。</div><button class="alt sm" style="margin-top:8px" onclick="go('seats')">開啟會座管理</button></div>
   <div class="panel"><h3 style="margin-top:0">單位名稱（列印抬頭）</h3><input id="org" value="${esc(orgName())}" placeholder="例：○○苑"><button class="sm" style="margin-top:8px" onclick="cfgSet('org',{name:$('#org').value.trim()});toast('已儲存')">儲存</button></div>
   <div class="panel"><h3 style="margin-top:0">${y} 年度金額</h3><div class="grid2">${FEE.map(([k, n]) => priceIn(k, n)).join('')}</div>
   <div class="row" style="margin-top:8px"><button class="sm" onclick="savePrices(false)">只存 ${y} 年</button><button class="alt sm" onclick="savePrices(true)">存成各年預設</button></div>
