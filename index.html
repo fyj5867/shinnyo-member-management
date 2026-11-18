@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#173b35"><link rel="manifest" href="manifest.webmanifest">
+<title>信徒管理系統</title>
+<style>
+:root{--g:#1e554b;--bg:#f3f6f4;--line:#dfe7e2;--muted:#64736c}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;color:#1b302b}
+header{background:#173b35;color:white;padding:18px 16px;position:sticky;top:0;z-index:2}
+header b{font-size:18px}header small{display:block;opacity:.8;margin-top:4px}
+main{max-width:1000px;margin:auto;padding:16px 14px 90px}
+h1{font-size:23px;margin:5px 0}h2{font-size:17px;margin:0 0 12px}
+.panel{background:white;border:1px solid var(--line);border-radius:14px;padding:14px;margin:12px 0}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}
+button{border:0;border-radius:10px;padding:11px 13px;background:var(--g);color:white;font-weight:650;font-size:14px}
+button.alt{background:#e2eee8;color:var(--g)}button:disabled{opacity:.45}
+input,select{width:100%;padding:11px;border:1px solid #d4ded8;border-radius:9px;font-size:15px;background:white}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 5px}
+.row{display:flex;gap:8px;align-items:center;justify-content:space-between}.muted{font-size:12px;color:var(--muted);line-height:1.6}
+.hidden{display:none!important}.nav{display:flex;gap:7px;overflow:auto;margin:12px 0}.nav button{white-space:nowrap;background:white;color:var(--g);border:1px solid var(--line)}.nav button.active{background:var(--g);color:white}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:9px 7px;border-bottom:1px solid var(--line);white-space:nowrap}
+.wrap{overflow:auto}.status{display:inline-block;border-radius:20px;background:#e2eee8;color:var(--g);padding:3px 8px;font-size:11px}
+.notice{background:#fff7e7;border:1px solid #ead9b4;color:#6e592d;border-radius:10px;padding:11px;font-size:12px;line-height:1.6}
+@media(min-width:700px){.grid{grid-template-columns:repeat(3,1fr)}main{padding:24px}}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<header><b>信徒管理系統</b><small>NB 與手機共用雲端資料｜第二版雲端架構</small></header>
+<main>
+<section id="login" class="panel">
+<h1>管理者登入</h1><p class="muted">請使用已授權的管理者帳戶。尚未設定雲端資料庫時，登入功能不會啟用。</p>
+<label>電子郵件</label><input id="email" type="email" autocomplete="username" placeholder="管理者 Email">
+<label>密碼</label><input id="password" type="password" autocomplete="current-password" placeholder="密碼">
+<div class="row" style="margin-top:12px"><button id="loginBtn" onclick="login()">登入</button><button class="alt" onclick="resetPassword()">忘記密碼</button></div>
+<p id="loginMsg" class="muted"></p>
+</section>
+
+<section id="app" class="hidden">
+<div class="row"><div><h1>管理首頁</h1><div class="muted" id="who"></div></div><button class="alt" onclick="logout()">登出</button></div>
+<div class="notice">正式資料僅限授權人員使用。此版本未匯入原始 Excel；完成資料欄位確認及權限測試後才可匯入真實資料。</div>
+<div class="nav">
+<button class="active" onclick="tab('people',this)">信徒資料</button>
+<button onclick="tab('star',this)">年度星供</button>
+<button onclick="tab('fees',this)">費用管理</button>
+<button onclick="tab('seats',this)">會座管理</button>
+</div>
+<section id="people" class="panel">
+<div class="row"><h2>信徒／聯絡人</h2><button onclick="addPerson()">新增</button></div>
+<input id="q" placeholder="搜尋姓名" oninput="loadPeople()">
+<div class="wrap"><table><thead><tr><th>姓名</th><th>入信狀態</th><th>會座</th></tr></thead><tbody id="peopleBody"></tbody></table></div>
+<div id="personEditor" class="hidden">
+<h2 style="margin-top:18px">新增資料</h2>
+<label>姓名</label><input id="pname">
+<label>入信狀態</label><select id="pstatus"><option value="member">入信</option><option value="non_member">非入信</option></select>
+<label>所屬會座</label><select id="pseat"><option value="">未分配</option></select>
+<button style="margin-top:12px" onclick="savePerson()">儲存</button>
+</div>
+</section>
+<section id="star" class="panel hidden">
+<h2>年度星供申請</h2><label>申請年度</label><input id="year" type="number" value="2027">
+<p class="muted">此處預計提供入信及非入信統一勾選，正式版將保存每年度獨立申請紀錄。</p>
+<button onclick="alert('下一步將完成年度申請清單與批次匯出。')">年度申請功能</button>
+</section>
+<section id="fees" class="panel hidden">
+<h2>費用管理</h2><p class="muted">收費項目：苑費、祈年證、星供、套子。正式版會按年度記錄應收、實收、日期及經手人。</p>
+</section>
+<section id="seats" class="panel hidden">
+<h2>會座管理</h2><p class="muted">正式版會支援會座建檔、負責人、成員關聯及異動歷史。</p>
+</section>
+</section>
+</main>
+<script src="config.js"></script>
+<script>
+let sb=null, currentUser=null;
+function configured(){return window.APP_CONFIG && APP_CONFIG.supabaseUrl && APP_CONFIG.supabaseAnonKey && !APP_CONFIG.supabaseUrl.includes('YOUR_')}
+function init(){if(configured()&&window.supabase){sb=window.supabase.createClient(APP_CONFIG.supabaseUrl,APP_CONFIG.supabaseAnonKey);sb.auth.getSession().then(({data})=>{if(data.session)enter(data.session.user)})}else{document.getElementById('loginMsg').textContent='尚未設定 Supabase。請先依 README 建立專案並填入 config.js。'}}
+async function login(){if(!sb)return alert('尚未設定雲端資料庫。');let email=document.getElementById('email').value,password=document.getElementById('password').value;let {data,error}=await sb.auth.signInWithPassword({email,password});if(error)return msg(error.message);enter(data.user)}
+async function resetPassword(){if(!sb)return alert('尚未設定雲端資料庫。');let email=document.getElementById('email').value;if(!email)return alert('請先輸入 Email');let {error}=await sb.auth.resetPasswordForEmail(email);msg(error?error.message:'已送出重設密碼郵件（請檢查信箱）。')}
+function msg(t){document.getElementById('loginMsg').textContent=t}
+function enter(user){currentUser=user;document.getElementById('login').classList.add('hidden');document.getElementById('app').classList.remove('hidden');document.getElementById('who').textContent=user.email;loadSeats();loadPeople()}
+async function logout(){if(sb)await sb.auth.signOut();location.reload()}
+function tab(id,btn){document.querySelectorAll('#app .panel').forEach(x=>x.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('.nav button').forEach(x=>x.classList.remove('active'));btn.classList.add('active')}
+async function loadSeats(){if(!sb)return;let {data,error}=await sb.from('seats').select('id,name').order('name');if(error)return;let el=document.getElementById('pseat');el.innerHTML='<option value="">未分配</option>'+(data||[]).map(s=>`<option value="${s.id}">${esc(s.name)}</option>`).join('')}
+async function loadPeople(){if(!sb)return;let q=document.getElementById('q').value;let query=sb.from('people').select('id,full_name,membership_status,seat_id,seats(name)').order('full_name').limit(100);if(q)query=query.ilike('full_name','%'+q+'%');let {data,error}=await query;if(error){document.getElementById('peopleBody').innerHTML='<tr><td colspan="3">讀取失敗：'+esc(error.message)+'</td></tr>';return}document.getElementById('peopleBody').innerHTML=(data||[]).map(p=>`<tr><td>${esc(p.full_name)}</td><td><span class="status">${p.membership_status==='member'?'入信':'非入信'}</span></td><td>${esc(p.seats?.name||'未分配')}</td></tr>`).join('')}
+function addPerson(){document.getElementById('personEditor').classList.remove('hidden')}
+async function savePerson(){let full_name=document.getElementById('pname').value.trim();if(!full_name)return alert('請輸入姓名');let payload={full_name,membership_status:document.getElementById('pstatus').value,seat_id:document.getElementById('pseat').value||null};let {error}=await sb.from('people').insert(payload);if(error)return alert(error.message);document.getElementById('pname').value='';document.getElementById('personEditor').classList.add('hidden');loadPeople()}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+init();
+if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(()=>{});
+</script>
+</body></html>

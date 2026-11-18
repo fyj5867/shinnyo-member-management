@@ -1,0 +1,9 @@
+{
+  "name": "信徒管理系統",
+  "short_name": "信徒管理",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f3f6f4",
+  "theme_color": "#173b35",
+  "lang": "zh-Hant"
+}
