@@ -63,6 +63,13 @@ label.ck input{width:auto;margin:0}
 .nm a{white-space:nowrap;flex-shrink:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;color:#1b302b}
 .nm .chip,.nm .sub,.nm .cnt{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tr.fam .nm a{font-weight:500;color:#3d5249}
+.info{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:3px 12px;margin-top:6px}
+.ii{display:flex;align-items:baseline;gap:6px;min-width:0;line-height:1.5}.ii.wide{grid-column:1/-1}
+.il{flex:none;font-size:12px;color:var(--muted);white-space:nowrap}
+.iv{font-size:14px;color:#1b302b;white-space:nowrap;min-width:0}.ii.wide .iv{white-space:normal;overflow-wrap:anywhere}
+.iv>span,.iv>a{white-space:nowrap}.iv a{color:var(--g);font-weight:650;cursor:pointer}
+.bcl{display:inline-block;margin-left:8px;padding:0 8px;border-radius:10px;background:#e2eee8;font-size:12px;line-height:20px;text-decoration:none}
+.bcimg{width:100%;max-height:260px;object-fit:contain;background:#fff;border:1px solid var(--line);border-radius:10px;display:block;margin-top:4px}
 .guide{display:block;background:#e9f4ee;border:1px solid #c5ddd1;border-radius:12px;padding:11px 13px;color:var(--g);font-weight:650;text-decoration:none;font-size:14px}
 .cake{flex:none;font-size:1.05em;line-height:1;margin:0 1px;position:relative;top:-3px}
 .bday{background:#fff4f6;border-color:#f1cfd7;color:#6b2c3b;font-size:14px;line-height:1.9}
@@ -217,6 +224,9 @@ const pracName = k => k.replace(/^會座-/, KZ + '・');
 const isActive = p => PRAC_ALL.some(k => pracOn(p, k)) || +p.pracDu > 0 || !!String(p.pracOther || '').trim();
 /* 自訂個人資料欄位：每人都有，值存在 p.ext[欄位 id] */
 const fields = () => cfgGet('fields', [{ id: 'lingwei', name: '靈位' }]);
+const CHIRYU = ['先修班', '修養科', '本科', '研究科', '教補', '教師', '已得度受戒'];        /* 智流學院（階段），空白＝無 */
+const DEPTS = Array.from({ length: 8 }, (_, i) => `台灣${i + 1}部`);                          /* 部會選單；選「在台」可以自己打 */
+const normDept = s => { s = String(s || '').trim(); const m = s.match(/^(?:台|臺)?[灣湾]?\s*([1-8一二三四五六七八])\s*部$/); if (!m) return s; const n = '一二三四五六七八'.indexOf(m[1]); return `台灣${n >= 0 ? n + 1 : m[1]}部`; };
 const LINGWEI = ['小乘', '大乘', '歡喜', '大歡喜', '靈發', '靈能者'];                 /* 靈位欄的輸入提示（使用者先前列過的選項） */
 /* Excel 的「院生號碼／教師號碼」：「90078 / 43493」→ 院生 90078、教師 43493；只有一個號碼時當院生號碼 */
 const splitRank = s => { const t = String(s || '').replace(/\s*\n\s*/g, ' ').trim(); if (!t.includes('/')) return [t, '']; const [a, b] = t.split(/\s*\/\s*/); return [a || '', b || '']; };
@@ -397,7 +407,7 @@ function closeModal() { $('#modal').classList.add('hidden'); renderAll(); }
 /* ═══════ 名冊（主畫面）═══════ */
 function vRoster() {
   $('#view').innerHTML = `<div class="bar">${yearSel('苑費')}
-  <input class="grow" placeholder="搜尋姓名、編號、手機、備註" value="${esc(ui.q)}" oninput="ui.q=this.value;renderList()">
+  <input class="grow" placeholder="搜尋：姓名、編號、經號" value="${esc(ui.q)}" oninput="ui.q=this.value;renderList()">
   <span class="seg2"><button class="${ui.view === 'card' ? 'on' : ''}" onclick="setView('card')">卡片</button><button class="${ui.view === 'table' ? 'on' : ''}" onclick="setView('table')">表格</button></span>
   <button class="sm" onclick="editPerson('')">＋新增</button><button class="alt sm" onclick="doXlsx()">匯出 Excel</button><button class="alt sm" onclick="doPrint()">列印</button></div>
   <div id="sum"></div><div id="list"></div>`;
@@ -424,7 +434,7 @@ function flip(id) { ui.flip.has(id) ? ui.flip.delete(id) : ui.flip.add(id); rend
 function listHtml() {
   const y = ui.year, ix = IX(), q = ui.q.trim().toLowerCase();
   if (!ix.rows.length) return '<div class="muted" style="padding:24px;text-align:center">還沒有資料。到「設定」匯入你的 Excel 名冊，或按「＋新增」。<br><a href="guide.html">第一次使用？看使用說明</a></div>';
-  const hit = p => [p.name, p.roman, p.code, p.phone, p.rank, p.teacherNo, p.note].concat(Object.values(p.ext || {})).some(x => String(x || '').toLowerCase().includes(q));
+  const hit = p => [p.name, p.roman, p.code, p.phone, p.rank, p.teacherNo, p.note, p.dept, p.sutraNo, p.dharmaNo, p.chiryu].concat(Object.values(p.ext || {})).some(x => String(x || '').toLowerCase().includes(q));
   const fOk = p => { if (!ui.f) return true; if (p.deceased) return false; const f = yrOf(y, p.id), due = f.fee === 'v' || f.cert === 'v';
     return ui.f === 'v' ? f.fee === 'v' : ui.f === 'cert' ? f.cert === 'v' : ui.f === 'unpaid' ? due && !f.paid : ui.f === 'paid' ? due && !!f.paid : ui.f === 'x' ? f.fee === 'x' : f.fee === ''; };
   const flat = !!(q || ui.f), card = ui.view !== 'table'; let body = '', n = 0;
@@ -443,7 +453,24 @@ function listHtml() {
 /* 卡片：一戶一張，寫出導親、導子幾戶、精進狀態，家族入信成員接在下面 */
 const pracChips = x => { const a = (x.prac || []).filter(k => PRAC_ALL.includes(k)).map(pracName).concat(+x.pracDu > 0 ? ['度眾 ' + x.pracDu] : [], x.pracOther ? [x.pracOther] : []);
   return a.length ? a.map(k => `<span class="chip pc">${esc(k)}</span>`).join('') : '<span class="chip idle">未精進</span>'; };
-const infoLine = x => [x.code && '編號 ' + x.code, x.joinedOn && '入信 ' + x.joinedOn, x.phone]   /* 出生年月日不顯示在卡片上（隱私），只在編輯視窗裡 */.concat(fields().map(f => (x.ext || {})[f.id] ? f.name + ' ' + x.ext[f.id] : '')).filter(Boolean).map(esc).join('｜');
+/* 卡片上的個人資料：照她指定的順序（部會、經號、信徒編號、入信時間、手機、目前靈位、智流學院、導子），其他自訂欄位、導親接在後面。
+   一格一項、標題和內容不拆開；手機上兩欄，內容太長的那格自己佔一整列。出生年月日、受法號碼不顯示（隱私），只在編輯視窗裡 */
+const lwField = () => fields().find(f => /靈位/.test(f.name));
+const txtW = s => [...String(s)].reduce((a, c) => a + (/[⺀-￿]/.test(c) ? 14 : 8), 0);
+function infoGrid(x, o) {
+  o = o || {}; const lw = lwField(), ext = x.ext || {}, it = [];
+  const add = (k, v, html, w) => { if (v === '' || v == null) return; it.push(`<div class="ii${12 * k.length + 6 + (w || txtW(v)) > 150 ? ' wide' : ''}"><span class="il">${esc(k)}</span><span class="iv">${html || esc(v)}</span></div>`); };
+  add('部會', x.dept); add('經號', x.sutraNo);
+  const bc = x.bc && x.bc.id ? `<a class="bcl" onclick="viewBarcode('${x.id}')">條碼</a>` : '';
+  if (x.code || bc) add('信徒編號', x.code || '條碼', `${x.code ? `<span>${esc(x.code)}</span>` : ''}${bc}`, txtW(x.code || '') + (bc ? 34 : 0));
+  add('入信時間', x.joinedOn); add('手機', x.phone);
+  if (lw) add('目前靈位', ext[lw.id]);
+  add('智流學院', x.chiryu || '無');
+  if (o.kids) add('導子', o.kids + ' 戶');
+  fields().filter(f => !lw || f.id !== lw.id).forEach(f => add(f.name, ext[f.id]));
+  if (o.mh) add('導親', o.mh.name, `<a onclick="editPerson('${o.mh.id}')">${esc(o.mh.name)}</a>`);
+  return it.length ? `<div class="info">${it.join('')}</div>` : '';
+}
 function houseCard(p, flat, forceOpen) {
   const ix = IX(), y = ui.year, f = yrOf(y, p.id), fam = ix.fam.get(p.id) || [], d = ix.depth.get(p.id) || 0, li = Math.min(d, 2), mh = ix.mh.get(p.id), kids = ix.kids.get(p.id) || [];
   const open = fam.length && (forceOpen || isOpen(p.id)), due = f.fee === 'v' || f.cert === 'v';
@@ -452,8 +479,8 @@ function houseCard(p, flat, forceOpen) {
   <div class="hd"><span class="chip dark">獨立戶</span><a class="nm1" onclick="editPerson('${p.id}')">${esc(p.name)}</a>${cake(p)}<span class="lv lv${li}">${LV[li]}</span>${p.deceased ? '<span class="chip">歿</span>' : ''}<span class="grow"></span><button class="edit" onclick="editPerson('${p.id}')">編輯</button><button class="add" title="新增導子或家族" onclick="addMenu('${p.id}')">＋</button></div>
   ${fees ? `<div class="row" style="margin-top:6px;gap:6px">${fees}</div>` : ''}
   <div style="margin-top:6px">${pracChips(p)}</div>
-  <div class="muted" style="margin-top:4px">${[infoLine(p), mh && `導親：<a onclick="editPerson('${mh.id}')">${esc(mh.name)}</a>`, kids.length && `導子 ${kids.length} 戶`].filter(Boolean).join('｜')}</div>
-  ${fam.length ? `<div class="fams"><a class="muted" onclick="flip('${p.id}')"><b>家族入信成員 ${fam.length} 人 ${open ? '▾' : '▸'}</b></a>${open ? fam.map(m => `<div class="fm${m.deceased ? ' dead' : ''}"><div class="hd" style="gap:6px"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${cake(m)}${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''}<span class="grow"></span><button class="edit" onclick="editPerson('${m.id}')">編輯</button></div>${m.deceased ? '' : pracChips(m)}<div class="muted">${infoLine(m)}</div></div>`).join('') : ''}</div>` : ''}</div>`;
+  ${infoGrid(p, { kids: kids.length, mh })}
+  ${fam.length ? `<div class="fams"><a class="muted" onclick="flip('${p.id}')"><b>家族入信成員 ${fam.length} 人 ${open ? '▾' : '▸'}</b></a>${open ? fam.map(m => `<div class="fm${m.deceased ? ' dead' : ''}"><div class="hd" style="gap:6px"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${cake(m)}${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''}<span class="grow"></span><button class="edit" onclick="editPerson('${m.id}')">編輯</button></div>${m.deceased ? '' : pracChips(m)}${infoGrid(m)}</div>`).join('') : ''}</div>` : ''}</div>`;
 }
 function houseRow(p, flat, forceOpen) {
   const ix = IX(), y = ui.year, f = yrOf(y, p.id), fam = ix.fam.get(p.id) || [], d = ix.depth.get(p.id) || 0, li = Math.min(d, 2);
@@ -1016,12 +1043,16 @@ const PDB = (() => {
   const run = (mode, fn) => open().then(db => new Promise((ok, no) => { const t = db.transaction('p', mode), req = fn(t.objectStore('p')); t.oncomplete = () => ok(req && req.result); t.onerror = () => no(t.error); }));
   return { get: k => run('readonly', s => s.get(k)).catch(() => mem.get(k)), put: (k, v) => run('readwrite', s => s.put(v, k)).catch(() => { mem.set(k, v); }), del: k => run('readwrite', s => s.delete(k)).catch(() => { mem.delete(k); }) };
 })();
-async function shrinkPhoto(file) {
+async function shrinkPhoto(file, mode) {
   const url = URL.createObjectURL(file);
   try {
     const img = await new Promise((ok, no) => { const i = new Image(); i.onload = () => ok(i); i.onerror = () => no(new Error('讀不了這張照片')); i.src = url; });
-    const enc = (max, q) => { const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.max(1, Math.round(img.naturalWidth * s)), h = Math.max(1, Math.round(img.naturalHeight * s));
-      const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h); return c.toDataURL('image/jpeg', q); };
+    const enc = (max, q, type) => { const s = Math.min(1, max / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.max(1, Math.round(img.naturalWidth * s)), h = Math.max(1, Math.round(img.naturalHeight * s));
+      const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h); return c.toDataURL(type || 'image/jpeg', q); };
+    if (mode === 'barcode') {                 /* 條碼：線條要清楚。截圖類的 PNG 通常很小；相機拍的太大才改高品質 JPEG */
+      let d = enc(1200, 1, 'image/png'); if (d.length > 270000) d = enc(1200, 0.85); if (d.length > 270000) d = enc(1000, 0.8);
+      return d;
+    }
     /* 目標一張 100KB 以內（base64 約 136000 字）：先降品質，再縮尺寸；紙張紋路多的照片才會走到後面幾級 */
     let d = enc(PH_MAX, PH_Q); if (d.length > 136000) d = enc(PH_MAX, 0.4); if (d.length > 136000) d = enc(900, 0.4); if (d.length > 160000) d = enc(800, 0.4);
     return d;
@@ -1030,8 +1061,14 @@ async function shrinkPhoto(file) {
 const phKB = d => Math.round(String(d || '').length * 0.75 / 1024);
 let phBusy = false, ePh = [];
 async function uploadPhotos() {                                            /* 有開同步就把還沒上傳的照片傳上去；失敗下次再試 */
-  if (phBusy || !SMSync.connected() || !LG().some(e => (e.photos || []).some(p => !p.gid))) return; phBusy = true;
+  const bcTodo = () => SMStore.all('people').filter(p => p.bc && p.bc.id && !p.bc.gid);
+  if (phBusy || !SMSync.connected() || (!LG().some(e => (e.photos || []).some(p => !p.gid)) && !bcTodo().length)) return; phBusy = true;
   try {
+    for (const p of bcTodo()) {                                             /* 信徒號碼條碼圖 */
+      const rec = await PDB.get(p.bc.id); if (!rec || !rec.data) continue;
+      const gid = await SMSync.putPhoto(rec.data), cur = SMStore.all('people').find(x => x.id === p.id);
+      if (cur && cur.bc && cur.bc.id === p.bc.id) SMStore.put('people', Object.assign({}, cur, { bc: Object.assign({}, cur.bc, { gid }) })); else SMSync.delPhoto(gid);
+    }
     for (const e of LG()) {
       if (!(e.photos || []).some(p => !p.gid)) continue;
       const done = new Map();
@@ -1236,8 +1273,16 @@ function editPerson(id, preset) {
   <div id="kdHouse" class="${isFam ? 'hidden' : ''}"><label>導親</label><select id="f_mentor"><option value="">（沒有：自己就是最上層的導親）</option>${refOpt}${opt(curM)}</select></div>
   <div id="kdFam" class="${isFam ? '' : 'hidden'}"><label>戶長</label><select id="f_famOf"><option value="">（請選擇）</option>${opt(curH)}</select>
   <div class="muted">家族入信不另外繳苑費，也不算實績。</div></div>`}
-  <div class="grid2">${fld('name', '姓名')}${fld('roman', '羅馬拼音')}${fld('birth', '出生年月日', '1977.05.16')}${fld('joinedOn', '入信時間', '2013.02.17')}${fld('code', '信徒編號', '9707-00-0000')}${fld('phone', '手機')}${fld('rank', '院生號碼')}${fld('teacherNo', '教師號碼')}
+  <div class="grid2">${fld('name', '姓名')}${fld('roman', '羅馬拼音')}${fld('birth', '出生年月日', '1977.05.16')}${fld('joinedOn', '入信時間', '2013.02.17')}${fld('code', '信徒編號', '9707-00-0000')}${fld('phone', '手機')}
+  ${(() => { const d = p.dept || '', inList = DEPTS.includes(d), zt = !!d && !inList;
+    return `<div><label>部會</label><select id="f_deptSel" onchange="$('#f_deptTxt').classList.toggle('hidden',this.value!=='在台');if(this.value==='在台')$('#f_deptTxt').focus()"><option value="">（空白）</option>${DEPTS.map(x => `<option${x === d ? ' selected' : ''}>${x}</option>`).join('')}<option value="在台"${zt ? ' selected' : ''}>在台（自己填）</option></select>
+    <input id="f_deptTxt" class="${zt ? '' : 'hidden'}" style="margin-top:6px" placeholder="在台：自己填" value="${esc(zt ? d.replace(/^在台\s*/, '') : '')}"></div>`; })()}
+  ${fld('sutraNo', '經號')}${fld('dharmaNo', '受法號碼')}
+  <div><label>智流學院</label><select id="f_chiryu"><option value="">無</option>${CHIRYU.concat(p.chiryu && !CHIRYU.includes(p.chiryu) ? [p.chiryu] : []).map(x => `<option${x === p.chiryu ? ' selected' : ''}>${esc(x)}</option>`).join('')}</select></div>
+  ${fld('rank', '院生號碼')}${fld('teacherNo', '教師號碼')}
   <div><label>已歿</label><div class="row" style="flex-wrap:nowrap"><label class="ck"><input type="checkbox" id="f_dead" ${p.deceased ? 'checked' : ''}>已歿</label><input id="f_deathOn" style="flex:1;width:auto;min-width:0" value="${esc(p.deathOn || '')}" placeholder="歿日"></div></div></div>
+  <label>信徒號碼條碼（圖片）</label><div id="bcBox"></div>
+  <input id="bcFile" type="file" accept="image/*" class="hidden" onchange="bcPick(this.files[0]);this.value=''">
   <div class="grid2" id="extBox">${fields().map(extIn).join('')}</div>
   <button class="alt sm" style="margin-top:8px" onclick="addFieldInline()">＋新增欄位</button><span class="muted">（新增的欄位每個人都會有）</span>
   <label>實踐（精進的細項）</label>
@@ -1250,8 +1295,27 @@ function editPerson(id, preset) {
   ${canRef ? `<label class="ck" style="margin-top:10px"><input type="checkbox" id="f_ref" ${isRef ? 'checked' : ''}>這位是我的導親（參考用，不列入苑費和統計）</label>` : ''}
   <div class="mbar"><button class="grow" onclick="savePerson('${old ? old.id : ''}')">儲存</button>
   ${old && k === 'house' ? `<button class="alt" onclick="addMenu('${old.id}')">＋導子／家族</button>` : ''}${old && (k === 'house' || k === 'family') ? `<button class="alt" onclick="openBook('${old.id}')">奠供帳</button>` : ''}${old ? `<button class="warn" onclick="removePerson('${old.id}')">刪除</button>` : ''}<button class="alt" onclick="closeModal()">取消</button></div>`);
+  eBc = p.bc && p.bc.id ? Object.assign({}, p.bc) : null; renderBc();
 }
-function savePerson(id) {
+/* 信徒號碼條碼：一人一張圖。條碼要掃得出來，所以不像奠供帳照片壓那麼小（長邊 1200、優先存 PNG，太大才改 JPEG） */
+let eBc = null;
+function renderBc() {
+  const b = $('#bcBox'); if (!b) return;
+  b.innerHTML = (eBc ? `<img class="bcimg" ${eBc.data ? `src="${eBc.data}"` : `data-ph="${eBc.id}" data-g="${eBc.gid || ''}"`} alt="條碼">` : '<div class="muted">還沒有上傳</div>')
+    + `<div class="row" style="margin-top:6px"><button class="alt sm" onclick="$('#bcFile').click()">${eBc ? '換一張' : '上傳圖片'}</button>${eBc ? '<button class="warn sm" onclick="eBc=null;renderBc()">移除</button>' : ''}</div>`;
+  hydratePhotos(b);
+}
+async function bcPick(f) {
+  if (!f) return;
+  try { const d = await shrinkPhoto(f, 'barcode'); eBc = { id: 'bc' + uid(), gid: '', data: d }; renderBc(); toast(`條碼圖已存成約 ${phKB(d)}KB`); } catch (e) { toast(e.message, 'err'); }
+}
+async function viewBarcode(pid) {
+  const p = anyP(pid); if (!p || !p.bc) return;
+  const d = await photoData(p.bc.id, p.bc.gid); if (!d) return toast('這張條碼圖還在別台裝置，等它上傳後再看', 'err');
+  openModal(`<h2>${esc(p.name)}</h2><div class="muted">信徒編號 ${esc(p.code || '')}</div><img src="${d}" alt="條碼" style="width:100%;background:#fff;border-radius:10px;display:block;margin-top:8px">
+  <div class="mbar"><button class="grow alt" onclick="closeModal()">關閉</button></div>`);
+}
+async function savePerson(id) {
   const ix = IX(), old = id ? ix.m.get(id) : null, v = k => { const e = $('#f_' + k); return e ? e.value.trim() : ''; };
   const name = v('name'); if (!name) return toast('請填姓名', 'err');
   const rb = $('#f_ref'), isRef = rb ? rb.checked : !!(old && old.ref);
@@ -1259,6 +1323,8 @@ function savePerson(id) {
   const dead = $('#f_dead').checked;
   const p = Object.assign({}, old || { id: uid(), status: 'member', ord: P().reduce((a, x) => Math.max(a, x.ord || 0), 0) + 1 }, {
     name, roman: v('roman'), birth: v('birth'), joinedOn: v('joinedOn'), code: v('code'), rank: v('rank'), teacherNo: v('teacherNo'), phone: v('phone'),
+    dept: v('deptSel') === '在台' ? ('在台 ' + v('deptTxt')).trim() : v('deptSel'), sutraNo: v('sutraNo'), dharmaNo: v('dharmaNo'), chiryu: v('chiryu'),
+    bc: eBc ? { id: eBc.id, gid: eBc.gid || '' } : null,
     note: $('#f_note').value.replace(/\s+$/, ''), deceased: dead, deathOn: dead ? v('deathOn') : '', ref: isRef,
     prac: [...document.querySelectorAll('.f_prac:checked')].map(x => x.value), pracDu: v('du') === '' ? '' : Math.max(0, parseInt(v('du'), 10) || 0), pracOther: v('pracOther'),
     ext: Object.assign({}, (old && old.ext) || {}, Object.fromEntries([...document.querySelectorAll('#extBox [data-fid]')].map(e => [e.dataset.fid, e.value.trim()]))) });
@@ -1271,7 +1337,10 @@ function savePerson(id) {
     p.famOf = ''; p.mentorId = isRef ? '' : v('mentor');
     if (p.mentorId && wouldLoop(p.id, p.mentorId)) return toast('選的導親在這個人的下面，關係會繞成一圈，請改選', 'err');
   }
-  SMStore.put('people', p); closeModal(); toast('已儲存');
+  const ob = old && old.bc && old.bc.id ? old.bc : null;                     /* 條碼圖：新的先存進本機，換掉或移除的舊圖連雲端一起刪 */
+  if (eBc && eBc.data) await PDB.put(eBc.id, { data: eBc.data });
+  if (ob && (!eBc || eBc.id !== ob.id)) dropPhotos([ob]);
+  eBc = null; SMStore.put('people', p); closeModal(); toast('已儲存'); uploadPhotos();
 }
 function removePerson(id) {
   /* 戶長有家族：由第一位家族接手當戶長（苑費、祈念證、收款、奠供帳一起轉過去）；導子、跟著申請星供的未入信者改掛接手的人 */
@@ -1293,7 +1362,7 @@ function removePerson(id) {
   YR().forEach(r => { if (r.rep === id && r.pid !== id) { const o = Object.assign({}, r, { rep: to }); delete o.updatedAt; yput.push(o); } });
   SMStore.putMany('yearly', yput, ys.map(r => r.id));
   if (nh && books) SMStore.putMany('ledger', LG().filter(e => e.hid === id).map(e => Object.assign({}, e, { hid: nh.id })));
-  SMStore.del('people', id);
+  SMStore.del('people', id); if (p.bc && p.bc.id) dropPhotos([p.bc]);   /* 條碼圖連雲端一起刪 */
   closeModal(); toast('已刪除');
 }
 
@@ -1307,13 +1376,14 @@ function loadXlsx() {
 const noteOut = p => p.deceased && !/歿/.test(p.note || '') ? ['歿' + (p.deathOn ? ' ' + p.deathOn : ''), p.note].filter(Boolean).join('\n') : (p.note || '');
 /* 前 14 欄＝原 Excel 名冊（前面多祈念證、苑費後面多已收）；右邊接著實踐與自訂欄位，匯回來時一起還原 */
 const BASE_COLS = 14;
+const EXP_INFO = ['部會', '經號', '受法號碼', '智流學院（階段）'];   /* 接在原本 14 欄後面；「智流學院」那欄是實踐的勾選，這欄是階段，標題要分開 */
 function sheetAoa() {
   const y = ui.year, ix = IX(), st = stats(y), fs = fields();
-  const head = ['祈念證', `${y}\n苑費`, '已收', '導親', '導子', '所屬', '家族入信', '羅馬拼音', '出生年月日', '入信時間', '信徒編號', '院生號碼\n/\n教師號碼', '手機', '備註', '度眾', ...PRAC_ALL.map(k => k.replace(/^會座-/, KZ + '-')), '實踐其他', ...fs.map(f => f.name)];
+  const head = ['祈念證', `${y}\n苑費`, '已收', '導親', '導子', '所屬', '家族入信', '羅馬拼音', '出生年月日', '入信時間', '信徒編號', '院生號碼\n/\n教師號碼', '手機', '備註', ...EXP_INFO, '度眾', ...PRAC_ALL.map(k => k.replace(/^會座-/, KZ + '-')), '實踐其他', ...fs.map(f => f.name)];
   const aoa = [['', '', '', st.lv[0], st.lv[1], st.lv[2], dotDate()], head];
   const rk = p => p.teacherNo ? `${p.rank || ''}\n/\n${p.teacherNo}` : (p.rank || '');
   const line = (p, col, f) => { f = f || {}; const r = [f.cert || '', f.fee || '', f.fee === 'v' || f.cert === 'v' ? f.paid || '' : '', '', '', '', '']; r[col] = p.name;
-    return r.concat([p.roman, p.birth, p.joinedOn, p.code, rk(p), p.phone, noteOut(p), +p.pracDu > 0 ? +p.pracDu : '', ...PRAC_ALL.map(k => pracOn(p, k) ? 'v' : ''), p.pracOther, ...fs.map(f => (p.ext || {})[f.id])].map(x => x == null ? '' : x)); };
+    return r.concat([p.roman, p.birth, p.joinedOn, p.code, rk(p), p.phone, noteOut(p), p.dept, p.sutraNo, p.dharmaNo, p.chiryu, +p.pracDu > 0 ? +p.pracDu : '', ...PRAC_ALL.map(k => pracOn(p, k) ? 'v' : ''), p.pracOther, ...fs.map(f => (p.ext || {})[f.id])].map(x => x == null ? '' : x)); };
   ix.refs.forEach(p => aoa.push(line(p, 3)));
   ix.rows.forEach(p => { aoa.push(line(p, 3 + lvIdx(p), yrOf(y, p.id))); (ix.fam.get(p.id) || []).forEach(m => aoa.push(line(m, 6))); });
   ix.loops.forEach(p => aoa.push(line(p, 3, yrOf(y, p.id))));                          /* 資料有問題的也匯出，不讓資料消失 */
@@ -1325,7 +1395,7 @@ async function doXlsx() {
   try { await loadXlsx(); } catch (e) { return toast('Excel 元件載入失敗（需要網路）', 'err'); }
   const aoa = sheetAoa(); if (blank) aoa[0] = [];               /* 上方各層級戶數留空，匯入時才不會說「Excel 上方寫 0，請核對」 */
   const ws = XLSX.utils.aoa_to_sheet(aoa);
-  ws['!cols'] = [6, 6, 8, 10, 10, 10, 10, 18, 11, 11, 14, 12, 14, 48].map(w => ({ wch: w })).concat(Array(PRAC_ALL.length + 2 + fields().length).fill({ wch: 8 }));
+  ws['!cols'] = [6, 6, 8, 10, 10, 10, 10, 18, 11, 11, 14, 12, 14, 48, 10, 10, 10, 12].map(w => ({ wch: w })).concat(Array(PRAC_ALL.length + 2 + fields().length).fill({ wch: 8 }));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '信徒資訊');
   XLSX.writeFile(wb, blank ? `信徒名冊_空白範本_${ui.year}苑費.xlsx` : `信徒名冊_${ui.year}苑費_${todayStr()}.xlsx`);
 }
@@ -1354,7 +1424,7 @@ function parseRoster(rows, base) {
   const hdr = rows[hi].map(H), used = new Set(), find = re => { const i = hdr.findIndex((h, k) => h && !used.has(k) && re.test(h)); if (i >= 0) used.add(i); return i; };
   const C = { fee: find(/^(?!.*已收).*苑費/), cert: find(/^祈[念年]/), paid: find(/已收/), l0: find(/^導親/), l1: find(/^導子/), l2: find(/^(導孫|所屬)/), fam: find(/家族/),
     roman: find(/羅馬|拼音/), birth: find(/出生|生日/), joined: find(/入信(時間|日)/), code: find(/信徒編號|^編號/), rank: find(/院生/), teacher: find(/^教師/), phone: find(/手機|電話/), note: find(/備註/),
-    du: find(/^度眾/), other: find(/^(實踐)?其他/) };
+    du: find(/^度眾/), other: find(/^(實踐)?其他/), dept: find(/^部會/), sutra: find(/^經號/), dharma: find(/受法/), chiryu: find(/^智流學院.+/) };
   const PC = PRAC_ALL.map(k => [k, find(new RegExp('^((會座|朝向靈位)[-－・:：]?)?' + k.replace(/^會座-/, '') + '$'))]);
   const fs = fields().slice(), newFields = [], CF = [];                     /* 其他有標題、對不上的欄 → 自訂欄位（同名沿用，沒有就新增） */
   hdr.forEach((h, k) => { if (!h || used.has(k) || /^\d+$/.test(h)) return; let f = fs.find(x => x.name === h); if (!f) { f = { id: 'f' + uid(), name: h }; fs.push(f); newFields.push(f); } CF.push([f.id, k]); });
@@ -1384,7 +1454,8 @@ function parseRoster(rows, base) {
     CF.forEach(([fid, c]) => { const x = g(c); if (x) ext[fid] = x; });
     const p = { id: uid(), status: 'member', name, roman: g(C.roman), birth: dt(C.birth, '出生年月日'), joinedOn: dt(C.joined, '入信時間'), code,
       rank, teacherNo: g(C.teacher) || tn, phone: g(C.phone), note, deceased: dead, deathOn, famOf: '', mentorId: '', ord: people.length + 1,
-      prac: PC.filter(([, c]) => c >= 0 && truthy(g(c))).map(([k]) => k), pracDu: isNaN(du) ? '' : du, pracOther: g(C.other), ext };
+      prac: PC.filter(([, c]) => c >= 0 && truthy(g(c))).map(([k]) => k), pracDu: isNaN(du) ? '' : du, pracOther: g(C.other), ext,
+      dept: normDept(g(C.dept)), sutraNo: g(C.sutra), dharmaNo: g(C.dharma), chiryu: /^(無|-|－)$/.test(g(C.chiryu)) ? '' : g(C.chiryu) };
     rowOf.set(p.id, rn);
     if (lv === 3) {
       if (!last) { fixes.push(`第 ${rn} 列 ${name} 在家族入信欄，但上面沒有戶長，略過`); continue; }
