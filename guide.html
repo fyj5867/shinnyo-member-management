@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#173b35">
+<title>信徒管理 使用說明</title>
+<link rel="icon" href="icon-192.png?v=2">
+<style>
+:root{--g:#173b35;--g2:#2d6a5d;--bg:#f2f5f4;--line:#dfe7e3;--muted:#5f7068;--ink:#1b302b;--warn:#9b3b12}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.75 -apple-system,BlinkMacSystemFont,"PingFang TC","Noto Sans TC","Microsoft JhengHei",sans-serif;-webkit-text-size-adjust:100%}
+header{background:var(--g);color:#fff;padding:calc(14px + env(safe-area-inset-top)) 16px 14px;position:sticky;top:0;z-index:2;display:flex;align-items:center;gap:10px}
+header h1{font-size:18px;margin:0;flex:1}
+header a{color:#fff;text-decoration:none;font-size:14px;border:1px solid rgba(255,255,255,.4);border-radius:18px;padding:4px 12px;white-space:nowrap}
+main{max-width:680px;margin:0 auto;padding:8px 16px 48px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0;scroll-margin-top:72px}
+h2{font-size:18px;margin:0 0 8px;color:var(--g)}
+h3{font-size:15px;margin:14px 0 4px}
+p{margin:6px 0}
+ol,ul{margin:6px 0;padding-left:1.4em}
+li{margin:3px 0}
+.muted{color:var(--muted);font-size:14px}
+.key{background:#eaf3ef;border-radius:6px;padding:0 6px;font-weight:600;white-space:nowrap}
+.url{word-break:break-all;font-weight:600;color:var(--g2)}
+.note{background:#fff7e7;border:1px solid #ead9b4;color:#6e592d;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:15px}
+.safe{background:#e9f4ee;border:1px solid #c5ddd1;border-radius:10px;padding:10px 12px;margin:10px 0;font-size:15px}
+.toc{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:6px}
+.toc a{display:block;background:#f7faf8;border:1px solid var(--line);border-radius:10px;padding:8px 10px;color:var(--ink);text-decoration:none;font-size:15px}
+.toc b{color:var(--g2);margin-right:4px}
+dt{font-weight:700;margin-top:10px}
+dd{margin:2px 0 0}
+a{color:var(--g2)}
+@media print{header{position:static}.toc{display:none}}
+</style>
+</head>
+<body>
+<header><h1>信徒管理 使用說明</h1><a href="./">回到 App</a></header>
+<main>
+
+<div class="panel">
+  <p>給第一次使用的人。照順序做，大約 10 分鐘。</p>
+  <div class="safe"><b>你的資料只屬於你。</b>資料存在你自己的手機；開了同步，才會另外存一份在你自己的加密雲端。網站作者和其他使用者都看不到。</div>
+  <div class="toc">
+    <a href="#install"><b>1</b>安裝到手機</a>
+    <a href="#start"><b>2</b>開始使用</a>
+    <a href="#excel"><b>3</b>匯入 Excel 名冊</a>
+    <a href="#sync"><b>4</b>跨裝置同步</a>
+    <a href="#pair"><b>5</b>加第二台裝置</a>
+    <a href="#safety"><b>6</b>平常要注意</a>
+    <a href="#faq"><b>7</b>常見問題</a>
+  </div>
+</div>
+
+<div class="panel" id="install">
+  <h2>1. 安裝到手機</h2>
+  <p>網址：<span class="url">https://fyj5867.github.io/shinnyo-member-management/</span></p>
+  <h3>iPhone</h3>
+  <ol>
+    <li>用 <b>Safari</b> 打開上面的網址。從 LINE 裡直接點開的不行，要複製網址到 Safari。</li>
+    <li>按下方的「分享」→「加入主畫面」→「加入」。</li>
+    <li>之後都從主畫面的圖示打開。生日通知只有這樣才能開。</li>
+  </ol>
+  <h3>Android</h3>
+  <ol>
+    <li>用 Chrome 打開網址。</li>
+    <li>右上角「⋮」→「加到主畫面」或「安裝應用程式」。</li>
+  </ol>
+  <h3>電腦</h3>
+  <p>用 Chrome 或 Edge 打開網址就能用。網址列右邊有「安裝」可以做成桌面圖示。</p>
+</div>
+
+<div class="panel" id="start">
+  <h2>2. 開始使用</h2>
+  <p>只用一台手機的話，做完這一段就可以用了，不需要同步。</p>
+  <ol>
+    <li><span class="key">設定 → 單位名稱</span>：例如「○○苑」，會印在列印的抬頭。</li>
+    <li><span class="key">設定 → 年度金額</span>：填苑費、祈念證、星供、星供套的單價。每一筆之後也可以個別改金額。</li>
+    <li>建立名冊，二選一：
+      <ul>
+        <li>一個一個加：<span class="key">名冊 → ＋新增</span>。之後在某一戶按「＋」，選「導子」或「家族入信」，關係會自動建好。</li>
+        <li>人數多的話，用 Excel 匯入，見下一段。</li>
+      </ul>
+    </li>
+  </ol>
+  <div class="note"><b>沒開同步的話，請定期備份。</b><span class="key">設定 → 備份 → 下載備份 JSON</span>，存到私人的地方。手機壞掉或換手機時，只能靠這個檔救回資料。</div>
+</div>
+
+<div class="panel" id="excel">
+  <h2>3. 匯入 Excel 名冊</h2>
+  <ol>
+    <li>先到 <span class="key">設定 → 匯出 → 下載空白範本</span>，拿到欄位排好的 Excel。</li>
+    <li>一個人填一列。<b>姓名填在他那一層的欄位</b>：導親、導子、所屬、家族入信。</li>
+    <li>要照順序排：
+      <ul>
+        <li>導子會掛在上面最近的導親下面。</li>
+        <li>所屬會掛在上面最近的導子下面。</li>
+        <li>家族入信會掛在上面最近的那一戶。</li>
+      </ul>
+    </li>
+    <li>苑費欄填 <b>v</b>（要繳）或 <b>x</b>（不繳）。標題寫年度，例如「2027 苑費」。</li>
+    <li>日期寫成 1980.01.01。</li>
+    <li>已經過世的人，姓名後面加「(歿)」。</li>
+    <li>標題對不上內建欄位的，會變成自訂欄位，例如「靈位」。</li>
+    <li>你自己的導親：放在最上面的導親欄，下面不放人、苑費留空。App 會當成參考，不列入苑費和統計。</li>
+  </ol>
+  <p>填好後到 <span class="key">設定 → 匯入 Excel 名冊</span> 選檔案。匯入前會先列出人數和要核對的地方，按確定才會寫入。</p>
+  <p class="muted">檔案只在你的裝置上讀取，不會上傳。之後再匯入一次是「對人更新」：信徒編號或姓名對得到的人，星供、實踐、奠供帳都會保留。</p>
+</div>
+
+<div class="panel" id="sync">
+  <h2>4. 跨裝置同步</h2>
+  <p>想讓手機和電腦看到同一份資料才需要。用的是<b>你自己的 GitHub 帳號</b>（免費）。資料在上傳前就加密，只有你的同步密語打得開。</p>
+  <h3>步驟 A：申請 GitHub 帳號</h3>
+  <ol>
+    <li>到 <span class="url">github.com</span> 按「Sign up」，用 email 註冊。已經有帳號就跳過。</li>
+    <li>GitHub 可能會要你開「兩步驟驗證」，照畫面做就好。</li>
+  </ol>
+  <h3>步驟 B：建立金鑰</h3>
+  <ol>
+    <li>App 裡 <span class="key">設定 → 跨裝置同步</span>，點「建立 GitHub 金鑰（只勾 gist）」。</li>
+    <li>登入 GitHub 後會打開建立金鑰的頁面。名稱「信徒管理同步」和 <b>gist</b> 已經幫你填好、勾好，其他都不要勾。</li>
+    <li>「Expiration」（有效期限）選 <b>No expiration</b>。選有期限的話，到期同步就會停，要重建一把。</li>
+    <li>拉到最下面按「Generate token」。</li>
+    <li>複製 <b>ghp_</b> 開頭的那一長串。<b>這串只會顯示一次</b>，先不要關掉頁面。</li>
+  </ol>
+  <h3>步驟 C：連線</h3>
+  <ol>
+    <li>回到 App，把金鑰貼進「貼上金鑰 ghp_…」。</li>
+    <li>自訂一組<b>同步密語</b>，至少 8 個字。</li>
+    <li>按「連線並開始同步」。右上角顯示「已同步」就完成了。</li>
+  </ol>
+  <div class="note"><b>同步密語請寫在紙上收好。</b>忘記的話，雲端的資料就打不開，作者也救不回來。</div>
+</div>
+
+<div class="panel" id="pair">
+  <h2>5. 加第二台裝置</h2>
+  <p>例如電腦，或家人幫忙用的另一支手機。不用再建金鑰，用配對碼就好。</p>
+  <ol>
+    <li>在已經連好的那台：<span class="key">設定 → 跨裝置同步 → 配對碼</span> →「複製」。</li>
+    <li>把配對碼傳給自己，例如 LINE 的 Keep 或寄 email 給自己。<b>不要傳到群組或給別人。</b></li>
+    <li>在新的那台打開 App：<span class="key">設定 → 方法二</span>，貼上配對碼，按「用配對碼連線」。密語可以留空。</li>
+    <li>連上後，把剛剛傳的配對碼訊息刪掉。</li>
+  </ol>
+  <p class="muted">之後每分鐘、每次切回 App 都會自動同步。</p>
+</div>
+
+<div class="panel" id="safety">
+  <h2>6. 平常要注意</h2>
+  <ul>
+    <li><b>金鑰、同步密語、配對碼</b>，三個都等於你全部資料的鑰匙。不要給別人，也不要截圖分享。</li>
+    <li>備份 JSON 有完整的個人資料。請存在私人的地方，不要放到公開的雲端資料夾。</li>
+    <li>生日匯出到行事曆時，請加到私人的行事曆，不要加到公司的 Outlook（會同步到公司伺服器）。</li>
+    <li>GitHub 上有一份「信徒管理 Shinnyo Members 同步資料（請勿刪除）」，那就是你的雲端資料，<b>不要刪</b>。奠供帳的照片也是一張一份「信徒管理 加密照片」。</li>
+    <li>手機遺失時：
+      <ol>
+        <li>電腦登入 GitHub → 右上頭像 → Settings → Developer settings → Personal access tokens → Tokens (classic)。</li>
+        <li>把「信徒管理同步」那把刪掉，遺失的手機就連不上了。</li>
+        <li>照步驟 B 建一把新的，用<b>原本的密語</b>重新連線，資料都還在。</li>
+      </ol>
+    </li>
+  </ul>
+</div>
+
+<div class="panel" id="faq">
+  <h2>7. 常見問題</h2>
+  <dl>
+    <dt>會跟別人的資料混在一起嗎？</dt>
+    <dd>不會。每個人用自己的 GitHub 和密語，各自一份。</dd>
+    <dt>看不到新功能？</dt>
+    <dd>把 App 完全關掉再打開。電腦的話重新整理網頁。</dd>
+    <dt>右上角顯示「需要同步密語」？</dt>
+    <dd>到「設定」輸入你的同步密語。</dd>
+    <dt>出現「GitHub 金鑰無效或已過期」？</dt>
+    <dd>照步驟 B 建一把新的金鑰，用原本的密語重新連線。</dd>
+    <dt>生日提醒怎麼開？</dt>
+    <dd><span class="key">設定 → 生日提醒</span>。iPhone 要從主畫面的圖示打開才能開通知。想要沒開 App 也會提醒，按「匯出全部生日」加到手機行事曆。</dd>
+    <dt>奠供帳的照片存在哪？</dt>
+    <dd>存在拍照的那台。有開同步的話，會加密傳到你的雲端，其他裝置打開時再下載。備份 JSON 不含照片。</dd>
+    <dt>不用了，怎麼刪乾淨？</dt>
+    <dd>先下載一份備份 JSON 自己留著。然後 <span class="key">設定 → 跨裝置同步 → 中斷</span>，刪掉主畫面的圖示，並在瀏覽器清除這個網站的資料。最後到 GitHub 刪掉上面那些 Gist 和「信徒管理同步」金鑰。</dd>
+  </dl>
+</div>
+
+<p class="muted" style="text-align:center">更新：2026-11-19</p>
+</main>
+</body>
+</html>

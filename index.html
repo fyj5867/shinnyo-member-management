@@ -63,6 +63,7 @@ label.ck input{width:auto;margin:0}
 .nm a{white-space:nowrap;flex-shrink:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;color:#1b302b}
 .nm .chip,.nm .sub,.nm .cnt{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tr.fam .nm a{font-weight:500;color:#3d5249}
+.guide{display:block;background:#e9f4ee;border:1px solid #c5ddd1;border-radius:12px;padding:11px 13px;color:var(--g);font-weight:650;text-decoration:none;font-size:14px}
 .cake{flex:none;font-size:1.05em;line-height:1;margin:0 1px;position:relative;top:-3px}
 .bday{background:#fff4f6;border-color:#f1cfd7;color:#6b2c3b;font-size:14px;line-height:1.9}
 .bday a{color:#a3304c;font-weight:700;cursor:pointer}.bdi{display:inline-block;margin-right:12px;white-space:nowrap}
@@ -422,7 +423,7 @@ const isOpen = id => ui.fold ? ui.flip.has(id) : !ui.flip.has(id);
 function flip(id) { ui.flip.has(id) ? ui.flip.delete(id) : ui.flip.add(id); renderList(); }
 function listHtml() {
   const y = ui.year, ix = IX(), q = ui.q.trim().toLowerCase();
-  if (!ix.rows.length) return '<div class="muted" style="padding:24px;text-align:center">還沒有資料。到「設定」匯入你的 Excel 名冊，或按「＋新增」。</div>';
+  if (!ix.rows.length) return '<div class="muted" style="padding:24px;text-align:center">還沒有資料。到「設定」匯入你的 Excel 名冊，或按「＋新增」。<br><a href="guide.html">第一次使用？看使用說明</a></div>';
   const hit = p => [p.name, p.roman, p.code, p.phone, p.rank, p.teacherNo, p.note].concat(Object.values(p.ext || {})).some(x => String(x || '').toLowerCase().includes(q));
   const fOk = p => { if (!ui.f) return true; if (p.deceased) return false; const f = yrOf(y, p.id), due = f.fee === 'v' || f.cert === 'v';
     return ui.f === 'v' ? f.fee === 'v' : ui.f === 'cert' ? f.cert === 'v' : ui.f === 'unpaid' ? due && !f.paid : ui.f === 'paid' ? due && !!f.paid : ui.f === 'x' ? f.fee === 'x' : f.fee === ''; };
@@ -1320,12 +1321,13 @@ function sheetAoa() {
   return aoa;
 }
 async function doXlsx() {
-  if (!IX().m.size) return toast('還沒有資料', 'err');
+  const blank = !IX().m.size;                                   /* 還沒有資料 → 給空白範本（只有標題列），新使用者照欄位填好再匯入 */
   try { await loadXlsx(); } catch (e) { return toast('Excel 元件載入失敗（需要網路）', 'err'); }
-  const ws = XLSX.utils.aoa_to_sheet(sheetAoa());
+  const aoa = sheetAoa(); if (blank) aoa[0] = [];               /* 上方各層級戶數留空，匯入時才不會說「Excel 上方寫 0，請核對」 */
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
   ws['!cols'] = [6, 6, 8, 10, 10, 10, 10, 18, 11, 11, 14, 12, 14, 48].map(w => ({ wch: w })).concat(Array(PRAC_ALL.length + 2 + fields().length).fill({ wch: 8 }));
   const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, '信徒資訊');
-  XLSX.writeFile(wb, `信徒名冊_${ui.year}苑費_${todayStr()}.xlsx`);
+  XLSX.writeFile(wb, blank ? `信徒名冊_空白範本_${ui.year}苑費.xlsx` : `信徒名冊_${ui.year}苑費_${todayStr()}.xlsx`);
 }
 function doPrint() {
   if (!IX().m.size) return toast('還沒有資料', 'err');
@@ -1484,11 +1486,12 @@ function doImport() {
 function vSettings() {
   const info = SMSync.info();
   $('#view').innerHTML = `<h2>設定</h2>
+  <a class="guide" href="guide.html">📖 第一次使用？看使用說明（安裝、匯入、同步）</a>
   <div class="panel"><h3>匯入 Excel 名冊</h3>
   <div class="muted">照你原本的名冊格式：苑費、導親、導子、導孫／所屬、家族入信、羅馬拼音、出生年月日、入信時間、信徒編號、院生號碼／教師號碼、手機、備註。看標題對欄位，順序不拘；這裡匯出的 Excel（多一欄「已收」）也能匯回來。<b>檔案只在這台裝置讀取，不會上傳。</b>匯入前會先給你看筆數和要核對的地方。</div>
   <input type="file" accept=".xlsx,.xls" style="margin-top:10px" onchange="pickXlsx(this.files[0]);this.value=''">
   <div id="impBox">${imp ? impHtml() : ''}</div></div>
-  <div class="panel"><h3>匯出</h3><div class="row"><button class="sm" onclick="doXlsx()">下載 Excel（${ui.year} 苑費）</button><button class="alt sm" onclick="doPrint()">列印／存 PDF</button></div>
+  <div class="panel"><h3>匯出</h3><div class="row"><button class="sm" onclick="doXlsx()">${IX().m.size ? `下載 Excel（${ui.year} 苑費）` : '下載空白範本'}</button><button class="alt sm" onclick="doPrint()">列印／存 PDF</button></div>
   <div class="muted" style="margin-top:6px">前面跟你的 Excel 一樣（多一欄「已收」），右邊接著實踐和自訂欄位；匯回來時會一起還原。年度在「名冊」上方切換。</div></div>
   <div class="panel"><h3>${ui.year} 年度金額</h3><div class="grid2">${(() => { const pr = cfgGet('prices', { def: {}, byYear: {} }), py = (pr.byYear || {})[ui.year] || {}, df = pr.def || {};
     return FEES.map(([k, n]) => `<div><label>${n}</label><input type="number" min="0" inputmode="numeric" id="pr_${k}" value="${py[k] != null ? py[k] : ''}" placeholder="${df[k] != null && df[k] !== '' ? '預設 ' + df[k] : '0'}"></div>`).join(''); })()}</div>
@@ -1501,7 +1504,7 @@ function vSettings() {
   <div class="panel"><h3>跨裝置同步</h3>${info ? `<div class="muted">已連線 GitHub：${esc(info.login)}（${info.encrypted ? '已加密' : '未加密'}）<br>${info.lastSync ? '最近同步 ' + new Date(info.lastSync).toLocaleString('zh-TW') : ''}</div>
   <div class="row" style="margin-top:8px"><button class="sm" onclick="SMSync.now(true)">立即同步</button><button class="alt sm" onclick="showPair()">配對碼（加第二台裝置）</button><button class="warn sm" onclick="if(confirm('中斷此裝置的同步？本機資料會保留。')){SMSync.disconnect();renderAll()}">中斷</button></div>
   ${SMSync.needsPassphrase() ? '<div class="notice" style="margin-top:8px">雲端資料有加密，請輸入同步密語：<input id="pp" type="password" style="margin:6px 0"><button class="sm" onclick="usePass()">確定</button></div>' : ''}`
-  : `<div class="notice">信徒資料是高度隱私資訊：<b>資料存在你自己的加密私密 Gist</b>，網站原始碼裡沒有任何人名。沒有同步密語就不會上傳；密語忘記就無法解開，請另外記下。</div>
+  : `<div class="notice">信徒資料是高度隱私資訊：<b>資料存在你自己的加密私密 Gist</b>，網站原始碼裡沒有任何人名。沒有同步密語就不會上傳；密語忘記就無法解開，請另外記下。<a href="guide.html#sync">一步一步的說明</a></div>
   <label>方法一：第一台裝置</label><div class="muted">① <a href="${SMSync.TOKEN_URL}" target="_blank" rel="noopener">建立 GitHub 金鑰（只勾 gist）</a> → 複製 ghp_ 開頭那串</div>
   <input id="tk" placeholder="貼上金鑰 ghp_…" autocomplete="off"><input id="pp" type="password" placeholder="自訂同步密語（至少 8 字，要記住）" style="margin-top:6px" autocomplete="new-password">
   <button style="margin-top:8px" onclick="doConnect()">連線並開始同步</button>
