@@ -63,6 +63,9 @@ label.ck input{width:auto;margin:0}
 .nm a{white-space:nowrap;flex-shrink:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;color:#1b302b}
 .nm .chip,.nm .sub,.nm .cnt{min-width:0;overflow:hidden;text-overflow:ellipsis}
 .tr.fam .nm a{font-weight:500;color:#3d5249}
+.cake{flex:none;font-size:1.05em;line-height:1;margin:0 1px;position:relative;top:-3px}
+.bday{background:#fff4f6;border-color:#f1cfd7;color:#6b2c3b;font-size:14px;line-height:1.9}
+.bday a{color:#a3304c;font-weight:700;cursor:pointer}.bdi{display:inline-block;margin-right:12px;white-space:nowrap}
 .tg{width:22px;flex:none;padding:0;background:none;color:var(--muted);font-size:13px}
 .cnt,.sub{font-size:11px;color:var(--muted);white-space:nowrap}
 .chip{display:inline-block;border-radius:20px;padding:1px 7px;font-size:11px;background:#eceeed;color:#6b7a73;white-space:nowrap}
@@ -161,6 +164,21 @@ const dkey = v => { const m = String(v || '').match(/(\d{4})\D+(\d{1,2})\D+(\d{1
 const todayStr = () => { const d = new Date(); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; };
 const dotDate = () => { const d = new Date(); return `${d.getFullYear()}.${pad(d.getMonth() + 1)}.${pad(d.getDate())}`; };
 const md = v => { const m = String(v || '').match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})$/); return m ? `${+m[2]}/${+m[3]}` : String(v || ''); };
+/* 生日提醒：生日前 3 天到當天，名字旁出現蛋糕。只用月／日，不顯示出生年。2/29 生日在平年算 2/28 */
+const BD_DAYS = 3;
+function bdInfo(p) {
+  if (!p || p.deceased || !p.birth) return null;
+  const n = String(p.birth).match(/\d+/g) || []; let m, d;
+  if (n.length >= 3) { m = +n[1]; d = +n[2]; } else if (n.length === 2) { m = +n[0]; d = +n[1]; } else if (n.length === 1 && n[0].length === 8) { m = +n[0].slice(4, 6); d = +n[0].slice(6); }
+  if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31)) return null;
+  const t = new Date(); t.setHours(0, 0, 0, 0);
+  const at = y => { const x = new Date(y, m - 1, d); if (x.getMonth() !== m - 1) x.setDate(0); return x; };
+  let b = at(t.getFullYear()); if (b < t) b = at(t.getFullYear() + 1);
+  return { m: b.getMonth() + 1, d: b.getDate(), days: Math.round((b - t) / 864e5), key: `${b.getFullYear()}-${b.getMonth() + 1}-${b.getDate()}` };
+}
+const bdSoon = p => { if (!p || p.status === 'non') return null; const b = bdInfo(p); return b && b.days <= BD_DAYS ? b : null; };
+const bdWhen = b => b.days === 0 ? '今天' : b.days === 1 ? '明天' : b.days === 2 ? '後天' : `還有 ${b.days} 天`;
+const cake = p => { const b = bdSoon(p); return b ? `<span class="cake" title="${b.m}/${b.d} 生日（${bdWhen(b)}）">🎂</span>` : ''; };
 function toast(msg, kind) {
   const t = $('#toast'); t.textContent = msg; t.className = kind === 'err' ? 'err' : ''; t.style.display = 'block';
   clearTimeout(toast.t); toast.t = setTimeout(() => t.style.display = 'none', kind === 'err' ? 4500 : 2200);
@@ -386,11 +404,13 @@ function renderList() { const s = $('#sum'), l = $('#list'); if (!s || !l) retur
 function sumHtml() {
   const y = ui.year, ix = IX(), st = stats(y), py = stats(y - 1), iss = dataIssues();
   const chip = (k, n, c) => `<button class="fchip ${ui.f === k ? 'on' : ''}" onclick="ui.f=ui.f==='${k}'?'':'${k}';renderList()">${n}<b>${c}</b></button>`;
-  return `<div class="panel sum"><div class="big">${y} 苑費要繳<b>${st.v}</b>戶<span class="lvc">導親 <b>${st.lv[0]}</b>｜導子 <b>${st.lv[1]}</b>｜所屬 <b>${st.lv[2]}</b>｜祈念證 <b>${st.cert}</b> 戶</span></div>
+  const bds = [...ix.m.values()].map(p => [p, bdSoon(p)]).filter(x => x[1]).sort((a, b) => a[1].days - b[1].days);
+  return `${bds.length ? `<div class="panel bday">🎂 <b>${BD_DAYS} 天內生日</b>　${bds.map(([p, b]) => `<span class="bdi"><a onclick="editPerson('${p.id}')">${esc(p.name)}</a> ${b.m}/${b.d}（${bdWhen(b)}）</span>`).join('')}</div>` : ''}
+  <div class="panel sum"><div class="big">${y} 苑費要繳<b>${st.v}</b>戶<span class="lvc">導親 <b>${st.lv[0]}</b>｜導子 <b>${st.lv[1]}</b>｜所屬 <b>${st.lv[2]}</b>｜祈念證 <b>${st.cert}</b> 戶</span></div>
   <div class="chips">${chip('v', '要繳 v ', st.v)}${chip('cert', '祈念證 ', st.cert)}${chip('unpaid', '未收 ', st.due - st.paid)}${chip('paid', '已收 ', st.paid)}${chip('x', '不繳 x ', st.x)}${chip('none', '未定 ', st.none)}
   <button class="fchip" onclick="ui.fold=!ui.fold;ui.flip.clear();renderList()">${ui.fold ? '展開家族' : '收合家族'}</button></div>
   <div class="muted" style="margin-top:6px">信徒 ${st.people} 人＝獨立戶 ${st.houses}＋家族入信 ${st.fam}${st.dead ? `（已歿 ${st.dead} 人不計）` : ''}。祈念證、苑費以戶為單位，點一下切換；「已收」含苑費和祈念證。家族跟著戶長，不算實績。</div>
-  ${ix.refs.length ? `<div class="muted ref">我的導親（參考，不列入苑費與統計）：${ix.refs.map(r => `<a onclick="editPerson('${r.id}')">${esc(r.name)}</a>`).join('、')}</div>` : ''}
+  ${ix.refs.length ? `<div class="muted ref">我的導親（參考，不列入苑費與統計）：${ix.refs.map(r => `<a onclick="editPerson('${r.id}')">${esc(r.name)}</a>${cake(r)}`).join('、')}</div>` : ''}
   ${dupNotice()}
   ${!st.v && !st.x && (py.v || py.x) ? `<div class="notice" style="margin-top:8px">${y} 年還沒有點苑費。<button class="sm" onclick="carryOver()">帶入 ${y - 1} 年的 v／x</button></div>` : ''}
   ${iss.length ? `<div class="notice" style="margin-top:8px"><b>資料檢查：${iss.length} 項要你確認</b>（點名字修改）${iss.map(([p, t]) => `<div><a onclick="editPerson('${p.id}')">${esc(p.name)}</a>：${esc(t)}</div>`).join('')}</div>` : ''}</div>`;
@@ -419,17 +439,17 @@ function listHtml() {
 /* 卡片：一戶一張，寫出導親、導子幾戶、精進狀態，家族入信成員接在下面 */
 const pracChips = x => { const a = (x.prac || []).filter(k => PRAC_ALL.includes(k)).map(pracName).concat(+x.pracDu > 0 ? ['度眾 ' + x.pracDu] : [], x.pracOther ? [x.pracOther] : []);
   return a.length ? a.map(k => `<span class="chip pc">${esc(k)}</span>`).join('') : '<span class="chip idle">未精進</span>'; };
-const infoLine = x => [x.code && '編號 ' + x.code, x.joinedOn && '入信 ' + x.joinedOn, x.birth && '生日 ' + x.birth, x.phone].concat(fields().map(f => (x.ext || {})[f.id] ? f.name + ' ' + x.ext[f.id] : '')).filter(Boolean).map(esc).join('｜');
+const infoLine = x => [x.code && '編號 ' + x.code, x.joinedOn && '入信 ' + x.joinedOn, x.phone]   /* 出生年月日不顯示在卡片上（隱私），只在編輯視窗裡 */.concat(fields().map(f => (x.ext || {})[f.id] ? f.name + ' ' + x.ext[f.id] : '')).filter(Boolean).map(esc).join('｜');
 function houseCard(p, flat, forceOpen) {
   const ix = IX(), y = ui.year, f = yrOf(y, p.id), fam = ix.fam.get(p.id) || [], d = ix.depth.get(p.id) || 0, li = Math.min(d, 2), mh = ix.mh.get(p.id), kids = ix.kids.get(p.id) || [];
   const open = fam.length && (forceOpen || isOpen(p.id)), due = f.fee === 'v' || f.cert === 'v';
   const fees = p.deceased ? '' : `<button class="fchip sm ${f.fee}" onclick="cycleFee('${p.id}')">${y} 苑費 ${f.fee === 'v' ? '要繳' : f.fee === 'x' ? '不繳' : '未定'}</button><button class="fchip sm ${f.cert ? 'c' : ''}" onclick="toggleCert('${p.id}')">祈念證${f.cert ? ' 申請' : ''}</button>${due ? `<button class="fchip sm ${f.paid ? 'pd' : ''}" onclick="editPaid('${p.id}')">${f.paid ? '已收 ' + esc(md(f.paid)) : '收款'}</button>` : ''}`;
   return `<div class="card hc d${li}${p.deceased ? ' dead' : ''}" style="margin-left:${flat ? 0 : Math.min(d, 3) * 12}px">
-  <div class="hd"><span class="chip dark">獨立戶</span><a class="nm1" onclick="editPerson('${p.id}')">${esc(p.name)}</a><span class="lv lv${li}">${LV[li]}</span>${p.deceased ? '<span class="chip">歿</span>' : ''}<span class="grow"></span><button class="edit" onclick="editPerson('${p.id}')">編輯</button><button class="add" title="新增導子或家族" onclick="addMenu('${p.id}')">＋</button></div>
+  <div class="hd"><span class="chip dark">獨立戶</span><a class="nm1" onclick="editPerson('${p.id}')">${esc(p.name)}</a>${cake(p)}<span class="lv lv${li}">${LV[li]}</span>${p.deceased ? '<span class="chip">歿</span>' : ''}<span class="grow"></span><button class="edit" onclick="editPerson('${p.id}')">編輯</button><button class="add" title="新增導子或家族" onclick="addMenu('${p.id}')">＋</button></div>
   ${fees ? `<div class="row" style="margin-top:6px;gap:6px">${fees}</div>` : ''}
   <div style="margin-top:6px">${pracChips(p)}</div>
-  <div class="muted" style="margin-top:4px">${infoLine(p)}${mh ? `｜導親：<a onclick="editPerson('${mh.id}')">${esc(mh.name)}</a>` : ''}${kids.length ? `｜導子 ${kids.length} 戶` : ''}</div>
-  ${fam.length ? `<div class="fams"><a class="muted" onclick="flip('${p.id}')"><b>家族入信成員 ${fam.length} 人 ${open ? '▾' : '▸'}</b></a>${open ? fam.map(m => `<div class="fm${m.deceased ? ' dead' : ''}"><div class="hd" style="gap:6px"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''}<span class="grow"></span><button class="edit" onclick="editPerson('${m.id}')">編輯</button></div>${m.deceased ? '' : pracChips(m)}<div class="muted">${infoLine(m)}</div></div>`).join('') : ''}</div>` : ''}</div>`;
+  <div class="muted" style="margin-top:4px">${[infoLine(p), mh && `導親：<a onclick="editPerson('${mh.id}')">${esc(mh.name)}</a>`, kids.length && `導子 ${kids.length} 戶`].filter(Boolean).join('｜')}</div>
+  ${fam.length ? `<div class="fams"><a class="muted" onclick="flip('${p.id}')"><b>家族入信成員 ${fam.length} 人 ${open ? '▾' : '▸'}</b></a>${open ? fam.map(m => `<div class="fm${m.deceased ? ' dead' : ''}"><div class="hd" style="gap:6px"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${cake(m)}${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''}<span class="grow"></span><button class="edit" onclick="editPerson('${m.id}')">編輯</button></div>${m.deceased ? '' : pracChips(m)}<div class="muted">${infoLine(m)}</div></div>`).join('') : ''}</div>` : ''}</div>`;
 }
 function houseRow(p, flat, forceOpen) {
   const ix = IX(), y = ui.year, f = yrOf(y, p.id), fam = ix.fam.get(p.id) || [], d = ix.depth.get(p.id) || 0, li = Math.min(d, 2);
@@ -439,12 +459,12 @@ function houseRow(p, flat, forceOpen) {
   const paid = p.deceased || (f.fee !== 'v' && f.cert !== 'v') ? '<span class="paid off">—</span>' : `<button class="paid ${f.paid ? 'on' : ''}" onclick="editPaid('${p.id}')">${f.paid ? esc(md(f.paid)) : '收款'}</button>`;
   const mh = flat ? ix.mh.get(p.id) : null;
   return `<div class="tr${p.deceased ? ' dead' : ''}">${cert}${fee}${paid}
-  <div class="nm" style="padding-left:${ind}px">${fam.length ? `<button class="tg" onclick="flip('${p.id}')">${open ? '▾' : '▸'}</button>` : '<span class="tg"></span>'}<a onclick="editPerson('${p.id}')">${esc(p.name)}</a>${fam.length ? `<span class="cnt">${fam.length + 1} 人</span>` : ''}${p.deceased ? '<span class="chip">歿</span>' : ''}${mh ? `<span class="sub">導親 ${esc(mh.name)}</span>` : ''}</div>
+  <div class="nm" style="padding-left:${ind}px">${fam.length ? `<button class="tg" onclick="flip('${p.id}')">${open ? '▾' : '▸'}</button>` : '<span class="tg"></span>'}<a onclick="editPerson('${p.id}')">${esc(p.name)}</a>${cake(p)}${fam.length ? `<span class="cnt">${fam.length + 1} 人</span>` : ''}${p.deceased ? '<span class="chip">歿</span>' : ''}${mh ? `<span class="sub">導親 ${esc(mh.name)}</span>` : ''}</div>
   <span class="lv lv${li}">${LV[li]}</span><span class="c-d">${esc(p.joinedOn || '')}</span><span class="c-c">${esc(p.code || '')}</span><span class="c-p">${esc(p.phone || '')}</span>
   <button class="add" title="新增導子或家族" onclick="addMenu('${p.id}')">＋</button></div>` + (open ? fam.map(m => famRow(m, ind)).join('') : '');
 }
 function famRow(m, ind) {
-  return `<div class="tr fam${m.deceased ? ' dead' : ''}"><span></span><span></span><span></span><div class="nm" style="padding-left:${ind + 28}px"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''}</div>
+  return `<div class="tr fam${m.deceased ? ' dead' : ''}"><span></span><span></span><span></span><div class="nm" style="padding-left:${ind + 28}px"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${cake(m)}${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''}</div>
   <span class="lv lvf">家族</span><span class="c-d">${esc(m.joinedOn || '')}</span><span class="c-c">${esc(m.code || '')}</span><span class="c-p">${esc(m.phone || '')}</span><span></span></div>`;
 }
 function rerender() { ({ roster: renderList, star: renderStar, fees: renderFees }[ui.tab] || renderAll)(); }
@@ -515,7 +535,7 @@ function pracTable() {
   const cell = (p, k) => `<td class="c"><button class="${pracOn(p, k) ? 'on' : ''}" onclick="togglePrac('${p.id}','${k}')">${pracOn(p, k) ? '●' : ''}</button></td>`;
   const th = `<thead><tr><th class="nmc" rowspan="2">姓名</th><th rowspan="2">度眾</th>${PRAC_A.map(k => `<th rowspan="2">${k}</th>`).join('')}<th colspan="4">${KZ}</th>${PRAC_B.map(k => `<th rowspan="2">${k}</th>`).join('')}<th rowspan="2">其他</th></tr>
   <tr>${KAIZA.map(k => `<th>${k}</th>`).join('')}</tr></thead>`;
-  const body = rows.map(({ p, d, fam }) => `<tr class="${fam ? 'fam' : ''}${isActive(p) ? '' : ' idle'}"><td class="nmc" style="padding-left:${filtered ? 10 : 10 + Math.min(d, 3) * 8 + (fam ? 12 : 0)}px"><a onclick="editPerson('${p.id}')">${esc(p.name)}</a>${fam && filtered ? `<span class="sub"> ${esc(fam.name)}家</span>` : ''}</td>
+  const body = rows.map(({ p, d, fam }) => `<tr class="${fam ? 'fam' : ''}${isActive(p) ? '' : ' idle'}"><td class="nmc" style="padding-left:${filtered ? 10 : 10 + Math.min(d, 3) * 8 + (fam ? 12 : 0)}px"><a onclick="editPerson('${p.id}')">${esc(p.name)}</a>${cake(p)}${fam && filtered ? `<span class="sub"> ${esc(fam.name)}家</span>` : ''}</td>
   <td class="c"><button class="${+p.pracDu > 0 ? 'on' : ''}" onclick="setDu('${p.id}')">${+p.pracDu > 0 ? +p.pracDu : ''}</button></td>${PRAC_A.map(k => cell(p, k)).join('')}${KAIZA.map(k => cell(p, '會座-' + k)).join('')}${PRAC_B.map(k => cell(p, k)).join('')}
   <td class="c o"><button class="${p.pracOther ? 'on' : ''}" onclick="setOther('${p.id}')">${esc(p.pracOther || '')}</button></td></tr>`).join('');
   if (!IX().rows.length) return '<div class="muted" style="padding:24px;text-align:center">還沒有資料。到「設定」匯入你的 Excel 名冊。</div>';
@@ -620,7 +640,7 @@ function starRow(p, y) {
   const ix = IX(), r = yrOf(y, p.id), amt = sumItems(feeItems(y, p).filter(x => x[2] !== 'a')), ex = (r.extra || []).filter(x => x.name || +x.amt);
   const tag = p.status === 'non' ? '<span class="chip non">未入信</span>' : ix.kind.get(p.id) === 'family' ? '<span class="lv lvf">家族</span>' : `<span class="lv lv${lvIdx(p)}">${lvOf(p)}</span>`;
   return `<div class="srow"><button class="fee ${r.star ? 'v' : ''}" title="星供：點一下切換" onclick="toggleStar('${p.id}')">${r.star ? '星' : ''}</button>
-  <div class="nm" style="flex-wrap:wrap"><a onclick="${p.status === 'non' ? `editNon('${p.id}')` : `editPerson('${p.id}')`}">${esc(p.name)}</a>${tag}${ex.length ? `<span class="sub">＋${ex.map(x => esc(x.name || '其他') + ' ' + money(+x.amt || 0)).join('、')}</span>` : ''}</div>
+  <div class="nm" style="flex-wrap:wrap"><a onclick="${p.status === 'non' ? `editNon('${p.id}')` : `editPerson('${p.id}')`}">${esc(p.name)}</a>${cake(p)}${tag}${ex.length ? `<span class="sub">＋${ex.map(x => esc(x.name || '其他') + ' ' + money(+x.amt || 0)).join('、')}</span>` : ''}</div>
   <div class="qty"><button onclick="setSet('${p.id}',-1)">−</button><span>${r.set || ''}</span><button onclick="setSet('${p.id}',1)">＋</button></div><button class="amtb" title="改金額、加其他項目" onclick="editFees('${p.id}')">${amt ? money(amt) : '金額'}</button></div>`;
 }
 function starCard(g, y) {
@@ -1483,10 +1503,36 @@ function vSettings() {
   <input id="tk" placeholder="貼上金鑰 ghp_…" autocomplete="off"><input id="pp" type="password" placeholder="自訂同步密語（至少 8 字，要記住）" style="margin-top:6px" autocomplete="new-password">
   <button style="margin-top:8px" onclick="doConnect()">連線並開始同步</button>
   <label>方法二：第二台以後（手機）</label><input id="pc" placeholder="貼上第一台產生的配對碼 SM1.…"><input id="pp2" type="password" placeholder="同步密語（配對碼已含金鑰時可留空）" style="margin-top:6px"><button class="alt" style="margin-top:8px" onclick="doPair()">用配對碼連線</button>`}</div>
+  <div class="panel"><h3>生日提醒</h3>
+  <div class="muted">生日前 ${BD_DAYS} 天到當天，名冊最上面會列出來，名字旁出現 🎂。卡片上不顯示出生年月日。</div>
+  ${!bdCan() ? '<div class="muted" style="margin-top:6px">這個瀏覽器不能發通知。iPhone 請用 Safari「分享 → 加入主畫面」，從主畫面圖示打開，再回到這裡開啟。</div>'
+    : bdOn() ? '<div class="row" style="margin-top:8px"><span class="grow">這台裝置：通知已開啟</span><button class="alt sm" onclick="bdEnable(false)">關閉通知</button></div>'
+    : `<button class="sm" style="margin-top:8px" onclick="bdEnable(true)">開啟這台裝置的通知</button>${Notification.permission === 'denied' ? '<div class="muted">通知權限被擋住了，請到手機「設定 → 通知 → 信徒管理」打開。</div>' : ''}`}
+  <div class="muted" style="margin-top:6px">沒有推播主機，所以是<b>打開 App 或切回 App 時</b>才發通知，每人每次生日只通知一次。通知只寫姓名和月／日。</div></div>
   <div class="panel"><h3>單位名稱（列印抬頭）</h3><input id="org" value="${esc(orgName())}" placeholder="例：○○苑"><button class="sm" style="margin-top:8px" onclick="cfgSet('org',{name:$('#org').value.trim()});toast('已儲存')">儲存</button></div>
   <div class="panel"><h3>備份</h3><div class="row"><button class="alt sm" onclick="backup()">下載備份 JSON</button><button class="alt sm" onclick="$('#rf').click()">從備份還原</button><input id="rf" type="file" accept=".json" class="hidden" onchange="restore(this.files[0])"></div>
   <div class="muted" style="margin-top:6px">備份檔含完整個資，請存在私人位置，不要放進 GitHub。奠供帳的照片不在備份檔裡：照片存在拍照的裝置，開同步後另外加密存在雲端。</div></div>
   <div class="muted" style="text-align:center">目前 ${IX().m.size} 人｜${YR().length} 筆年度資料</div>`;
+}
+/* 生日通知：每台裝置自己開關（存在本機）。沒有推播主機，打開或切回 App 時檢查；同一人同一次生日只通知一次 */
+const bdCan = () => 'Notification' in window && 'serviceWorker' in navigator;
+const bdOn = () => bdCan() && Notification.permission === 'granted' && LSget('sm.bdOn') === '1';
+async function bdEnable(on) {
+  if (!on) { LSset('sm.bdOn', ''); toast('已關閉生日通知'); return renderAll(); }
+  if (!bdCan()) return toast('這個瀏覽器不能發通知', 'err');
+  let r = Notification.permission; try { if (r !== 'granted') r = await Notification.requestPermission(); } catch (e) {}
+  if (r !== 'granted') { toast('沒有取得通知權限', 'err'); return renderAll(); }
+  LSset('sm.bdOn', '1'); toast('已開啟生日通知'); renderAll(); bdNotify();
+}
+function bdNotify() {
+  if (!bdOn()) return;
+  let seen = []; try { seen = JSON.parse(LSget('sm.bdSeen') || '[]'); } catch (e) {}
+  const list = [...IX().m.values()].map(p => [p, bdSoon(p)]).filter(([p, b]) => b && !seen.includes(p.id + '|' + b.key)).sort((a, b) => a[1].days - b[1].days);
+  if (!list.length) return;
+  LSset('sm.bdSeen', JSON.stringify(seen.concat(list.map(([p, b]) => p.id + '|' + b.key)).slice(-300)));
+  const title = '🎂 生日提醒', body = list.map(([p, b]) => `${p.name} ${b.m}/${b.d}（${bdWhen(b)}）`).join('、');
+  const fall = () => { try { new Notification(title, { body, icon: 'icon-192.png' }); } catch (e) {} };
+  navigator.serviceWorker.getRegistration().then(r => r ? r.showNotification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'sm-bday' }) : fall()).catch(fall);
 }
 function savePrices(asDef) {
   const y = ui.year, pr = cfgGet('prices', { def: {}, byYear: {} }); pr.def = Object.assign({}, pr.def || {}); pr.byYear = Object.assign({}, pr.byYear || {}); pr.byYear[y] = Object.assign({}, pr.byYear[y] || {});
@@ -1523,10 +1569,13 @@ function restore(f) {
 /* ═══════ 啟動 ═══════ */
 $('#modal').addEventListener('click', e => { if (e.target.id === 'modal') closeModal(); });
 /* 同步每分鐘、每次切回 App 都會跑：資料真的有變才重畫，只是狀態變（同步中／已同步）就只更新右上角 */
-SMStore.attach(changed => { if (changed === true) renderAll(); else renderSyncBtn(); uploadPhotos(); }, toast);
+SMStore.attach(changed => { if (changed === true) { renderAll(); bdNotify(); } else renderSyncBtn(); uploadPhotos(); }, toast);
 const setHdrH = () => document.documentElement.style.setProperty('--hdrH', $('header').offsetHeight + 'px');
 setHdrH(); addEventListener('resize', setHdrH);
-renderAll(); uploadPhotos();
+renderAll(); uploadPhotos(); bdNotify();
+/* 隔天才切回 App：重畫一次，蛋糕和名冊上方的生日提醒才會換成今天的 */
+let bdDay = todayStr();
+document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') return; if (bdDay !== todayStr()) { bdDay = todayStr(); renderAll(); } bdNotify(); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
 </body>
