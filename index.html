@@ -425,6 +425,7 @@ function sumHtml() {
   <div class="panel sum"><div class="big">${y} 苑費要繳<b>${st.v}</b>戶<span class="lvc">導親 <b>${st.lv[0]}</b>｜導子 <b>${st.lv[1]}</b>｜所屬 <b>${st.lv[2]}</b>｜祈念證 <b>${st.cert}</b> 戶</span></div>
   <div class="chips">${chip('v', '要繳 v ', st.v)}${chip('cert', '祈念證 ', st.cert)}${chip('unpaid', '未收 ', st.due - st.paid)}${chip('paid', '已收 ', st.paid)}${chip('x', '不繳 x ', st.x)}${chip('none', '未定 ', st.none)}</div>
   <div class="row" style="margin-top:8px;gap:8px"><span style="font-size:14px">家族入信的資料</span><span class="seg2"><button class="${ui.fold ? '' : 'on'}" onclick="setFam(false)">全部展開</button><button class="${ui.fold ? 'on' : ''}" onclick="setFam(true)">全部收合</button></span></div>
+  ${(() => { const ni = ix.rows.filter(p => isIdle(p, y)).length; return `<div class="row" style="margin-top:8px;gap:8px"><span style="font-size:14px">不繳苑費＋未精進 <b>${ni}</b> 戶</span><span class="seg2"><button class="${hideIdle() ? 'on' : ''}" onclick="setIdle(true)">隱藏</button><button class="${hideIdle() ? '' : 'on'}" onclick="setIdle(false)">顯示</button></span></div>`; })()}
   <div class="muted" style="margin-top:6px">信徒 ${st.people} 人＝獨立戶 ${st.houses}＋家族入信 ${st.fam}${st.dead ? `（已歿 ${st.dead} 人不計）` : ''}。祈念證、苑費以戶為單位，點一下切換；「已收」含苑費和祈念證。家族跟著戶長，不算實績。</div>
   ${ix.refs.length ? `<div class="muted ref">我的導親（參考，不列入苑費與統計）：${ix.refs.map(r => `<a onclick="editPerson('${r.id}')">${esc(r.name)}</a>${cake(r)}`).join('、')}</div>` : ''}
   ${dupNotice()}
@@ -434,6 +435,11 @@ function sumHtml() {
 const isOpen = id => ui.fold ? ui.flip.has(id) : !ui.flip.has(id);
 /* 家族入信的資料：全部展開／全部收合（記在這台裝置），每一戶也可以自己再點開或收起來 */
 function setFam(fold) { ui.fold = fold; ui.flip.clear(); LSset('sm.fam', fold ? 'fold' : ''); renderList(); }
+/* 不繳苑費（x 或未定）、沒申請祈念證、而且這戶（戶長＋家族）沒有人在精進 → 名冊預設先藏起來。
+   搜尋或點上方篩選時一律照常列出；「要繳 v」但還沒收的人不會被藏（還要收款） */
+const isIdle = (p, y) => { const f = yrOf(y, p.id); if (f.fee === 'v' || f.cert === 'v') return false; return ![p].concat(IX().fam.get(p.id) || []).some(m => !m.deceased && isActive(m)); };
+const hideIdle = () => LSget('sm.idle') !== 'show';
+function setIdle(hide) { LSset('sm.idle', hide ? '' : 'show'); renderList(); }
 function flip(id) { ui.flip.has(id) ? ui.flip.delete(id) : ui.flip.add(id); renderList(); }
 function listHtml() {
   const y = ui.year, ix = IX(), q = ui.q.trim().toLowerCase();
@@ -441,14 +447,15 @@ function listHtml() {
   const hit = p => [p.name, p.roman, p.code, p.phone, p.rank, p.teacherNo, p.note, p.dept, p.sutraNo, p.dharmaNo, p.chiryu].concat(Object.values(p.ext || {})).some(x => String(x || '').toLowerCase().includes(q));
   const fOk = p => { if (!ui.f) return true; if (p.deceased) return false; const f = yrOf(y, p.id), due = f.fee === 'v' || f.cert === 'v';
     return ui.f === 'v' ? f.fee === 'v' : ui.f === 'cert' ? f.cert === 'v' : ui.f === 'unpaid' ? due && !f.paid : ui.f === 'paid' ? due && !!f.paid : ui.f === 'x' ? f.fee === 'x' : f.fee === ''; };
-  const flat = !!(q || ui.f), card = ui.view !== 'table'; let body = '', n = 0;
+  const flat = !!(q || ui.f), card = ui.view !== 'table', hid = !flat && hideIdle(); let body = '', n = 0, nHid = 0;
   ix.rows.forEach(p => {
-    if (!flat) { body += card ? houseCard(p, false, false) : houseRow(p, false, false); return; }
+    if (!flat) { if (hid && isIdle(p, y)) { nHid++; return; } body += card ? houseCard(p, false, false) : houseRow(p, false, false); return; }
     const famHit = !!q && (ix.fam.get(p.id) || []).some(hit);
     if ((q && !hit(p) && !famHit) || !fOk(p)) return;
     n++; body += card ? houseCard(p, true, famHit) : houseRow(p, true, famHit);
   });
-  const cnt = flat ? `<div class="muted" style="padding:6px 4px">符合 ${n} 戶${ui.f ? '　<a onclick="ui.f=\'\';renderList()">清除篩選</a>' : ''}</div>` : '';
+  const cnt = flat ? `<div class="muted" style="padding:6px 4px">符合 ${n} 戶${ui.f ? '　<a onclick="ui.f=\'\';renderList()">清除篩選</a>' : ''}</div>`
+    : nHid ? `<div class="muted" style="padding:6px 4px">已先藏起 ${nHid} 戶（${y} 不繳或未定苑費，而且全戶都沒有精進）　<a onclick="setIdle(false)">顯示</a></div>` : '';
   const none = '<div class="muted" style="padding:20px;text-align:center">沒有符合的人</div>';
   if (card) return cnt + (body || none);
   const th = '<div class="tr th"><span>祈念證</span><span>苑費</span><span>已收</span><span>姓名</span><span>層級</span><span class="c-d">入信時間</span><span class="c-c">信徒編號</span><span class="c-p">手機</span><span></span></div>';
