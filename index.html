@@ -90,6 +90,8 @@ label.ck input{width:auto;margin:0}
 .hc .nm1{font-size:17px;font-weight:800;color:#1b302b;cursor:pointer}
 .hc.dead .nm1,.fm.dead .hd>a{color:#9aa7a1;text-decoration:line-through}
 .fams{margin-top:8px;border-top:1px dashed var(--line);padding-top:6px}.fams>a{cursor:pointer}
+.fnames{display:flex;flex-wrap:wrap;gap:4px 14px;margin-top:4px}.fn{white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
+.fn a{font-weight:700;color:#1b302b;cursor:pointer;font-size:15px}.fn.dead a{color:#9aa7a1;text-decoration:line-through;font-weight:500}
 .fm{padding:6px 0 2px}.fm .hd>a{font-weight:700;color:#1b302b;cursor:pointer;font-size:15px}
 @media(max-width:760px){.hc{margin-left:0!important;border-left-width:4px}.hc.d1{border-left-color:#9fc0e6}.hc.d2{border-left-color:#e3c98f}.hc.d0{border-left-color:#2b4a3c}}
 .chip.non{background:#f1ebdd;color:#7a6330}
@@ -386,7 +388,7 @@ function stats(y) {
 const TABS = [['roster', '👥', '名冊'], ['prac', '🙏', '實踐'], ['star', '⭐', '星供'], ['fees', '🧮', '費用'], ['ledger', '📒', '奠供帳'], ['settings', '⚙️', '設定']];
 const LSget = k => { try { return localStorage.getItem(k); } catch (e) { return null; } };
 const LSset = (k, v) => { try { v ? localStorage.setItem(k, v) : localStorage.removeItem(k); } catch (e) {} };
-const ui = { tab: 'roster', year: new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear(), q: '', f: '', pf: '', fold: false, flip: new Set(),
+const ui = { tab: 'roster', year: new Date().getMonth() >= 9 ? new Date().getFullYear() + 1 : new Date().getFullYear(), q: '', f: '', pf: '', fold: LSget('sm.fam') === 'fold', flip: new Set(),
   view: LSget('sm.view') || 'card', sAll: false, sNon: false, sel: new Set(), fAll: false, fUnpaid: false, lg: '', lgView: 'book', lgMonth: '' };
 let imp = null, simp = null;
 function go(t) { ui.tab = t; ui.q = ''; if (t !== 'ledger') ui.lg = ''; renderAll(); scrollTo(0, 0); }
@@ -421,8 +423,8 @@ function sumHtml() {
   const bds = [...ix.m.values()].map(p => [p, bdSoon(p)]).filter(x => x[1]).sort((a, b) => a[1].days - b[1].days);
   return `${bds.length ? `<div class="panel bday">🎂 <b>${BD_DAYS} 天內生日</b>　${bds.map(([p, b]) => `<span class="bdi"><a onclick="editPerson('${p.id}')">${esc(p.name)}</a> ${b.m}/${b.d}（${bdWhen(b)}）</span>`).join('')}</div>` : ''}
   <div class="panel sum"><div class="big">${y} 苑費要繳<b>${st.v}</b>戶<span class="lvc">導親 <b>${st.lv[0]}</b>｜導子 <b>${st.lv[1]}</b>｜所屬 <b>${st.lv[2]}</b>｜祈念證 <b>${st.cert}</b> 戶</span></div>
-  <div class="chips">${chip('v', '要繳 v ', st.v)}${chip('cert', '祈念證 ', st.cert)}${chip('unpaid', '未收 ', st.due - st.paid)}${chip('paid', '已收 ', st.paid)}${chip('x', '不繳 x ', st.x)}${chip('none', '未定 ', st.none)}
-  <button class="fchip" onclick="ui.fold=!ui.fold;ui.flip.clear();renderList()">${ui.fold ? '展開家族' : '收合家族'}</button></div>
+  <div class="chips">${chip('v', '要繳 v ', st.v)}${chip('cert', '祈念證 ', st.cert)}${chip('unpaid', '未收 ', st.due - st.paid)}${chip('paid', '已收 ', st.paid)}${chip('x', '不繳 x ', st.x)}${chip('none', '未定 ', st.none)}</div>
+  <div class="row" style="margin-top:8px;gap:8px"><span style="font-size:14px">家族入信的資料</span><span class="seg2"><button class="${ui.fold ? '' : 'on'}" onclick="setFam(false)">全部展開</button><button class="${ui.fold ? 'on' : ''}" onclick="setFam(true)">全部收合</button></span></div>
   <div class="muted" style="margin-top:6px">信徒 ${st.people} 人＝獨立戶 ${st.houses}＋家族入信 ${st.fam}${st.dead ? `（已歿 ${st.dead} 人不計）` : ''}。祈念證、苑費以戶為單位，點一下切換；「已收」含苑費和祈念證。家族跟著戶長，不算實績。</div>
   ${ix.refs.length ? `<div class="muted ref">我的導親（參考，不列入苑費與統計）：${ix.refs.map(r => `<a onclick="editPerson('${r.id}')">${esc(r.name)}</a>${cake(r)}`).join('、')}</div>` : ''}
   ${dupNotice()}
@@ -430,6 +432,8 @@ function sumHtml() {
   ${iss.length ? `<div class="notice" style="margin-top:8px"><b>資料檢查：${iss.length} 項要你確認</b>（點名字修改）${iss.map(([p, t]) => `<div><a onclick="editPerson('${p.id}')">${esc(p.name)}</a>：${esc(t)}</div>`).join('')}</div>` : ''}</div>`;
 }
 const isOpen = id => ui.fold ? ui.flip.has(id) : !ui.flip.has(id);
+/* 家族入信的資料：全部展開／全部收合（記在這台裝置），每一戶也可以自己再點開或收起來 */
+function setFam(fold) { ui.fold = fold; ui.flip.clear(); LSset('sm.fam', fold ? 'fold' : ''); renderList(); }
 function flip(id) { ui.flip.has(id) ? ui.flip.delete(id) : ui.flip.add(id); renderList(); }
 function listHtml() {
   const y = ui.year, ix = IX(), q = ui.q.trim().toLowerCase();
@@ -480,7 +484,8 @@ function houseCard(p, flat, forceOpen) {
   ${fees ? `<div class="row" style="margin-top:6px;gap:6px">${fees}</div>` : ''}
   <div style="margin-top:6px">${pracChips(p)}</div>
   ${infoGrid(p, { kids: kids.length, mh })}
-  ${fam.length ? `<div class="fams"><a class="muted" onclick="flip('${p.id}')"><b>家族入信成員 ${fam.length} 人 ${open ? '▾' : '▸'}</b></a>${open ? fam.map(m => `<div class="fm${m.deceased ? ' dead' : ''}"><div class="hd" style="gap:6px"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${cake(m)}${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''}<span class="grow"></span><button class="edit" onclick="editPerson('${m.id}')">編輯</button></div>${m.deceased ? '' : pracChips(m)}${infoGrid(m)}</div>`).join('') : ''}</div>` : ''}</div>`;
+  ${fam.length ? `<div class="fams"><div class="hd" style="gap:8px"><b class="muted" style="font-size:13px">家族入信 ${fam.length} 人</b><span class="grow"></span><button class="fchip sm" onclick="flip('${p.id}')">${open ? '收合資料 ▴' : '展開資料 ▾'}</button></div>
+  ${open ? '' : `<div class="fnames">${fam.map(m => `<span class="fn${m.deceased ? ' dead' : ''}"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${cake(m)}${m.deceased ? '<span class="chip">歿</span>' : ''}</span>`).join('')}</div>`}${open ? fam.map(m => `<div class="fm${m.deceased ? ' dead' : ''}"><div class="hd" style="gap:6px"><a onclick="editPerson('${m.id}')">${esc(m.name)}</a>${cake(m)}${m.deceased ? `<span class="chip">歿${m.deathOn ? ' ' + esc(m.deathOn) : ''}</span>` : ''}<span class="grow"></span><button class="edit" onclick="editPerson('${m.id}')">編輯</button></div>${m.deceased ? '' : pracChips(m)}${infoGrid(m)}</div>`).join('') : ''}</div>` : ''}</div>`;
 }
 function houseRow(p, flat, forceOpen) {
   const ix = IX(), y = ui.year, f = yrOf(y, p.id), fam = ix.fam.get(p.id) || [], d = ix.depth.get(p.id) || 0, li = Math.min(d, 2);
