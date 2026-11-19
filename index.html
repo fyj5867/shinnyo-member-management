@@ -166,11 +166,14 @@ const dotDate = () => { const d = new Date(); return `${d.getFullYear()}.${pad(d
 const md = v => { const m = String(v || '').match(/^(\d{4})\D(\d{1,2})\D(\d{1,2})$/); return m ? `${+m[2]}/${+m[3]}` : String(v || ''); };
 /* 生日提醒：生日前 3 天到當天，名字旁出現蛋糕。只用月／日，不顯示出生年。2/29 生日在平年算 2/28 */
 const BD_DAYS = 3;
-function bdInfo(p) {
+function bdMD(p) {
   if (!p || p.deceased || !p.birth) return null;
   const n = String(p.birth).match(/\d+/g) || []; let m, d;
   if (n.length >= 3) { m = +n[1]; d = +n[2]; } else if (n.length === 2) { m = +n[0]; d = +n[1]; } else if (n.length === 1 && n[0].length === 8) { m = +n[0].slice(4, 6); d = +n[0].slice(6); }
-  if (!(m >= 1 && m <= 12 && d >= 1 && d <= 31)) return null;
+  return m >= 1 && m <= 12 && d >= 1 && d <= 31 ? { m, d } : null;
+}
+function bdInfo(p) {
+  const x = bdMD(p); if (!x) return null; const { m, d } = x;
   const t = new Date(); t.setHours(0, 0, 0, 0);
   const at = y => { const x = new Date(y, m - 1, d); if (x.getMonth() !== m - 1) x.setDate(0); return x; };
   let b = at(t.getFullYear()); if (b < t) b = at(t.getFullYear() + 1);
@@ -1508,7 +1511,11 @@ function vSettings() {
   ${!bdCan() ? '<div class="muted" style="margin-top:6px">這個瀏覽器不能發通知。iPhone 請用 Safari「分享 → 加入主畫面」，從主畫面圖示打開，再回到這裡開啟。</div>'
     : bdOn() ? '<div class="row" style="margin-top:8px"><span class="grow">這台裝置：通知已開啟</span><button class="alt sm" onclick="bdEnable(false)">關閉通知</button></div>'
     : `<button class="sm" style="margin-top:8px" onclick="bdEnable(true)">開啟這台裝置的通知</button>${Notification.permission === 'denied' ? '<div class="muted">通知權限被擋住了，請到手機「設定 → 通知 → 信徒管理」打開。</div>' : ''}`}
-  <div class="muted" style="margin-top:6px">沒有推播主機，所以是<b>打開 App 或切回 App 時</b>才發通知，每人每次生日只通知一次。通知只寫姓名和月／日。</div></div>
+  <div class="muted" style="margin-top:6px">沒有推播主機，所以是<b>打開 App 或切回 App 時</b>才發通知，每人每次生日只通知一次。通知只寫姓名和月／日。</div>
+  ${(() => { const all = icsPeople(), done = new Set(icsDone()), nw = all.filter(([p, x]) => !done.has(icsKey(p, x))).length;
+    return `<label>加到手機行事曆（App 沒開也會提醒）</label>
+  <div class="row">${done.size ? `<button class="sm" onclick="exportIcs(true)"${nw ? '' : ' disabled'}>只匯出新加的 ${nw} 人</button><button class="alt sm" onclick="if(confirm('全部重新匯出？iPhone 行事曆可能會多出重複的生日，要自己刪掉舊的。'))exportIcs(false)">全部重新匯出（${all.length} 人）</button>` : `<button class="sm" onclick="exportIcs(false)">匯出全部生日（${all.length} 人）</button>`}</div>
+  <div class="muted" style="margin-top:6px">每人一個每年重複的行程，生日前 ${BD_DAYS} 天早上 9 點提醒，只寫姓名，不寫出生年。iPhone：按下去選「行事曆」或打開檔案 →「加入全部」。<b>請加到私人的行事曆，不要加到公司的 Outlook</b>（會同步到公司伺服器）。之後有人過世、改生日，要自己到行事曆刪掉舊的。</div>`; })()}</div>
   <div class="panel"><h3>單位名稱（列印抬頭）</h3><input id="org" value="${esc(orgName())}" placeholder="例：○○苑"><button class="sm" style="margin-top:8px" onclick="cfgSet('org',{name:$('#org').value.trim()});toast('已儲存')">儲存</button></div>
   <div class="panel"><h3>備份</h3><div class="row"><button class="alt sm" onclick="backup()">下載備份 JSON</button><button class="alt sm" onclick="$('#rf').click()">從備份還原</button><input id="rf" type="file" accept=".json" class="hidden" onchange="restore(this.files[0])"></div>
   <div class="muted" style="margin-top:6px">備份檔含完整個資，請存在私人位置，不要放進 GitHub。奠供帳的照片不在備份檔裡：照片存在拍照的裝置，開同步後另外加密存在雲端。</div></div>
@@ -1533,6 +1540,33 @@ function bdNotify() {
   const title = '🎂 生日提醒', body = list.map(([p, b]) => `${p.name} ${b.m}/${b.d}（${bdWhen(b)}）`).join('、');
   const fall = () => { try { new Notification(title, { body, icon: 'icon-192.png' }); } catch (e) {} };
   navigator.serviceWorker.getRegistration().then(r => r ? r.showNotification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'sm-bday' }) : fall()).catch(fall);
+}
+/* 匯出到手機行事曆（.ics）：每人一個每年重複的全天行程，生日前 3 天早上 9 點提醒；只寫姓名，不寫出生年。
+   UID 固定（bd-人id），同一人再匯一次是更新不是多一筆（Google、Outlook 會認；iPhone 可能還是會多一筆，所以預設只匯新加的人） */
+const icsEsc = s => String(s).replace(/[\\;,]/g, c => '\\' + c).replace(/\r?\n/g, '\\n');
+const icsFold = l => { const te = new TextEncoder(); if (te.encode(l).length <= 75) return l; let out = '', n = 0;
+  for (const ch of l) { const b = te.encode(ch).length; if (n + b > 75) { out += '\r\n '; n = 1; } out += ch; n += b; } return out; };   /* 折行數位元組、只在字元之間斷，中文才不會被切壞 */
+const icsKey = (p, x) => p.id + '|' + x.m + '-' + x.d;
+const icsPeople = () => [...IX().m.values()].map(p => [p, bdMD(p)]).filter(x => x[1]).sort((a, b) => a[1].m - b[1].m || a[1].d - b[1].d || byNameZh(a[0].name, b[0].name));
+const icsDone = () => { try { return JSON.parse(LSget('sm.icsDone') || '[]'); } catch (e) { return []; } };
+function icsText(list) {
+  const y = new Date().getFullYear(), d8 = t => `${t.getFullYear()}${pad(t.getMonth() + 1)}${pad(t.getDate())}`, stamp = new Date().toISOString().replace(/[-:]|\.\d+/g, '');
+  const ev = list.map(([p, x]) => { const leap = x.m === 2 && x.d === 29, s = leap ? new Date(y, 2, 0) : new Date(y, x.m - 1, x.d), e = new Date(s); e.setDate(e.getDate() + 1);
+    return ['BEGIN:VEVENT', `UID:bd-${p.id}@shinnyo-member`, 'DTSTAMP:' + stamp, 'DTSTART;VALUE=DATE:' + d8(s), 'DTEND;VALUE=DATE:' + d8(e),
+      'RRULE:FREQ=YEARLY' + (leap ? ';BYMONTH=2;BYMONTHDAY=-1' : ''), 'SUMMARY:' + icsEsc(p.name + ' 生日'), 'TRANSP:TRANSPARENT',
+      'BEGIN:VALARM', 'ACTION:DISPLAY', 'DESCRIPTION:' + icsEsc(`${p.name} ${BD_DAYS} 天後生日`), `TRIGGER:-P${BD_DAYS - 1}DT15H`, 'END:VALARM', 'END:VEVENT']; });
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//shinnyo-member//birthday//ZH', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH'].concat(...ev, 'END:VCALENDAR').map(icsFold).join('\r\n') + '\r\n';
+}
+async function exportIcs(onlyNew) {
+  const done = new Set(icsDone()), all = icsPeople(), list = onlyNew ? all.filter(([p, x]) => !done.has(icsKey(p, x))) : all;
+  if (!list.length) return toast(onlyNew ? '沒有新加的人' : '沒有人填出生年月日', 'err');
+  const name = 'birthdays-' + todayStr() + '.ics', blob = new Blob([icsText(list)], { type: 'text/calendar;charset=utf-8' });
+  const mark = () => { LSset('sm.icsDone', JSON.stringify([...new Set([...done, ...list.map(([p, x]) => icsKey(p, x))])])); toast(`已匯出 ${list.length} 人的生日`); renderAll(); };
+  const file = typeof File === 'function' ? new File([blob], name, { type: 'text/calendar' }) : null;
+  if (file && navigator.canShare && navigator.canShare({ files: [file] }) && /iPhone|iPad|Android/i.test(navigator.userAgent)) {
+    try { await navigator.share({ files: [file] }); return mark(); } catch (e) { if (e && e.name === 'AbortError') return; }   /* 取消分享就不要偷偷改成下載 */
+  }
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 60000); mark();
 }
 function savePrices(asDef) {
   const y = ui.year, pr = cfgGet('prices', { def: {}, byYear: {} }); pr.def = Object.assign({}, pr.def || {}); pr.byYear = Object.assign({}, pr.byYear || {}); pr.byYear[y] = Object.assign({}, pr.byYear[y] || {});

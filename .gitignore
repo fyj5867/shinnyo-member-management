@@ -1,4 +1,5 @@
 _private/
 *.bak
 members-backup-*.json
+*.ics
 ~$*
