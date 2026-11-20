@@ -215,7 +215,9 @@ const FEES = [['yuan', '苑費'], ['cert', '祈念證'], ['star', '星供'], ['s
 const amtOr = (v, d) => v === '' || v == null ? d : +v || 0;             /* 這一筆有填金額就用它，空白就用單價 */
 function price(y, k) { const p = cfgGet('prices', { def: {}, byYear: {} }), yy = (p.byYear || {})[y] || {}; return +(yy[k] != null && yy[k] !== '' ? yy[k] : (p.def || {})[k]) || 0; }
 const money = n => (n < 0 ? '-$' : '$') + Math.abs(Math.round(+n || 0)).toLocaleString('en-US');
-const amtOf = v => { const n = parseInt(String(v == null ? '' : v).replace(/[$＄,\s元]/g, ''), 10); return isNaN(n) ? 0 : n; };
+const half = s => String(s == null ? '' : s).replace(/[０-９＄，．－]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0));   /* 全形數字→半形 */
+const amtOf = v => { const n = parseInt(half(v).replace(/[$,\s元]/g, ''), 10); return isNaN(n) ? 0 : n; };
+const numClean = s => half(s).replace(/[^\d-]/g, '').replace(/(?!^)-/g, '');
 /* 實踐（精進的細項努力）：每人目前的狀態，不分年度。有任何一項＝精進中，全空＝未精進 */
 const PRAC_A = ['奉侍', '護摩', '超度', '布施', '接心', '集會', '法會'], KAIZA = ['大乘', '歡喜', '大歡喜', '靈發'], PRAC_B = ['智流學院'];
 const PRAC_ALL = PRAC_A.concat(KAIZA.map(k => '會座-' + k), PRAC_B);
@@ -595,7 +597,7 @@ function togglePrac(pid, k) {
 }
 function setDu(pid) {
   const p = Object.assign({}, IX().m.get(pid)), v = prompt(`${p.name} 度眾人數\n清空＝沒有`, p.pracDu || ''); if (v == null) return;
-  const n = parseInt(v, 10); if (v.trim() && (isNaN(n) || n < 0)) return toast('請填數字', 'err');
+  const n = parseInt(half(v), 10); if (v.trim() && (isNaN(n) || n < 0)) return toast('請填數字', 'err');
   p.pracDu = v.trim() ? n : ''; savePrac(p);
 }
 function setOther(pid) {
@@ -651,7 +653,7 @@ function starSumHtml({ gs }) {
   <div class="muted" style="margin-top:4px">星供、星供套、其他 ${money(st)}｜連苑費、祈念證共 ${money(tot)}｜${grp} 組付款：星供已收 ${sp}、已發送 ${sent}</div>
   <details ${miss ? 'open' : ''} style="margin-top:8px"><summary class="muted" style="cursor:pointer">${y} 單價：${FEES.map(([k, nm]) => `${nm.replace(/（.*）/, '')} ${money(price(y, k))}`).join('・')}　<b>點這裡修改</b></summary>
   ${miss ? `<div class="notice" style="margin-top:6px">還有單價沒填，會算成 $0。填一次就好，之後每個人預設都用這個金額；個別不同的再點那個人的金額改。</div>` : ''}
-  <div class="grid2">${FEES.map(([k, nm]) => `<div><label>${nm}</label><input type="number" min="0" inputmode="numeric" id="pr_${k}" value="${py[k] != null ? py[k] : ''}" placeholder="${(pr.def || {})[k] != null && (pr.def || {})[k] !== '' ? '預設 ' + pr.def[k] : '金額'}"></div>`).join('')}</div>
+  <div class="grid2">${FEES.map(([k, nm]) => `<div><label>${nm}</label><input class="num" inputmode="numeric" autocomplete="off" id="pr_${k}" value="${py[k] != null ? py[k] : ''}" placeholder="${(pr.def || {})[k] != null && (pr.def || {})[k] !== '' ? '預設 ' + pr.def[k] : '金額'}"></div>`).join('')}</div>
   <div class="row" style="margin-top:8px"><button class="sm" onclick="savePrices(false)">儲存 ${y} 年單價</button><button class="alt sm" onclick="savePrices(true)">存成各年預設</button></div></details>
   <div class="chips"><button class="fchip ${ui.sAll ? '' : 'on'}" onclick="ui.sAll=false;renderStar()">只看有申請</button><button class="fchip ${ui.sAll ? 'on' : ''}" onclick="ui.sAll=true;renderStar()">全部（勾新的申請）</button><button class="fchip ${ui.sNon ? 'on' : ''}" onclick="ui.sNon=!ui.sNon;renderStar()">未入信依代繳人</button></div>
   ${dupNotice()}
@@ -704,15 +706,15 @@ function starCard(g, y) {
 }
 function toggleStar(pid) { const r = yrOf(ui.year, pid); r.star = !r.star; saveYr(r); rerender(); }
 /* 改這一筆的金額：每一項可以填自己的金額（空白＝用單價），另外可加「其他」項目 */
-const exRow = x => `<div class="irow" style="grid-template-columns:minmax(0,1fr) 92px 36px"><input class="x_n" placeholder="項目（例：護摩）" value="${esc(x.name || '')}"><input class="x_a" inputmode="numeric" placeholder="金額" value="${x.amt != null && x.amt !== '' ? esc(x.amt) : ''}"><button class="alt sm" onclick="this.parentNode.remove()">✕</button></div>`;
+const exRow = x => `<div class="irow" style="grid-template-columns:minmax(0,1fr) 92px 36px"><input class="x_n" placeholder="項目（例：護摩）" value="${esc(x.name || '')}"><input class="x_a num" inputmode="numeric" autocomplete="off" placeholder="金額" value="${x.amt != null && x.amt !== '' ? esc(x.amt) : ''}"><button class="alt sm" onclick="this.parentNode.remove()">✕</button></div>`;
 function editFees(pid) {
   const y = ui.year, p = anyP(pid); if (!p) return; const r = yrOf(y, pid), house = IX().kind.get(pid) === 'house';
   const ph = (k, n) => price(y, k) ? `空白＝單價 ${money(price(y, k) * (n || 1))}` : '金額（單價還沒填）', val = v => v === '' || v == null ? '' : esc(v);
-  const line = (id, on, lab, amtId, amt, k) => `<div class="frm"><label class="ck"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}>${lab}</label><input id="${amtId}" inputmode="numeric" placeholder="${ph(k)}" value="${val(amt)}"></div>`;
+  const line = (id, on, lab, amtId, amt, k) => `<div class="frm"><label class="ck"><input type="checkbox" id="${id}" ${on ? 'checked' : ''}>${lab}</label><input id="${amtId}" class="num" inputmode="numeric" autocomplete="off" placeholder="${ph(k)}" value="${val(amt)}"></div>`;
   openModal(`<h2>${esc(p.name)}｜${y} 金額</h2><div class="muted">勾選＝有申請。金額空白就用單價；這個人要不一樣的金額（例如祈念證兩張），直接填。</div>
   ${house ? line('x_fee', r.fee === 'v', '苑費', 'x_feeAmt', r.feeAmt, 'yuan') + line('x_cert', r.cert === 'v', '祈念證', 'x_certAmt', r.certAmt, 'cert') : ''}
   ${line('x_star', r.star, '星供', 'x_starAmt', r.starAmt, 'star')}
-  <div class="frm"><span class="lab">星供套</span><input id="x_set" type="number" min="0" inputmode="numeric" style="width:76px;flex:none" placeholder="份數" value="${r.set || ''}"><input id="x_setAmt" inputmode="numeric" placeholder="${price(y, 'set') ? '空白＝份數×' + money(price(y, 'set')) : '金額'}" value="${val(r.setAmt)}"></div>
+  <div class="frm"><span class="lab">星供套</span><input id="x_set" class="num" inputmode="numeric" autocomplete="off" style="width:76px;flex:none" placeholder="份數" value="${r.set || ''}"><input id="x_setAmt" class="num" inputmode="numeric" autocomplete="off" placeholder="${price(y, 'set') ? '空白＝份數×' + money(price(y, 'set')) : '金額'}" value="${val(r.setAmt)}"></div>
   <label>其他（自行填寫項目與金額）</label><div id="x_ex">${(r.extra || []).map(exRow).join('')}</div>
   <button class="alt sm" onclick="$('#x_ex').insertAdjacentHTML('beforeend',exRow({}))">＋其他項目</button>
   <div class="mbar"><button class="grow" onclick="saveFees('${pid}')">儲存</button><button class="alt" onclick="closeModal()">取消</button></div>`);
@@ -984,8 +986,6 @@ function bookOf(hid) {
   const es = LG().filter(e => e.hid === hid).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.seq || 0) - (b.seq || 0));
   let bal = 0; es.forEach(e => { bal = fixedBal(e) ? +e.stated : bal + entDelta(e); e._bal = bal; }); return { es, bal };
 }
-/* 「10000」「-500」「代支 500」「代支：$1,020」→ 數字；代支一律是負的 */
-const statedOf = s => { s = String(s == null ? '' : s).trim(); if (!s) return null; const neg = /代支|墊付|代墊|墊款/.test(s); const n = amtOf(s.replace(/代支|墊付|代墊|墊款|結餘|餘額|[:：]/g, '')); return neg ? -Math.abs(n) : n; };
 const statedTxt = v => +v < 0 ? '代支 ' + money(-v) : '結餘 ' + money(+v);
 function openBook(hid) { if (!hid) return; $('#modal').classList.add('hidden'); ui.tab = 'ledger'; ui.lg = hid; ui.q = ''; renderAll(); scrollTo(0, 0); }
 function vLedger() {
@@ -1126,33 +1126,35 @@ function entCard(e) {
 }
 function useStated(eid) { const e = LG().find(x => x.id === eid); if (!e) return; SMStore.put('ledger', Object.assign({}, e, { src: 'line' })); renderAll(); toast('這筆之後改照記的金額'); }
 const ITEM_BASE = ['布施', '初迴向', '護摩', '超度', '元旦會護摩', '一如慶典護摩', '一如慶典超度', '預存'];
-const itemRow = it => `<div class="irow"><input class="i_name" list="dl_items" placeholder="項目（例：11月布施）" value="${esc(it.name || '')}"><input class="i_amt" inputmode="numeric" placeholder="金額" value="${it.amt != null && it.amt !== '' ? esc(it.amt) : ''}"><input class="i_memo" placeholder="內容（選填）" value="${esc(it.memo || '')}"><button class="alt sm" onclick="this.parentNode.remove()">✕</button></div>`;
+const itemRow = it => `<div class="irow"><input class="i_name" list="dl_items" placeholder="項目（例：11月布施）" value="${esc(it.name || '')}"><input class="i_amt num" inputmode="numeric" autocomplete="off" placeholder="金額" value="${it.amt != null && it.amt !== '' ? esc(it.amt) : ''}"><input class="i_memo" placeholder="內容（選填）" value="${esc(it.memo || '')}"><button class="alt sm" onclick="this.parentNode.remove()">✕</button></div>`;
 function editEntry(id, preset) {
   const e = id ? LG().find(x => x.id === id) : Object.assign({ kind: 'out', date: todayStr(), items: [], text: '' }, preset || {}); if (!e) return;
   const items = e.items && e.items.length ? e.items : [{ name: e.kind === 'in' ? '預存' : '', amt: '', memo: '' }];
   const sugg = [...new Set(ITEM_BASE.concat(LG().flatMap(x => (x.items || []).map(i => i.name))).filter(Boolean))];
   openModal(`<h2>${id ? '修改紀錄' : e.kind === 'in' ? '預存（收款）' : '申請（支出）'}｜${esc(bookName(e.hid))}</h2>
-  <div class="grid2"><div><label>日期</label><input type="date" id="e_date" value="${isoDate(e.date)}"></div><div><label>類型</label><select id="e_kind">${[['out', '申請（支出）'], ['in', '預存（收款）'], ['adj', '結餘校正']].map(([k, n]) => `<option value="${k}" ${e.kind === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>
-  <label>項目、金額、內容</label><div id="e_items">${items.map(itemRow).join('')}</div><button class="alt sm" onclick="$('#e_items').insertAdjacentHTML('beforeend',itemRow({}))">＋項目</button>
+  <div class="grid2"><div><label>日期</label><input type="date" id="e_date" value="${isoDate(e.date)}"></div><div><label>類型</label><select id="e_kind" onchange="syncAmtIM()">${[['out', '申請（支出）'], ['in', '預存（收款）'], ['adj', '結餘校正']].map(([k, n]) => `<option value="${k}" ${e.kind === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div></div>
+  <label>項目、金額、內容</label><div id="e_items">${items.map(itemRow).join('')}</div><button class="alt sm" onclick="$('#e_items').insertAdjacentHTML('beforeend',itemRow({}));syncAmtIM()">＋項目</button>
   <datalist id="dl_items">${sugg.map(s => `<option value="${esc(s)}">`).join('')}</datalist>
   <label>內容（超度名單、地址、祈願內容等，可從 LINE 記事本直接貼上）</label><textarea id="e_text" rows="6">${esc(e.text || '')}</textarea>
   <label>照片（超度、護摩單等，自動壓小存檔，看得清內容即可）</label><div id="e_ph" class="phs"></div>
   <div class="row" style="margin-top:8px"><label class="ck" style="cursor:pointer">📷 拍照<input type="file" accept="image/*" capture="environment" class="hidden" onchange="addPhotos(this.files);this.value=''"></label><label class="ck" style="cursor:pointer">🖼 選照片<input type="file" accept="image/*" multiple class="hidden" onchange="addPhotos(this.files);this.value=''"></label></div>
-  <label>結餘或代支（選填）</label><input id="e_stated" placeholder="例：10000；代支填 -500 或「代支 500」" value="${e.stated != null ? esc(+e.stated < 0 ? '代支 ' + (-e.stated) : e.stated) : ''}">
+  <label>結餘或代支（選填）</label><div class="row" style="flex-wrap:nowrap"><select id="e_stK" style="width:auto;flex:none"><option value="">結餘</option><option value="neg" ${+e.stated < 0 ? 'selected' : ''}>代支</option></select><input id="e_stated" class="num" inputmode="numeric" autocomplete="off" style="flex:1;min-width:0" placeholder="金額" value="${e.stated != null && e.stated !== '' ? Math.abs(+e.stated) : ''}"></div>
   <label class="ck" style="margin-top:8px"><input type="checkbox" id="e_src" ${e.src === 'line' ? 'checked' : ''}>照這個金額（LINE 貼文）</label>
   <div class="muted">不勾＝從上一筆的結餘／代支自動接著算，這欄只用來核對。</div>
   <div class="mbar"><button class="grow" onclick="saveEntry('${id || ''}','${e.hid}')">儲存</button>${id ? `<button class="warn" onclick="delEntry('${id}')">刪除</button>` : ''}<button class="alt" onclick="closeModal()">取消</button></div>`);
-  ePh = (e.photos || []).map(p => Object.assign({}, p)); renderEPh();
+  ePh = (e.photos || []).map(p => Object.assign({}, p)); renderEPh(); syncAmtIM();
 }
+/* 結餘校正可能要填負數（iPhone 數字鍵盤沒有減號），這時改回一般鍵盤 */
+function syncAmtIM() { const adj = ($('#e_kind') || {}).value === 'adj'; document.querySelectorAll('#e_items .i_amt').forEach(i => i.setAttribute('inputmode', adj ? 'text' : 'numeric')); }
 async function saveEntry(id, hid) {
   const date = $('#e_date').value; if (!date) return toast('請填日期', 'err');
   const kind = $('#e_kind').value, items = [...document.querySelectorAll('#e_items .irow')].map(r => { const a = amtOf(r.querySelector('.i_amt').value);
     return { name: r.querySelector('.i_name').value.trim(), amt: kind === 'adj' ? a : Math.abs(a), memo: r.querySelector('.i_memo').value.trim() }; }).filter(it => it.name || it.amt);
   const text = $('#e_text').value.replace(/\s+$/, ''); if (!items.length && !text && !ePh.length) return toast('至少填一個項目、內容或照片', 'err');
-  const st = $('#e_stated').value.trim(), old = id ? LG().find(x => x.id === id) : null;
+  const sv = numClean($('#e_stated').value), st = sv === '' ? null : $('#e_stK').value === 'neg' ? -Math.abs(+sv) : +sv, old = id ? LG().find(x => x.id === id) : null;
   for (const p of ePh) if (p.data) await PDB.put(p.id, { data: p.data });                       /* 照片先存進這台裝置 */
   const keep = new Set(ePh.map(p => p.id)); dropPhotos(((old && old.photos) || []).filter(p => !keep.has(p.id)));   /* 移掉的照片連雲端一起刪 */
-  SMStore.put('ledger', Object.assign({}, old || { id: uid(), seq: Date.now() }, { hid, date, kind, items, text, stated: statedOf(st), src: $('#e_src').checked ? 'line' : '', photos: ePh.map(p => ({ id: p.id, gid: p.gid || '' })) }));
+  SMStore.put('ledger', Object.assign({}, old || { id: uid(), seq: Date.now() }, { hid, date, kind, items, text, stated: st, src: $('#e_src').checked ? 'line' : '', photos: ePh.map(p => ({ id: p.id, gid: p.gid || '' })) }));
   ePh = []; closeModal(); toast('已儲存'); uploadPhotos();
 }
 function delEntry(id) {
@@ -1298,7 +1300,7 @@ function editPerson(id, preset) {
   <div class="grid2" id="extBox">${fields().map(extIn).join('')}</div>
   <button class="alt sm" style="margin-top:8px" onclick="addFieldInline()">＋新增欄位</button><span class="muted">（新增的欄位每個人都會有）</span>
   <label>實踐（精進的細項）</label>
-  <div class="row" style="flex-wrap:nowrap"><span style="font-size:14px">度眾</span><input id="f_du" type="number" min="0" inputmode="numeric" style="width:90px" value="${esc(p.pracDu || '')}"><span class="muted">人${old && k === 'house' && kids.length ? `（名冊裡直接導子 ${kids.length} 戶）` : ''}</span></div>
+  <div class="row" style="flex-wrap:nowrap"><span style="font-size:14px">度眾</span><input id="f_du" class="num" inputmode="numeric" autocomplete="off" style="width:90px" value="${esc(p.pracDu || '')}"><span class="muted">人${old && k === 'house' && kids.length ? `（名冊裡直接導子 ${kids.length} 戶）` : ''}</span></div>
   <div class="seg" style="margin-top:8px">${PRAC_A.concat(PRAC_B).map(x => ck(x)).join('')}</div>
   <div class="seg" style="margin-top:8px;align-items:center"><span class="muted">${KZ}：</span>${KAIZA.map(x => ck('會座-' + x, x)).join('')}</div>
   <input id="f_pracOther" style="margin-top:8px" placeholder="其他實踐（自行填寫）" value="${esc(p.pracOther || '')}">
@@ -1577,7 +1579,7 @@ function vSettings() {
   <div class="panel"><h3>匯出</h3><div class="row"><button class="sm" onclick="doXlsx()">${IX().m.size ? `下載 Excel（${ui.year} 苑費）` : '下載空白範本'}</button><button class="alt sm" onclick="doPrint()">列印／存 PDF</button></div>
   <div class="muted" style="margin-top:6px">前面跟你的 Excel 一樣（多一欄「已收」），右邊接著實踐和自訂欄位；匯回來時會一起還原。年度在「名冊」上方切換。</div></div>
   <div class="panel"><h3>${ui.year} 年度金額</h3><div class="grid2">${(() => { const pr = cfgGet('prices', { def: {}, byYear: {} }), py = (pr.byYear || {})[ui.year] || {}, df = pr.def || {};
-    return FEES.map(([k, n]) => `<div><label>${n}</label><input type="number" min="0" inputmode="numeric" id="pr_${k}" value="${py[k] != null ? py[k] : ''}" placeholder="${df[k] != null && df[k] !== '' ? '預設 ' + df[k] : '0'}"></div>`).join(''); })()}</div>
+    return FEES.map(([k, n]) => `<div><label>${n}</label><input class="num" inputmode="numeric" autocomplete="off" id="pr_${k}" value="${py[k] != null ? py[k] : ''}" placeholder="${df[k] != null && df[k] !== '' ? '預設 ' + df[k] : '0'}"></div>`).join(''); })()}</div>
   <div class="row" style="margin-top:8px"><button class="sm" onclick="savePrices(false)">只存 ${ui.year} 年</button><button class="alt sm" onclick="savePrices(true)">存成各年預設</button></div>
   <div class="muted" style="margin-top:6px">星供、費用頁用這裡的金額計算。金額只存在你的加密資料裡，不在網站程式碼中。匯入星供表時也可以直接帶入表上的金額。年度在各頁上方切換。</div></div>
   <div class="panel"><h3>個人資料的自訂欄位</h3>
@@ -1656,7 +1658,7 @@ async function exportIcs(onlyNew) {
 }
 function savePrices(asDef) {
   const y = ui.year, pr = cfgGet('prices', { def: {}, byYear: {} }); pr.def = Object.assign({}, pr.def || {}); pr.byYear = Object.assign({}, pr.byYear || {}); pr.byYear[y] = Object.assign({}, pr.byYear[y] || {});
-  FEES.forEach(([k]) => { const v = $('#pr_' + k).value.trim(); pr.byYear[y][k] = v === '' ? null : +v; if (asDef && v !== '') pr.def[k] = +v; });
+  FEES.forEach(([k]) => { const v = numClean($('#pr_' + k).value); pr.byYear[y][k] = v === '' ? null : +v; if (asDef && v !== '') pr.def[k] = +v; });
   cfgSet('prices', pr); toast('已儲存'); renderAll();
 }
 async function doConnect() {
@@ -1695,6 +1697,23 @@ setHdrH(); addEventListener('resize', setHdrH);
 renderAll(); uploadPhotos(); bdNotify();
 /* 隔天才切回 App：重畫一次，蛋糕和名冊上方的生日提醒才會換成今天的 */
 let bdDay = todayStr();
+/* 金額、份數欄（class="num"）：手機開數字鍵盤；打成全形數字自動變半形，其他字去掉。
+   電腦在注音模式按數字鍵會變成ㄅㄉˇ…：記下實際按的數字鍵，組字結束時換回數字，不用先切英文 */
+let numK = null, numFix = null;
+document.addEventListener('keydown', e => {
+  const t = e.target; if (!t.classList || !t.classList.contains('num') || (e.key !== 'Process' && e.keyCode !== 229)) return;
+  if (!numK || numK.t !== t || !numK.on) numK = { t, pre: t.value.slice(0, t.selectionStart), post: t.value.slice(t.selectionEnd), keys: '', on: false };
+  const m = /^(?:Digit|Numpad)(\d)$/.exec(e.code || '');
+  if (m) numK.keys += m[1]; else if (e.code === 'Minus' || e.code === 'NumpadSubtract') numK.keys += '-'; else if (e.code === 'Backspace') numK.keys = numK.keys.slice(0, -1);
+}, true);
+document.addEventListener('compositionstart', e => { if (numK && numK.t === e.target) numK.on = true; }, true);
+document.addEventListener('compositionend', e => {
+  const t = e.target; if (!t.classList || !t.classList.contains('num')) return; const k = numK && numK.t === t ? numK : null; numK = null; numFix = t;
+  setTimeout(() => { numFix = null; const v = t.value, mid = k ? v.slice(k.pre.length, v.length - k.post.length) : v;
+    const fixed = k && k.keys && /[^\d\s,-]/.test(half(mid)) ? k.pre + k.keys + k.post : v;      /* 打出來的不是數字（注音、中文）→ 用按的鍵 */
+    const c = numClean(fixed); if (c !== v) t.value = c; });
+}, true);
+document.addEventListener('input', e => { const t = e.target; if (e.isComposing || numFix === t || !t.classList || !t.classList.contains('num')) return; numK = null; const c = numClean(t.value); if (c !== t.value) t.value = c; }, true);
 document.addEventListener('visibilitychange', () => { if (document.visibilityState !== 'visible') return; if (bdDay !== todayStr()) { bdDay = todayStr(); renderAll(); } bdNotify(); });
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 </script>
