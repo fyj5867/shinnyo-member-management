@@ -423,7 +423,7 @@ function sumHtml() {
   const y = ui.year, ix = IX(), st = stats(y), py = stats(y - 1), iss = dataIssues();
   const chip = (k, n, c) => `<button class="fchip ${ui.f === k ? 'on' : ''}" onclick="ui.f=ui.f==='${k}'?'':'${k}';renderList()">${n}<b>${c}</b></button>`;
   const bds = [...ix.m.values()].map(p => [p, bdSoon(p)]).filter(x => x[1]).sort((a, b) => a[1].days - b[1].days);
-  return `${bds.length ? `<div class="panel bday">🎂 <b>生日提醒</b>${bds.map(([p, b]) => `<span class="bdi"><a onclick="editPerson('${p.id}')">${esc(p.name)}</a> ${b.m}/${b.d}（${bdWhen(b)}）</span>`).join('')}</div>` : ''}
+  return `${bds.length ? `<div class="panel bday">🎂 ${bds.map(([p, b]) => `<span class="bdi"><a onclick="editPerson('${p.id}')">${esc(p.name)}</a> ${b.m}/${b.d}</span>`).join('')}</div>` : ''}
   <div class="panel sum"><div class="big">${y} 苑費要繳<b>${st.v}</b>戶<span class="lvc">導親 <b>${st.lv[0]}</b>｜導子 <b>${st.lv[1]}</b>｜所屬 <b>${st.lv[2]}</b>｜祈念證 <b>${st.cert}</b> 戶</span></div>
   <div class="chips">${chip('v', '要繳 v ', st.v)}${chip('cert', '祈念證 ', st.cert)}${chip('unpaid', '未收 ', st.due - st.paid)}${chip('paid', '已收 ', st.paid)}${chip('x', '不繳 x ', st.x)}${chip('none', '未定 ', st.none)}</div>
   <div class="row" style="margin-top:8px;gap:8px"><span style="font-size:14px">家族入信的資料</span><span class="seg2"><button class="${ui.fold ? '' : 'on'}" onclick="setFam(false)">全部展開</button><button class="${ui.fold ? 'on' : ''}" onclick="setFam(true)">全部收合</button></span></div>
@@ -1625,7 +1625,7 @@ function bdNotify() {
   const list = [...IX().m.values()].map(p => [p, bdSoon(p)]).filter(([p, b]) => b && !seen.includes(p.id + '|' + b.key)).sort((a, b) => a[1].days - b[1].days);
   if (!list.length) return;
   LSset('sm.bdSeen', JSON.stringify(seen.concat(list.map(([p, b]) => p.id + '|' + b.key)).slice(-300)));
-  const title = '🎂 生日提醒', body = list.map(([p, b]) => `${p.name} ${b.m}/${b.d}（${bdWhen(b)}）`).join('、');
+  const title = '🎂', body = list.map(([p, b]) => `${p.name} ${b.m}/${b.d}`).join('、');
   const fall = () => { try { new Notification(title, { body, icon: 'icon-192.png' }); } catch (e) {} };
   navigator.serviceWorker.getRegistration().then(r => r ? r.showNotification(title, { body, icon: 'icon-192.png', badge: 'icon-192.png', tag: 'sm-bday' }) : fall()).catch(fall);
 }
