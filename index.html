@@ -423,7 +423,7 @@ function sumHtml() {
   const y = ui.year, ix = IX(), st = stats(y), py = stats(y - 1), iss = dataIssues();
   const chip = (k, n, c) => `<button class="fchip ${ui.f === k ? 'on' : ''}" onclick="ui.f=ui.f==='${k}'?'':'${k}';renderList()">${n}<b>${c}</b></button>`;
   const bds = [...ix.m.values()].map(p => [p, bdSoon(p)]).filter(x => x[1]).sort((a, b) => a[1].days - b[1].days);
-  return `${bds.length ? `<div class="panel bday">🎂 <b>${BD_DAYS} 天內生日</b>　${bds.map(([p, b]) => `<span class="bdi"><a onclick="editPerson('${p.id}')">${esc(p.name)}</a> ${b.m}/${b.d}（${bdWhen(b)}）</span>`).join('')}</div>` : ''}
+  return `${bds.length ? `<div class="panel bday">🎂 <b>生日提醒</b>${bds.map(([p, b]) => `<span class="bdi"><a onclick="editPerson('${p.id}')">${esc(p.name)}</a> ${b.m}/${b.d}（${bdWhen(b)}）</span>`).join('')}</div>` : ''}
   <div class="panel sum"><div class="big">${y} 苑費要繳<b>${st.v}</b>戶<span class="lvc">導親 <b>${st.lv[0]}</b>｜導子 <b>${st.lv[1]}</b>｜所屬 <b>${st.lv[2]}</b>｜祈念證 <b>${st.cert}</b> 戶</span></div>
   <div class="chips">${chip('v', '要繳 v ', st.v)}${chip('cert', '祈念證 ', st.cert)}${chip('unpaid', '未收 ', st.due - st.paid)}${chip('paid', '已收 ', st.paid)}${chip('x', '不繳 x ', st.x)}${chip('none', '未定 ', st.none)}</div>
   <div class="row" style="margin-top:8px;gap:8px"><span style="font-size:14px">家族入信的資料</span><span class="seg2"><button class="${ui.fold ? '' : 'on'}" onclick="setFam(false)">全部展開</button><button class="${ui.fold ? 'on' : ''}" onclick="setFam(true)">全部收合</button></span></div>
@@ -1595,7 +1595,7 @@ function vSettings() {
   <button style="margin-top:8px" onclick="doConnect()">連線並開始同步</button>
   <label>方法二：第二台以後（手機）</label><input id="pc" placeholder="貼上第一台產生的配對碼 SM1.…"><input id="pp2" type="password" placeholder="同步密語（配對碼已含金鑰時可留空）" style="margin-top:6px"><button class="alt" style="margin-top:8px" onclick="doPair()">用配對碼連線</button>`}</div>
   <div class="panel"><h3>生日提醒</h3>
-  <div class="muted">生日前 ${BD_DAYS} 天到當天，名冊最上面會列出來，名字旁出現 🎂。卡片上不顯示出生年月日。</div>
+  <div class="muted">快到生日的人，名冊最上面會直接列出來，名字旁出現 🎂。卡片上不顯示出生年月日。</div>
   ${!bdCan() ? '<div class="muted" style="margin-top:6px">這個瀏覽器不能發通知。iPhone 請用 Safari「分享 → 加入主畫面」，從主畫面圖示打開，再回到這裡開啟。</div>'
     : bdOn() ? '<div class="row" style="margin-top:8px"><span class="grow">這台裝置：通知已開啟</span><button class="alt sm" onclick="bdEnable(false)">關閉通知</button></div>'
     : `<button class="sm" style="margin-top:8px" onclick="bdEnable(true)">開啟這台裝置的通知</button>${Notification.permission === 'denied' ? '<div class="muted">通知權限被擋住了，請到手機「設定 → 通知 → 信徒管理」打開。</div>' : ''}`}
@@ -1603,7 +1603,7 @@ function vSettings() {
   ${(() => { const all = icsPeople(), done = new Set(icsDone()), nw = all.filter(([p, x]) => !done.has(icsKey(p, x))).length;
     return `<label>加到手機行事曆（App 沒開也會提醒）</label>
   <div class="row">${done.size ? `<button class="sm" onclick="exportIcs(true)"${nw ? '' : ' disabled'}>只匯出新加的 ${nw} 人</button><button class="alt sm" onclick="if(confirm('全部重新匯出？iPhone 行事曆可能會多出重複的生日，要自己刪掉舊的。'))exportIcs(false)">全部重新匯出（${all.length} 人）</button>` : `<button class="sm" onclick="exportIcs(false)">匯出全部生日（${all.length} 人）</button>`}</div>
-  <div class="muted" style="margin-top:6px">每人一個每年重複的行程，生日前 ${BD_DAYS} 天早上 9 點提醒，只寫姓名，不寫出生年。iPhone：按下去選「行事曆」或打開檔案 →「加入全部」。<b>請加到私人的行事曆，不要加到公司的 Outlook</b>（會同步到公司伺服器）。之後有人過世、改生日，要自己到行事曆刪掉舊的。</div>`; })()}</div>
+  <div class="muted" style="margin-top:6px">每人一個每年重複的行程，生日前早上 9 點提醒，只寫姓名，不寫出生年。iPhone：按下去選「行事曆」或打開檔案 →「加入全部」。<b>請加到私人的行事曆，不要加到公司的 Outlook</b>（會同步到公司伺服器）。之後有人過世、改生日，要自己到行事曆刪掉舊的。</div>`; })()}</div>
   <div class="panel"><h3>單位名稱（列印抬頭）</h3><input id="org" value="${esc(orgName())}" placeholder="例：○○苑"><button class="sm" style="margin-top:8px" onclick="cfgSet('org',{name:$('#org').value.trim()});toast('已儲存')">儲存</button></div>
   <div class="panel"><h3>備份</h3><div class="row"><button class="alt sm" onclick="backup()">下載備份 JSON</button><button class="alt sm" onclick="$('#rf').click()">從備份還原</button><input id="rf" type="file" accept=".json" class="hidden" onchange="restore(this.files[0])"></div>
   <div class="muted" style="margin-top:6px">備份檔含完整個資，請存在私人位置，不要放進 GitHub。奠供帳的照片不在備份檔裡：照片存在拍照的裝置，開同步後另外加密存在雲端。</div></div>
